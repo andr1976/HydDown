@@ -117,17 +117,25 @@ for i in range(1,len(time_array)):
 import pylab as plt 
 plt.figure(1)
 plt.plot(time_array/60, T_vessel-273.15)
+plt.xlabel('Time (minutes)')
+plt.ylabel('Vessel inventory temperature ($^\circ$C)')
 
 plt.figure(2)
 plt.plot(time_array/60,P/1e5)
+plt.xlabel('Time (minutes)')
+plt.ylabel('Pressure (bar)')
 
 plt.figure(3)
-plt.plot(time_array/60,H_mass,label='H')
-plt.plot(time_array/60,U_mass,label='U')
-plt.plot(time_array/60, S_mass*100,label='S*100')
+plt.plot(time_array/60,H_mass,label='H (J/kg)')
+plt.plot(time_array/60,U_mass,label='U (J/kg)')
+plt.plot(time_array/60, S_mass*100,label='S*100 (J/kg K)')
+plt.xlabel('Time (minutes)')
+plt.ylabel('Enthalpy/Internal Energy/Entropy/')
 
 plt.figure(4)
 plt.plot(time_array/60,mass_rate,label='m_dot')
+plt.xlabel('Time (minutes)')
+plt.ylabel('Vent rate (kg/s)')
 plt.show()
 
 
