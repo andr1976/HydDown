@@ -72,6 +72,9 @@ for i in range(1,len(time_array)):
     elif method=="isentropic":
         T_vessel[i]=PropsSI('T','D',rho[i],'S',S_mass[i-1],species)
         P[i]=PropsSI('P','D',rho[i],'S',S_mass[i-1],species)
+    elif method=="constantU":
+        T_vessel[i]=PropsSI('T','D',rho[i],'U',H_mass[i-1]-P[i-1]*vol/mass_vessel[i-1],species)
+        P[i]=PropsSI('P','D',rho[i],'U',H_mass[i-1]-P[i-1]*vol/mass_vessel[i-1],species)
     elif method=="internalenergy":
         P1 = PropsSI('P','D',rho[i],'T',T_vessel[i-1],species)
         T1 = PropsSI('T','P',P1,'H',H_mass[i-1],species)
@@ -115,24 +118,27 @@ for i in range(1,len(time_array)):
 
 
 import pylab as plt 
-plt.figure(1)
+
+plt.figure()
+plt.subplot(221)
 plt.plot(time_array/60, T_vessel-273.15)
 plt.xlabel('Time (minutes)')
 plt.ylabel('Vessel inventory temperature ($^\circ$C)')
 
-plt.figure(2)
+plt.subplot(222)
 plt.plot(time_array/60,P/1e5)
 plt.xlabel('Time (minutes)')
 plt.ylabel('Pressure (bar)')
 
-plt.figure(3)
+plt.subplot(223)
 plt.plot(time_array/60,H_mass,label='H (J/kg)')
 plt.plot(time_array/60,U_mass,label='U (J/kg)')
 plt.plot(time_array/60, S_mass*100,label='S*100 (J/kg K)')
+plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Enthalpy/Internal Energy/Entropy/')
 
-plt.figure(4)
+plt.subplot(224)
 plt.plot(time_array/60,mass_rate,label='m_dot')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Vent rate (kg/s)')
