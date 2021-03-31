@@ -45,9 +45,9 @@ CD=0.84
 p_back=1e6 # Pa
 time_tot = 900 #s
 species='HEOS::CH4'
-method="isothermal"
-eta=0 
-Q = 0.0 #1000e3#1000. #"W"
+method="firstlaw"
+eta=1 
+Q = 50000.0 #1000e3#1000. #"W"
 
 
 vol=diameter**2/4*3.1415*length #m3
