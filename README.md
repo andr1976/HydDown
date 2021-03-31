@@ -17,7 +17,13 @@ These choices make the problem a lot more simple to solve, First of all the the 
 Over time the code could evolve to account for convective heat transfer inside/outside vessel, also with a heat balance of the vessel walls, acting to attenuate the temperature drop during depressurisation. Implenentation of the Stefan-Bolzmann fire duty equation as described in e.g. API521 / Scandpower guideline, pressure relief valve instead of blow down valve, pressurisation behaviour etc.
 
 ## Description
+The follwoing methods are implemented:
 
+- Isothermal i.e. constant tmeperature of the fluid during depressurisation (for a very slow process with a large heat reservoir)
+- Adiabatic (no heat transfer with surroundings, no work performed by the expanding fluid)
+- Isentropic (no heat transfer with surroundings, PV work performed by the expanding fluid)
+- Constant internal energy
+- First law, this is the most general case, and includes both the ability to transfer heat with surroundings as well as PV work is accounted for (PV work efficiency can be specied, but 100% or close to is recommended)
 
 ## Requirements
 
