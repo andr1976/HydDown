@@ -10,6 +10,7 @@ A few choices is made to keep things simple to begin with:
 - Only pure substances are considered
 - Gas phase only
 - Heat transfer is modelled as simple as possible
+
 Code will be as simple as possible - likely a single file to start with - no fancy module structure, manual input for starters - no input file parser, no GUI, nothing - just a simple script.
 These choices make the problem a lot more simple to solve, First of all the the pure substance Helmholtz energy based equation of state in coolprop offers a lot of convenience in terms of the property pairs/state variables that can be set independtly. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
