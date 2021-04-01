@@ -34,12 +34,7 @@ def h_inner(Nu,k,L):
 length=10 #internal
 diameter=3 #internal
 thickness=0.10 # m
-vessel_cp=500 # J/kg K
-vessel_density=7800 # kg/m3
-Uheat=20.
-Tamb=298.
-ho=10.
-hi=200.
+
 p0=1e7 #Pa
 T0=298 #K
 tstep=1 # sec
@@ -47,11 +42,18 @@ D_orifice=0.035 #m
 CD=0.84
 p_back=1e6 # Pa
 time_tot = 900 #s
-species='HEOS::CH4'
+species='HEOS::H2'
 method="firstlaw"
 eta=1 
-Qfix = 50000.0 #1000e3#1000. #"W"
 
+heat_method="specified_h"
+Tamb=298.
+Ufix=20.
+ho=10.
+hi=200.
+Qfix = 50000.0 #1000e3#1000. #"W"
+vessel_cp=500 # J/kg K
+vessel_density=7800 # kg/m3
 
 vol=diameter**2/4*3.1415*length #m3
 vol_tot=(diameter+2*thickness)**2/4*3.1415*(length+2*thickness) #m3
@@ -121,10 +123,19 @@ for i in range(1,len(time_array)):
         NMOL=mass_vessel[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
         #Q=Uheat*surf_area*(298-T_fluid[i-1])
 
-        Q_inner[i]=surf_area_inner*hi*(T_vessel[i-1]-T_fluid[i-1])
-        Q_outer[i]=surf_area_outer*ho*(Tamb-T_vessel[i-1])
-
-        T_vessel[i]=T_vessel[i-1]+(Q_outer[i]-Q_inner[i])*tstep/(vessel_cp*vessel_density*vol_solid)
+        if heat_method=="specified_h" or heat_method=="detailed":
+            Q_inner[i]=surf_area_inner*hi*(T_vessel[i-1]-T_fluid[i-1])
+            Q_outer[i]=surf_area_outer*ho*(Tamb-T_vessel[i-1])
+            T_vessel[i]=T_vessel[i-1]+(Q_outer[i]-Q_inner[i])*tstep/(vessel_cp*vessel_density*vol_solid)
+        elif heat_method=="specified_U":
+            Q_inner[i]=surf_area_outer*Ufix*(Tamb-T_fluid[i-1])
+            T_vessel[i]=T_vessel[0] 
+        elif heat_method=="specified_Q":
+            Q_inner[i]=Qfix
+            T_vessel[i]=T_vessel[0]
+        else:
+            Q_inner[i]=0.0
+            T_vessel[i]=T_vessel[0]
 
         U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q_inner[i]*tstep
         U=0
