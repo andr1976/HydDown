@@ -33,10 +33,13 @@ def h_inner(Nu,k,L):
 # Intial parameters and setup
 length=10 #internal
 diameter=3 #internal
-thickness=0.010 # m
+thickness=0.10 # m
 vessel_cp=500 # J/kg K
 vessel_density=7800 # kg/m3
 Uheat=20.
+Tamb=298.
+ho=10.
+hi=200.
 p0=1e7 #Pa
 T0=298 #K
 tstep=1 # sec
@@ -47,7 +50,7 @@ time_tot = 900 #s
 species='HEOS::CH4'
 method="firstlaw"
 eta=1 
-Q = 50000.0 #1000e3#1000. #"W"
+Qfix = 50000.0 #1000e3#1000. #"W"
 
 
 vol=diameter**2/4*3.1415*length #m3
@@ -63,11 +66,14 @@ T_fluid = np.zeros(data_len)
 T_vessel = np.zeros(data_len)
 Q_outer = np.zeros(data_len)
 Q_inner = np.zeros(data_len)
+h_inner = np.zeros(data_len)
 T_vent = np.zeros(data_len)
 H_mass = np.zeros(data_len)
 S_mass = np.zeros(data_len)
 U_mass = np.zeros(data_len)
 U_tot = np.zeros(data_len)
+Qo=np.zeros(data_len)
+Qi=np.zeros(data_len)
 P = np.zeros(data_len)
 mass_vessel = np.zeros(data_len)
 mass_rate = np.zeros(data_len)
@@ -80,6 +86,7 @@ m0 = rho0*vol
 # Inititialise 
 rho[0] = rho0
 T_fluid[0] = T0
+T_vessel[0] = T0
 H_mass[0] = PropsSI('H','T',T0,'P',p0,species)
 S_mass[0] = PropsSI('S','T',T0,'P',p0,species)
 U_mass[0] = PropsSI('U','T',T0,'P',p0,species)
@@ -113,8 +120,13 @@ for i in range(1,len(time_array)):
         T1 = PropsSI('T','P',P1,'H',H_mass[i-1],species)
         NMOL=mass_vessel[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
         #Q=Uheat*surf_area*(298-T_fluid[i-1])
-        
-        U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q*tstep
+
+        Q_inner[i]=surf_area_inner*hi*(T_vessel[i-1]-T_fluid[i-1])
+        Q_outer[i]=surf_area_outer*ho*(Tamb-T_vessel[i-1])
+
+        T_vessel[i]=T_vessel[i-1]+(Q_outer[i]-Q_inner[i])*tstep/(vessel_cp*vessel_density*vol_solid)
+
+        U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q_inner[i]*tstep
         U=0
         nn=0
         rho1=0
@@ -155,9 +167,11 @@ import pylab as plt
 
 plt.figure()
 plt.subplot(221)
-plt.plot(time_array/60, T_fluid-273.15)
+plt.plot(time_array/60, T_fluid-273.15,label="Fluid")
+plt.plot(time_array/60, T_vessel-273.15,label="Vessel")
+plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
-plt.ylabel('Vessel inventory temperature ($^\circ$C)')
+plt.ylabel('Temperature ($^\circ$C)')
 
 plt.subplot(222)
 plt.plot(time_array/60,P/1e5)
