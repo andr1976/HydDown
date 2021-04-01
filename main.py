@@ -31,27 +31,27 @@ def h_inner(Nu,k,L):
 
 
 # Intial parameters and setup
-length=10 #internal
-diameter=3 #internal
-thickness=0.10 # m
+length=1.52#10 #internal
+diameter=0.273#3 #internal
+thickness=0.025 # m
 
-p0=1e7 #Pa
-T0=298 #K
-tstep=1 # sec
-D_orifice=0.035 #m
-CD=0.84
-p_back=1e6 # Pa
-time_tot = 900 #s
-species='HEOS::H2'
-method="firstlaw"
+p0=1.5e7 #Pa
+T0=288 #K
+tstep=0.05 # sec
+D_orifice=0.00635 #m
+CD=0.65
+p_back=1e5 # Pa
+time_tot = 100 #s
+species='HEOS::N2'
+method="energybalance"
 eta=1 
 
 heat_method="specified_h"
-Tamb=298.
+Tamb=288.
 Ufix=20.
-ho=10.
-hi=200.
-Qfix = 50000.0 #1000e3#1000. #"W"
+ho=5.
+hi=30.
+Qfix = 0.0 #1000e3#1000. #"W"
 vessel_cp=500 # J/kg K
 vessel_density=7800 # kg/m3
 
@@ -74,6 +74,9 @@ H_mass = np.zeros(data_len)
 S_mass = np.zeros(data_len)
 U_mass = np.zeros(data_len)
 U_tot = np.zeros(data_len)
+U_iter=np.zeros(data_len)
+m_iter=np.zeros(data_len)
+n_iter=np.zeros(data_len)
 Qo=np.zeros(data_len)
 Qi=np.zeros(data_len)
 P = np.zeros(data_len)
@@ -117,9 +120,9 @@ for i in range(1,len(time_array)):
     elif method=="constantU":
         T_fluid[i]=PropsSI('T','D',rho[i],'U',U_mass[i-1],species)
         P[i]=PropsSI('P','D',rho[i],'U',U_mass[i-1],species)
-    elif method=="firstlaw":
+    elif method=="energybalance":
         P1 = PropsSI('P','D',rho[i],'T',T_fluid[i-1],species)
-        T1 = PropsSI('T','P',P1,'H',H_mass[i-1],species)
+        T1 = PropsSI('T','P',P1,'H',H_mass[i-1]+Q_inner[i]*tstep/mass_vessel[i],species)
         NMOL=mass_vessel[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
         #Q=Uheat*surf_area*(298-T_fluid[i-1])
 
@@ -136,8 +139,10 @@ for i in range(1,len(time_array)):
         else:
             Q_inner[i]=0.0
             T_vessel[i]=T_vessel[0]
-
+        print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i])
         U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q_inner[i]*tstep
+        #U_start=NMOL*PropsSI('UMOLAR','P',P[i-1],'T',T_fluid[i-1],species)
+        
         U=0
         nn=0
         rho1=0
@@ -146,20 +151,27 @@ for i in range(1,len(time_array)):
         n=0
         relax=0.1
 
-        while abs(rho[i]-rho1)>1 and m<itermax:
+        while abs(rho[i]-rho1)>0.1 and m<itermax:
+            
             m=m+1
             rho1=PropsSI('D','T',T1,'P',P1,species)
             #nn=vol*PropsSI('D','T',T1,'P',P1,species)/PropsSI('M',species)
             dd=rho[i]-rho1#NMOL-nn
             P1 = P1 + dd*1e4
-            #print(m,dd,P1/1e5)
-            while abs(U_start-U)>100 and n<itermax:
+            if m==itermax:
+                raise Exception("Iter max exceeded for rho/P")
+            while abs(U_start-U)/U_start>0.00001 and n<itermax:
                 n=n+1
-                U=NMOL*PropsSI('HMOLAR','P',P1,'T',T1,species)-eta*P1*vol
+                U=NMOL*PropsSI('HMOLAR','P',P1,'T',T1,species)-eta*P1*vol#Q_inner[i]*tstep
                 d=U_start - U 
                 T1 = T1 + 0.1* d / U_start* T1
+                if n==itermax:
+                    raise Exception("Iter max exceeded for U/T")
+            
                 #print(n,d,T1)
-
+        m_iter[i]=dd
+        n_iter[i]=d
+        U_iter[i]=U/NMOL*mass_vessel[i]
         P[i]=P1
         T_fluid[i]=T1
         
@@ -193,6 +205,7 @@ plt.subplot(223)
 plt.plot(time_array/60,H_mass,label='H (J/kg)')
 plt.plot(time_array/60,U_mass,label='U (J/kg)')
 plt.plot(time_array/60, S_mass*100,label='S*100 (J/kg K)')
+plt.plot(time_array/60,U_iter)
 plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Enthalpy/Internal Energy/Entropy/')
