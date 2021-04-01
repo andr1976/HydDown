@@ -31,23 +31,23 @@ def h_inner(Nu,k,L):
 
 
 # Intial parameters and setup
-length=1.52#10 #internal
-diameter=0.273#3 #internal
-thickness=0.025 # m
+length=.212#10 #internal
+diameter=0.075#3 #internal
+thickness=0.0030 # m
 
-p0=1.5e7 #Pa
-T0=288 #K
+p0=1.0e7 #Pa
+T0=273+36 #K
 tstep=0.05 # sec
-D_orifice=0.00635 #m
+D_orifice=0.0005 #m
 CD=0.65
 p_back=1e5 # Pa
-time_tot = 100 #s
-species='HEOS::N2'
+time_tot = 50 #s
+species='HEOS::H2'
 method="energybalance"
 eta=1 
 
 heat_method="specified_h"
-Tamb=288.
+Tamb=298.
 Ufix=20.
 ho=5.
 hi=30.
