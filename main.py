@@ -14,20 +14,30 @@ def gas_release_rate(P1,P2,T,rho,MW,k,CD,area):
         retval = 0 
     return retval # kg/s
 
-def Ra(L):
-    pass
+def Gr(L,Tfluid,Tvessel,P,species):
+    T=(Tfluid+Tvessel)/2
+    beta=PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','T',T,'P',P,species)
+    nu=PropsSI('V','T',T,'P',P,species)/PropsSI('D','T',T,'P',P,species)
+    Gr = 9.81 * beta * (Tvessel-Tfluid)*L**3/nu**2
+    return Gr
 
-def Gr():
-    pass
-
-def Pr():
-    pass
+def Pr(T,P,species):
+    Pr = PropsSI('C','T',T,'P',P,species)*PropsSI('V','T',T,'P',P,species)/PropsSI('L','T',T,'P',P,species)
+    return Pr 
 
 def Nu(Ra):
     return 0.104*Ra**0.352
 
-def h_inner(Nu,k,L):
-    return Nu*k/L
+def h_inner(L,Tfluid,Tvessel,P,species):
+    NPr=Pr(Tfluid,P,species)
+    print("Pr:", NPr)
+    NGr=Gr(L,Tfluid,Tvessel,P,species)
+    print("Gr:", NGr)
+    NRa=NPr*NGr
+    print("Ra:", NRa)
+    NNu=Nu(NRa)
+    print("Nu:", NNu)
+    return NNu*PropsSI('L','T',Tfluid,'P',P,species)/L
 
 
 # Intial parameters and setup
@@ -38,7 +48,7 @@ thickness=0.0030 # m
 p0=1.0e7 #Pa
 T0=273+36 #K
 tstep=0.05 # sec
-D_orifice=0.0005 #m
+D_orifice=0.0008 #m
 CD=0.65
 p_back=1e5 # Pa
 time_tot = 50 #s
@@ -68,7 +78,7 @@ T_fluid = np.zeros(data_len)
 T_vessel = np.zeros(data_len)
 Q_outer = np.zeros(data_len)
 Q_inner = np.zeros(data_len)
-h_inner = np.zeros(data_len)
+h_inside = np.zeros(data_len)
 T_vent = np.zeros(data_len)
 H_mass = np.zeros(data_len)
 S_mass = np.zeros(data_len)
@@ -122,10 +132,12 @@ for i in range(1,len(time_array)):
         P[i]=PropsSI('P','D',rho[i],'U',U_mass[i-1],species)
     elif method=="energybalance":
         P1 = PropsSI('P','D',rho[i],'T',T_fluid[i-1],species)
-        T1 = PropsSI('T','P',P1,'H',H_mass[i-1]+Q_inner[i]*tstep/mass_vessel[i],species)
+        #T1 = PropsSI('T','P',P1,'H',H_mass[i-1]+Q_inner[i-1]*tstep/mass_vessel[i],species)
+        T1 = PropsSI('T','P',P1,'H',H_mass[i-1],species)
         NMOL=mass_vessel[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
         #Q=Uheat*surf_area*(298-T_fluid[i-1])
-
+        hi=h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species)
+        h_inside[i]=hi
         if heat_method=="specified_h" or heat_method=="detailed":
             Q_inner[i]=surf_area_inner*hi*(T_vessel[i-1]-T_fluid[i-1])
             Q_outer[i]=surf_area_outer*ho*(Tamb-T_vessel[i-1])
@@ -139,7 +151,7 @@ for i in range(1,len(time_array)):
         else:
             Q_inner[i]=0.0
             T_vessel[i]=T_vessel[0]
-        print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i])
+        print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i], " h_inner: ",h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species))
         U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q_inner[i]*tstep
         #U_start=NMOL*PropsSI('UMOLAR','P',P[i-1],'T',T_fluid[i-1],species)
         
@@ -151,8 +163,7 @@ for i in range(1,len(time_array)):
         n=0
         relax=0.1
 
-        while abs(rho[i]-rho1)>0.1 and m<itermax:
-            
+        while abs(rho[i]-rho1)>0.01 and m<itermax:
             m=m+1
             rho1=PropsSI('D','T',T1,'P',P1,species)
             #nn=vol*PropsSI('D','T',T1,'P',P1,species)/PropsSI('M',species)
