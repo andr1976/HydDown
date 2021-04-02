@@ -88,7 +88,7 @@ n_iter=np.zeros(data_len)
 Qo=np.zeros(data_len)
 Qi=np.zeros(data_len)
 P = np.zeros(data_len)
-mass_vessel = np.zeros(data_len)
+mass_fluid = np.zeros(data_len)
 mass_rate = np.zeros(data_len)
 time_array = np.zeros(data_len)
 
@@ -105,7 +105,7 @@ S_mass[0] = PropsSI('S','T',T0,'P',p0,species)
 U_mass[0] = PropsSI('U','T',T0,'P',p0,species)
 U_tot[0] = PropsSI('U','T',T0,'P',p0,species)*m0
 P[0] = p0
-mass_vessel[0] = m0
+mass_fluid[0] = m0
 cpcv=PropsSI('CP0MOLAR','T',T0,'P',p0,species)/PropsSI('CVMOLAR','T',T0,'P',p0,species)
 
 mass_rate[0] = gas_release_rate(p0,p_back,T0,rho0,PropsSI('M',species),cpcv,CD,D_orifice**2/4*3.1415)
@@ -113,8 +113,8 @@ time_array[0] = 0
 
 for i in range(1,len(time_array)):
     time_array[i]=time_array[i-1]+tstep
-    mass_vessel[i]=mass_vessel[i-1]-mass_rate[i-1]*tstep
-    rho[i]=mass_vessel[i]/vol
+    mass_fluid[i]=mass_fluid[i-1]-mass_rate[i-1]*tstep
+    rho[i]=mass_fluid[i]/vol
 
     if method == "isenthalpic":
         T_fluid[i]=PropsSI('T','D',rho[i],'H',H_mass[i-1],species)
@@ -130,9 +130,9 @@ for i in range(1,len(time_array)):
         P[i]=PropsSI('P','D',rho[i],'U',U_mass[i-1],species)
     elif method=="energybalance":
         P1 = PropsSI('P','D',rho[i],'T',T_fluid[i-1],species)
-        #T1 = PropsSI('T','P',P1,'H',H_mass[i-1]+Q_inner[i-1]*tstep/mass_vessel[i],species)
+        #T1 = PropsSI('T','P',P1,'H',H_mass[i-1]+Q_inner[i-1]*tstep/mass_fluid[i],species)
         T1 = PropsSI('T','P',P1,'H',H_mass[i-1],species)
-        NMOL=mass_vessel[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
+        NMOL=mass_fluid[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
         #Q=Uheat*surf_area*(298-T_fluid[i-1])
         hi=h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species)
         h_inside[i]=hi
@@ -180,7 +180,7 @@ for i in range(1,len(time_array)):
                 #print(n,d,T1)
         m_iter[i]=dd
         n_iter[i]=d
-        U_iter[i]=U/NMOL*mass_vessel[i]
+        U_iter[i]=U/NMOL*mass_fluid[i]
         P[i]=P1
         T_fluid[i]=T1
         
@@ -190,7 +190,7 @@ for i in range(1,len(time_array)):
 
     H_mass[i]=PropsSI('H','T',T_fluid[i],'P',P[i],species)
     S_mass[i]=PropsSI('S','T',T_fluid[i],'P',P[i],species)
-    U_mass[i]=(mass_vessel[i]*PropsSI('H','P',P[i],'T',T_fluid[i],species)-P[i]*vol)/mass_vessel[i]#PropsSI('U','T',T_fluid[i],'P',P[i],species)#-(P[i-1]-P[i])*vol/mass_vessel[i]
+    U_mass[i]=(mass_fluid[i]*PropsSI('H','P',P[i],'T',T_fluid[i],species)-P[i]*vol)/mass_fluid[i]#PropsSI('U','T',T_fluid[i],'P',P[i],species)#-(P[i-1]-P[i])*vol/mass_fluid[i]
     cpcv=PropsSI('CP0MOLAR','T',T_fluid[i],'P',P[i],species)/PropsSI('CVMOLAR','T',T_fluid[i],'P',P[i],species)
     mass_rate[i] = gas_release_rate(P[i],p_back,T_fluid[i],rho[i],PropsSI('M',species),cpcv,CD,D_orifice**2/4*3.1415)
 
