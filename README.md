@@ -48,7 +48,7 @@ The script is running on Windows 10 x64, with stock python installation from pyt
 ## References
 
 - [C. J. Geankoplis; Transport Processes and Unit Operations, International Edition, Prentice-Hall, 1993](https://www.amazon.co.uk/Transport-Processes-Unit-Operations-International/dp/013045253X)
-- HYSYS/Unisim
+- Haque, M.A.; Richardson, S.M.; Saville, G.; Chamberlain, G.; Shirvill, L. Blowdown of pressure vessels II. Experimental Validation of Computer Model and Case Studies. Trans. IChemE 1992, 70, 10–17.
 - [Woodfield, Monde, Mitsutake; Measurement of Averaged Heat Transfer Coefficients in High-Pressure Vessel during Charging with Hydrogen, Nitrogen or Argon Gas; Journal of Thermal Science and Technology; 2007 Volume 2 Issue 2 Pages 180-191 ](https://doi.org/10.1299/jtst.2.180)
 - [Woodfield, Monde, Takano; Heat Transfer Characteristics for Practical Hydrogen Pressure Vessels Being Filled at High Pressure, Journal of Thermal Science and Technology 3(2):241-253](http://dx.doi.org/10.1299/jtst.3.241)
 - [On the Adequacy of API 521 Relief-Valve Sizing Method for Gas-Filled Pressure Vessels Exposed to Fire](https://doi.org/10.3390/safety4010011)
