@@ -9,6 +9,8 @@ A few choices is made to keep things simple to begin with:
 - Coolprop is used as thermodynamic backend
 - Only pure substances are considered
 - Gas phase only
+- No temperture startification in the gas phase
+- No temperture gradient through vessel wall
 - Heat transfer is modelled as simple as possible
 
 Code will be as simple as possible - a single file to start with - no fancy module structure, no GUI, nothing - just a simple script with an input file.
@@ -24,6 +26,10 @@ The following methods are implemented:
 - Isentropic (no heat transfer with surroundings, PV work performed by the expanding fluid)
 - Constant internal energy
 - Energy balance, this is the most general case, and includes both the ability to transfer heat with surroundings as well as PV work is accounted for (PV work efficiency can be specied, but 100% or close to is recommended)
+
+A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step then the mass relief/ left in the vessel is known. Since the volume is fixed, from the mass the density is directly given. For the simple methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally onlt TP, PH, TS flash calculations are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. Coolprop is very convenient for this, however for the cubic EOS it only supports a subset of state variables to be specified directly. 
+
+In case the "Energy balance" method is applied, the heat added from convection and work is accounted for. In this case some of the Coolprop convenience is lost and the P,T for the new time step is iteratively solved in a nested loop, with pressure being iterated to match the density, and an inner loop with an energy balance solved to estimate the final temperture. The two iteration loops can most likely be improved massively. 
 
 ## Basic usage
 The Yaml input file is edited to reflect the system of interest. For isothermal/isenthalpic/isentropic/isenergetic calculations the minimal input required are:
