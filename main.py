@@ -1,6 +1,7 @@
 from CoolProp.CoolProp import PropsSI
 import math
 import numpy as np
+from numpy.lib.nanfunctions import _nanquantile_1d
 
 def gas_release_rate(P1,P2,T,rho,MW,k,CD,area):
     p_limit = (P1 * (2 / (1 + k)) ** (k / (k - 1)))
@@ -18,46 +19,43 @@ def Gr(L,Tfluid,Tvessel,P,species):
     T=(Tfluid+Tvessel)/2
     beta=PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','T',T,'P',P,species)
     nu=PropsSI('V','T',T,'P',P,species)/PropsSI('D','T',T,'P',P,species)
-    Gr = 9.81 * beta * (Tvessel-Tfluid)*L**3/nu**2
+    Gr = 9.81 * beta * abs(Tvessel-Tfluid)*L**3/nu**2
     return Gr
 
 def Pr(T,P,species):
     Pr = PropsSI('C','T',T,'P',P,species)*PropsSI('V','T',T,'P',P,species)/PropsSI('L','T',T,'P',P,species)
     return Pr 
 
-def Nu(Ra):
-    return 0.104*Ra**0.352
+def Nu(Ra,Pr):
+    NNu = 0.13*Ra**0.333
+    return NNu
 
 def h_inner(L,Tfluid,Tvessel,P,species):
-    NPr=Pr(Tfluid,P,species)
-    print("Pr:", NPr)
+    NPr=Pr((Tfluid+Tvessel)/2,P,species)
     NGr=Gr(L,Tfluid,Tvessel,P,species)
-    print("Gr:", NGr)
     NRa=NPr*NGr
-    print("Ra:", NRa)
-    NNu=Nu(NRa)
-    print("Nu:", NNu)
-    return NNu*PropsSI('L','T',Tfluid,'P',P,species)/L
+    NNu=Nu(NRa,NPr)
+    return NNu*PropsSI('L','T',(Tfluid+Tvessel)/2,'P',P,species)/L
 
 
 # Intial parameters and setup
-length=.212#10 #internal
-diameter=0.075#3 #internal
-thickness=0.0030 # m
+length=1.524#10 #internal
+diameter=0.273#3 #internal
+thickness=0.025 # m
 
-p0=1.0e7 #Pa
-T0=273+36 #K
+p0=1.5e7 #Pa
+T0=288 #K
 tstep=0.05 # sec
-D_orifice=0.0008 #m
-CD=0.65
+D_orifice=0.00635 #m
+CD=0.75
 p_back=1e5 # Pa
-time_tot = 50 #s
-species='HEOS::H2'
+time_tot = 100 #s
+species='HEOS::N2'
 method="energybalance"
 eta=1 
 
 heat_method="specified_h"
-Tamb=298.
+Tamb=288.
 Ufix=20.
 ho=5.
 hi=30.
@@ -151,7 +149,7 @@ for i in range(1,len(time_array)):
         else:
             Q_inner[i]=0.0
             T_vessel[i]=T_vessel[0]
-        print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i], " h_inner: ",h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species))
+        #print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i], " h_inner: ",h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species))
         U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q_inner[i]*tstep
         #U_start=NMOL*PropsSI('UMOLAR','P',P[i-1],'T',T_fluid[i-1],species)
         
@@ -216,7 +214,7 @@ plt.subplot(223)
 plt.plot(time_array/60,H_mass,label='H (J/kg)')
 plt.plot(time_array/60,U_mass,label='U (J/kg)')
 plt.plot(time_array/60, S_mass*100,label='S*100 (J/kg K)')
-plt.plot(time_array/60,U_iter)
+#plt.plot(time_array/60,U_iter)
 plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Enthalpy/Internal Energy/Entropy/')
