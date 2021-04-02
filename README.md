@@ -42,6 +42,12 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 - Detailed (not yet implememted)
 - Fire (Not yet implemented)
 
+## Validation
+The code is mainly for demonstration, and is provided as-is. However, a comparison has been made to experiment I1 from Haque et al. (see full ref below). The results are shown below.
+
+![Figure_1](https://user-images.githubusercontent.com/58475535/113461326-62a66800-941c-11eb-8197-2252d82cdb69.png)
+
+
 ## Requirements
 
 - [Python](http://www.python.org) (3.8 - at least python3)
@@ -53,13 +59,10 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip. Should run om linux or in any conda environment as well, but I haven't checked.
 
 ## TO-DO
-
-- Internal/external heat transfer
+- Addition of heat transfer correlations for different geometries and also considering mixed convection
 - Fire heat load using Stefan-Boltzmann equation as per API521/Scandpower guideline
-- Vessel wall temperature
 - Vessel loading/filling
 - Relief valve (spring loaded) as an alternative to orifice depressurisation
-- Config file
 - Additional plots
 - More description
 
