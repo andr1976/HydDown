@@ -1,6 +1,14 @@
 # HydDown
 Hydrogen (or other pure gas phase species) depressurization calculations
 
+This code is published under an MIT license.
+
+Run the code as simple as: 
+
+    python main.py input.yml
+
+where main.py is the main script and input.yml is the input file in Yaml syntax. 
+
 ## Background
 This is a small spare time project for calculation of vessel depressurisation behaviour. This is mainly to demonstrate, that although perceived as a very tedious/difficult task to write your own code for such an apparent complex problem, actually a fairly limited amount of code is necessary if you have a good thermodynamic backend. 
 
