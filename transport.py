@@ -63,6 +63,9 @@ def gas_release_rate(P1,P2,rho,k,CD,area):
     else:
         return 0 
 
+def relief_valve():
+    pass
+
 def control_valve(P1,P2,T,Z,MW,gamma,Cv,xT=0.75,FP=1):
     """
     Flow calculated from ANSI/ISA control valve equations for single phase gas flow.
