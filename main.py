@@ -61,8 +61,7 @@ species='HEOS::'+input['initial']['fluid']
 tstep=input['calculation']['time_step']
 time_tot = input['calculation']['end_time']
 method=input['calculation']['type'] 
-if method=="energybalance":
-    eta=input['calculation']['eta']  
+if method=="energybalance": eta=input['calculation']['eta']  
 
 D_orifice=input['valve']['diameter']
 CD=input['valve']['discharge_coef']
