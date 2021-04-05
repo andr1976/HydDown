@@ -87,7 +87,9 @@ if __name__=='__main__':
     MolW=20.    
     T1=20.+273.15   # Kelvin
     Z1=0.9          
-
+    print(Gr(0.305,311,505.4,1e5,'HEOS::air'))
+    print(PropsSI('D','T',(311+504)/2,'P',1e5,'HEOS::air'))
+    print(PropsSI('V','T',(311+504)/2,'P',1e5,'HEOS::air')/PropsSI('D','T',(311+504)/2,'P',1e5,'HEOS::air'))
     print(control_valve(P1,P2,T1,Z1,MolW,gamma,500))
     print(gas_release_rate(P1,P2,9.12,1.1,0.85,0.01))
-    
+    print(Pr((311+504)/2,1e5,'HEOS::air'))
