@@ -7,18 +7,7 @@ import math
 import numpy as np
 import yaml
 import sys
-
-def gas_release_rate(P1,P2,T,rho,MW,k,CD,area):
-    p_limit = (P1 * (2 / (1 + k)) ** (k / (k - 1)))
-    if P2 < p_limit:
-        p_used = p_limit
-    else:
-        p_used=P2
-    if P1>P2:
-        retval = CD * area * math.sqrt((2 * k / (k - 1)) * P1 * rho * (p_used / P1) **  (2 / k) * (1 - (p_used / P1) ** ((k - 1) / k)))
-    else: 
-        retval = 0 
-    return retval # kg/s
+from transport import *
 
 def Gr(L,Tfluid,Tvessel,P,species):
     T=(Tfluid+Tvessel)/2
@@ -127,7 +116,7 @@ P[0] = p0
 mass_fluid[0] = m0
 cpcv=PropsSI('CP0MOLAR','T',T0,'P',p0,species)/PropsSI('CVMOLAR','T',T0,'P',p0,species)
 
-mass_rate[0] = gas_release_rate(p0,p_back,T0,rho0,PropsSI('M',species),cpcv,CD,D_orifice**2/4*math.pi)
+mass_rate[0] = gas_release_rate(p0,p_back,rho0,cpcv,CD,D_orifice**2/4*math.pi)
 time_array[0] = 0
 
 # Run actual integration
@@ -215,7 +204,7 @@ for i in range(1,len(time_array)):
     S_mass[i]=PropsSI('S','T',T_fluid[i],'P',P[i],species)
     U_mass[i]=(mass_fluid[i]*PropsSI('H','P',P[i],'T',T_fluid[i],species)-P[i]*vol)/mass_fluid[i]#PropsSI('U','T',T_fluid[i],'P',P[i],species)#-(P[i-1]-P[i])*vol/mass_fluid[i]
     cpcv=PropsSI('CP0MOLAR','T',T_fluid[i],'P',P[i],species)/PropsSI('CVMOLAR','T',T_fluid[i],'P',P[i],species)
-    mass_rate[i] = gas_release_rate(P[i],p_back,T_fluid[i],rho[i],PropsSI('M',species),cpcv,CD,D_orifice**2/4*math.pi)
+    mass_rate[i] = gas_release_rate(P[i],p_back,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
 
 
 import pylab as plt 
