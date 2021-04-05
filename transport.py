@@ -1,4 +1,50 @@
 import math 
+from CoolProp.CoolProp import PropsSI
+
+def Gr(L,Tfluid,Tvessel,P,species):
+    """
+    Calculation of Grasshof number. See eq. 4.7-4 in 
+    C. J. Geankoplis Transport Processes and Unit Operations, International Edition, 
+    Prentice-Hall, 1993
+    """
+    T=(Tfluid+Tvessel)/2
+    beta=PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','T',T,'P',P,species)
+    nu=PropsSI('V','T',T,'P',P,species)/PropsSI('D','T',T,'P',P,species)
+    Gr = 9.81 * beta * abs(Tvessel-Tfluid)*L**3/nu**2
+    return Gr
+
+def Pr(T,P,species):
+    """
+    Calculation of Prandtl number, eq. 4.5-6 in 
+    C. J. Geankoplis Transport Processes and Unit Operations, International Edition, 
+    Prentice-Hall, 1993
+    """
+    Pr = PropsSI('C','T',T,'P',P,species)*PropsSI('V','T',T,'P',P,species)/PropsSI('L','T',T,'P',P,species)
+    return Pr 
+
+def Nu(Ra,Pr):
+    """
+    Calculation of Nusselt number for natural convection. See eq. 4.7-4  and Table 4.7-1 in 
+    C. J. Geankoplis Transport Processes and Unit Operations, International Edition, 
+    Prentice-Hall, 1993
+    """
+    if Ra>=1e9:
+        NNu = 0.13*Ra**0.333
+    elif Ra<1e9 and Ra>1e4:
+        NNu = 0.59*Ra**0.25
+    else:
+        NNu = 1.36*Ra**0.20
+    return NNu
+
+def h_inner(L,Tfluid,Tvessel,P,species):
+    """
+    Calculation of heat transfer coefficient from Nusselt number
+    """
+    NPr=Pr((Tfluid+Tvessel)/2,P,species)
+    NGr=Gr(L,Tfluid,Tvessel,P,species)
+    NRa=NPr*NGr
+    NNu=Nu(NRa,NPr)
+    return NNu*PropsSI('L','T',(Tfluid+Tvessel)/2,'P',P,species)/L
 
 def gas_release_rate(P1,P2,rho,k,CD,area):
     """

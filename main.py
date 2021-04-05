@@ -9,28 +9,6 @@ import yaml
 import sys
 from transport import *
 
-def Gr(L,Tfluid,Tvessel,P,species):
-    T=(Tfluid+Tvessel)/2
-    beta=PropsSI('ISOBARIC_EXPANSION_COEFFICIENT','T',T,'P',P,species)
-    nu=PropsSI('V','T',T,'P',P,species)/PropsSI('D','T',T,'P',P,species)
-    Gr = 9.81 * beta * abs(Tvessel-Tfluid)*L**3/nu**2
-    return Gr
-
-def Pr(T,P,species):
-    Pr = PropsSI('C','T',T,'P',P,species)*PropsSI('V','T',T,'P',P,species)/PropsSI('L','T',T,'P',P,species)
-    return Pr 
-
-def Nu(Ra,Pr):
-    NNu = 0.13*Ra**0.333
-    return NNu
-
-def h_inner(L,Tfluid,Tvessel,P,species):
-    NPr=Pr((Tfluid+Tvessel)/2,P,species)
-    NGr=Gr(L,Tfluid,Tvessel,P,species)
-    NRa=NPr*NGr
-    NNu=Nu(NRa,NPr)
-    return NNu*PropsSI('L','T',(Tfluid+Tvessel)/2,'P',P,species)/L
-
 if len(sys.argv) > 1:
     input_filename=sys.argv[1]
 else:
