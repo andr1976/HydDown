@@ -9,6 +9,23 @@ import yaml
 import sys
 from transport import *
 
+class HydDown:
+    def __init__(input):
+        pass
+
+    def initialize(self):
+        pass
+
+    def run(self):
+        pass
+
+    def plot(self):
+        pass
+    
+    def report(self):
+        pass
+
+
 if len(sys.argv) > 1:
     input_filename=sys.argv[1]
 else:
