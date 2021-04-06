@@ -131,7 +131,6 @@ for i in range(1,len(time_array)):
         P[i]=PropsSI('P','D',rho[i],'U',U_mass[i-1],species)
     elif method=="energybalance":
         P1 = PropsSI('P','D',rho[i],'T',T_fluid[i-1],species)
-        #T1 = PropsSI('T','P',P1,'H',H_mass[i-1]+Q_inner[i-1]*tstep/mass_fluid[i],species)
         T1 = PropsSI('T','P',P1,'H',H_mass[i-1],species)
         NMOL=mass_fluid[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
         
@@ -153,9 +152,9 @@ for i in range(1,len(time_array)):
         else:
             Q_inner[i]=0.0
             T_vessel[i]=T_vessel[0]
+            
         #print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i], " h_inner: ",h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species))
         U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q_inner[i]*tstep
-        #U_start=NMOL*PropsSI('UMOLAR','P',P[i-1],'T',T_fluid[i-1],species)
         
         U=0
         nn=0
@@ -168,7 +167,6 @@ for i in range(1,len(time_array)):
         while abs(rho[i]-rho1)>0.01 and m<itermax:
             m=m+1
             rho1=PropsSI('D','T',T1,'P',P1,species)
-            #nn=vol*PropsSI('D','T',T1,'P',P1,species)/PropsSI('M',species)
             dd=rho[i]-rho1#NMOL-nn
             P1 = P1 + dd*1e5
             if m==itermax:
@@ -178,7 +176,6 @@ for i in range(1,len(time_array)):
                 U=NMOL*PropsSI('HMOLAR','P',P1,'T',T1,species)-eta*P1*vol#Q_inner[i]*tstep
                 d=U_start - U 
                 T1 = T1 + 0.1* d / U_start* T1
-                #T1 = T1 + 0.1 * d / PropsSI('C','P',P1,'T',T1,species)
                 if n==itermax:
                     raise Exception("Iter max exceeded for U/T")
             
