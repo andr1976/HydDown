@@ -120,6 +120,17 @@ elif input['valve']['type']=='mdot':
         mass_rate[0]= -input['valve']['mass_flow']
     else:
         mass_rate[0]= input['valve']['mass_flow']
+elif input['valve']['type']=='controlvalve':
+    if input['valve']['flow']=='filling':
+        Z=PropsSI('Z','T',T0,'P',p_back,species)
+        MW=PropsSI('M','T',T0,'P',p_back,species)
+        k=PropsSI('CP0MOLAR','T',T0,'P',p_back,species)/PropsSI('CVMOLAR','T',T0,'P',p_back,species)
+        mass_rate[0] = -control_valve(p_back,p0,T0,Z,MW,k,Cv)
+    else:
+        Z=PropsSI('Z','T',T0,'P',p0,species)
+        MW=PropsSI('M','T',T0,'P',p0,species)
+        k=PropsSI('CP0MOLAR','T',T0,'P',p0,species)/PropsSI('CVMOLAR','T',T0,'P',p0,species)
+        mass_rate[0] = control_valve(p0,p_back,T0,Z,MW,k,Cv)
 elif input['valve']['type']=='psv':
     if input['valve']['flow']=='filling': raise ValueError("Unsupported valve: ", input['valve']['type'], " for vessel filling.")
     mass_rate[0] = relief_valve(p0,p_back,Pset,blowdown,rho0,cpcv,CD,D_orifice**2/4*math.pi)
@@ -215,6 +226,16 @@ for i in range(1,len(time_array)):
             mass_rate[i] = -gas_release_rate(p_back,P[i],PropsSI('D','T',T0,'P',p_back,species),k,CD,D_orifice**2/4*math.pi)
         else:
             mass_rate[i] = gas_release_rate(P[i],p_back,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
+    elif input['valve']['type']=='controlvalve':
+        if input['valve']['flow']=='filling':
+            Z=PropsSI('Z','T',T0,'P',p_back,species)
+            MW=PropsSI('M','T',T0,'P',p_back,species)
+            k=PropsSI('CP0MOLAR','T',T0,'P',p_back,species)/PropsSI('CVMOLAR','T',T0,'P',p_back,species)
+            mass_rate[i] = -control_valve(p_back,P[i],T0,Z,MW,k,Cv)
+        else:
+            Z=PropsSI('Z','T',T_fluid[i],'P',P[i],species)
+            MW=PropsSI('M','T',T_fluid[i],'P',P[i],species)
+            mass_rate[i] = control_valve(P[i],p_back,T_fluid[i],Z,MW,cpcv,Cv)
     elif input['valve']['type']=='mdot':
         if input['valve']['flow']=='filling':
             mass_rate[i]= -input['valve']['mass_flow']
