@@ -1,3 +1,7 @@
+# HydDown hydrogen/other gas depressurisation
+# Copyright (c) 2021 Anders Andreasen
+# Published under an MIT license
+
 import math 
 from CoolProp.CoolProp import PropsSI
 
@@ -64,6 +68,11 @@ def gas_release_rate(P1,P2,rho,k,CD,area):
         return 0 
 
 def relief_valve(P1,Pback,Pset,blowdown,rho,k,CD,area):
+    """
+    Pop action relief valve model including hysteresis. 
+    The pressure shall rise above P_set to open and 
+    decrease below P_reseat (P_set*(1-blowdown)) to close
+    """
     global psv_state
     if P1>Pset:
         eff_area=area
@@ -92,11 +101,12 @@ def control_valve(P1,P2,T,Z,MW,gamma,Cv,xT=0.75,FP=1):
     """
     P1=P1/1e5
     P2=P2/1e5
+    MW=MW*1000
     N8=94.8
     Fk=gamma/1.4
     x = (P1-P2)/P1
     Y= 1. - min(x,Fk*xT) / (3. * Fk * xT)
-    mass_flow = N8 * FP * Cv * P1 * Y * (MW * min(x,xT*Fk) / T / Z)**0.5
+    mass_flow = N8 * FP * Cv * P1 * Y * (MW  * min(x,xT*Fk) / T / Z)**0.5
     return mass_flow/3600 # kg/s
 
     
