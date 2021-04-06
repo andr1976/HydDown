@@ -2,16 +2,17 @@
 # Copyright (c) 2021 Anders Andreasen
 # Published under an MIT license
 
-from CoolProp.CoolProp import PropsSI
 import math
-import numpy as np
-import yaml
 import sys
+import yaml
+import numpy as np
+from CoolProp.CoolProp import PropsSI
 from transport import *
 
 class HydDown:
-    def __init__(input):
-        pass
+    def __init__(self,input):
+        self.input=input
+        self.initialize()
 
     def initialize(self):
         pass
