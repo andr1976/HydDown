@@ -30,12 +30,23 @@ time_tot = input['calculation']['end_time']
 method=input['calculation']['type'] 
 if method=="energybalance": eta=input['calculation']['eta']  
 
-D_orifice=input['valve']['diameter']
-CD=input['valve']['discharge_coef']
+# Reading valve specific data
 p_back=input['valve']['back_pressure']
+if input['valve']['type']=='orifice' or input['valve']['type']=='psv':
+    D_orifice=input['valve']['diameter']
+    CD=input['valve']['discharge_coef']
+    if input['valve']['type']=='psv':
+        Pset=input['valve']['set_pressure']
+        blowdown=input['valve']['blowdown']
+        psv_state='closed'
+elif input['valve']['type']=="controlvalve":
+    Cv=input['valve']['Cv']
+    if 'xT' in input['valve ']: xT=input['valve']['xT']
+    if 'Fp' in input['valve ']: Fp=input['valve']['Fp']
 
+# Reading heat transfer related data/information
 heat_method=input['heat_transfer']['type']
-
+thickness=0
 if heat_method=="specified_h" or heat_method=="specified_U":
     Tamb=input['heat_transfer']['temp_ambient']
 if heat_method=="specified_U": Ufix=input['heat_transfer']['U_fix']
@@ -94,7 +105,10 @@ P[0] = p0
 mass_fluid[0] = m0
 cpcv=PropsSI('CP0MOLAR','T',T0,'P',p0,species)/PropsSI('CVMOLAR','T',T0,'P',p0,species)
 
-mass_rate[0] = gas_release_rate(p0,p_back,rho0,cpcv,CD,D_orifice**2/4*math.pi)
+if input['valve']['type']=='orifice':
+    mass_rate[0] = gas_release_rate(p0,p_back,rho0,cpcv,CD,D_orifice**2/4*math.pi)
+elif input['valve']['type']=='psv':
+    mass_rate[0] = relief_valve(p0,p_back,Pset,blowdown,rho0,cpcv,CD,D_orifice**2/4*math.pi)
 time_array[0] = 0
 
 # Run actual integration
@@ -182,7 +196,11 @@ for i in range(1,len(time_array)):
     S_mass[i]=PropsSI('S','T',T_fluid[i],'P',P[i],species)
     U_mass[i]=(mass_fluid[i]*PropsSI('H','P',P[i],'T',T_fluid[i],species)-P[i]*vol)/mass_fluid[i]#PropsSI('U','T',T_fluid[i],'P',P[i],species)#-(P[i-1]-P[i])*vol/mass_fluid[i]
     cpcv=PropsSI('CP0MOLAR','T',T_fluid[i],'P',P[i],species)/PropsSI('CVMOLAR','T',T_fluid[i],'P',P[i],species)
-    mass_rate[i] = gas_release_rate(P[i],p_back,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
+    
+    if input['valve']['type']=='orifice':
+        mass_rate[i] = gas_release_rate(P[i],p_back,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
+    elif input['valve']['type']=='psv':
+        mass_rate[i] = relief_valve(P[i],p_back,Pset,blowdown,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
 
 
 import pylab as plt 

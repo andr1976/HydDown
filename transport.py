@@ -63,8 +63,26 @@ def gas_release_rate(P1,P2,rho,k,CD,area):
     else:
         return 0 
 
-def relief_valve(P1,Pset,Pback,blowdown):
-    pass
+def relief_valve(P1,Pback,Pset,blowdown,rho,k,CD,area):
+    global psv_state
+    if P1>Pset:
+        eff_area=area
+        psv_state="open"
+    elif P1<Pset*(1-blowdown):
+        eff_area=0
+        psv_state="closed"
+    else:
+        if psv_state=="open":
+            eff_area=area
+        elif psv_state=="closed":
+            eff_area=0
+        else:
+            raise ValueError("Unknown PSV open/close state.")
+
+    if eff_area > 0:
+        return gas_release_rate(P1,Pback,rho,k,CD,area)
+    else:
+        return 0.0
 
 def control_valve(P1,P2,T,Z,MW,gamma,Cv,xT=0.75,FP=1):
     """
