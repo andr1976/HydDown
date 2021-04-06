@@ -170,7 +170,7 @@ for i in range(1,len(time_array)):
             rho1=PropsSI('D','T',T1,'P',P1,species)
             #nn=vol*PropsSI('D','T',T1,'P',P1,species)/PropsSI('M',species)
             dd=rho[i]-rho1#NMOL-nn
-            P1 = P1 + dd*1e4
+            P1 = P1 + dd*1e5
             if m==itermax:
                 raise Exception("Iter max exceeded for rho/P")
             while abs(U_start-U)/U_start>0.00001 and n<itermax:
@@ -178,10 +178,10 @@ for i in range(1,len(time_array)):
                 U=NMOL*PropsSI('HMOLAR','P',P1,'T',T1,species)-eta*P1*vol#Q_inner[i]*tstep
                 d=U_start - U 
                 T1 = T1 + 0.1* d / U_start* T1
+                #T1 = T1 + 0.1 * d / PropsSI('C','P',P1,'T',T1,species)
                 if n==itermax:
                     raise Exception("Iter max exceeded for U/T")
             
-                #print(n,d,T1)
         m_iter[i]=dd
         n_iter[i]=d
         U_iter[i]=U/NMOL*mass_fluid[i]
