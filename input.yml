@@ -15,6 +15,7 @@ calculation:
   end_time: 100.
   eta: 1.0
 valve:
+  flow: "discharge"
   type: "orifice"
   diameter: 0.00635
   discharge_coef: 0.80

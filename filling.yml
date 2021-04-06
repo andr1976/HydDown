@@ -1,0 +1,25 @@
+vessel:
+  length: 1.524
+  diameter: 0.273
+  thickness: 0.025
+  heat_capacity: 500
+  density: 7800. 
+  orientation: "vertical"
+initial:
+  temperature: 298.0
+  pressure: 100000.
+  fluid: "N2" 
+calculation:
+  type: "energybalance"
+  time_step: 0.05
+  end_time: 100.
+  eta: 1.0
+valve:
+  flow: "filling"
+  type: "mdot"
+  mass_flow: 0.1
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 288.
+  h_outer: 5. 
+  h_inner: "calc"
