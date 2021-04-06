@@ -187,30 +187,49 @@ for i in range(1,len(time_array)):
 
 import pylab as plt 
 
+
 plt.figure()
 plt.subplot(221)
-plt.plot(time_array/60, T_fluid-273.15,label="Fluid")
-plt.plot(time_array/60, T_vessel-273.15,label="Vessel")
+plt.plot(time_array/60, T_fluid-273.15,'b',label="Fluid")
+plt.plot(time_array/60, T_vessel-273.15,'g',label="Vessel")
+if 'validation' in input:
+    if 'temperature'in input['validation']:
+        temp=input['validation']['temperature']
+        if 'gas_mean' in temp:
+            plt.plot(np.asarray(temp['gas_mean']['time'])/60,np.asarray(temp['gas_mean']['temp'])-273.15,'b:',label="Gas mean")
+        if 'gas_high' in temp:
+            plt.plot(np.asarray(temp['gas_high']['time'])/60,np.asarray(temp['gas_high']['temp'])-273.15,'b-.',label="Gas high")
+        if 'gas_low' in temp:
+            plt.plot(np.asarray(temp['gas_low']['time'])/60,np.asarray(temp['gas_low']['temp'])-273.15,'b--',label="Gas low")
+        if 'wall_mean' in temp:
+            plt.plot(np.asarray(temp['wall_mean']['time'])/60,np.asarray(temp['wall_mean']['temp'])-273.15,'g:',label="Wall mean")
+        if 'wall_high' in temp:
+            plt.plot(np.asarray(temp['wall_high']['time'])/60,np.asarray(temp['wall_high']['temp'])-273.15,'g-.',label="Wall high")
+        if 'wall_low' in temp:
+            plt.plot(np.asarray(temp['wall_low']['time'])/60,np.asarray(temp['wall_low']['temp'])-273.15,'g--',label="Wall low")
 plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Temperature ($^\circ$C)')
 
 plt.subplot(222)
-plt.plot(time_array/60,P/1e5)
+plt.plot(time_array/60,P/1e5,'b',label="Calculated")
+if 'validation' in input:
+    if 'pressure'in input['validation']:
+        plt.plot(np.asarray(input['validation']['pressure']['time'])/60,input['validation']['pressure']['pres'],'ko',label="Experimental")
+plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Pressure (bar)')
 
 plt.subplot(223)
-plt.plot(time_array/60,H_mass,label='H (J/kg)')
-plt.plot(time_array/60,U_mass,label='U (J/kg)')
-plt.plot(time_array/60, S_mass*100,label='S*100 (J/kg K)')
-#plt.plot(time_array/60,U_iter)
+plt.plot(time_array/60,H_mass,'b',label='H (J/kg)')
+plt.plot(time_array/60,U_mass,'g',label='U (J/kg)')
+plt.plot(time_array/60, S_mass*100,'r',label='S*100 (J/kg K)')
 plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Enthalpy/Internal Energy/Entropy')
 
 plt.subplot(224)
-plt.plot(time_array/60,mass_rate,label='m_dot')
+plt.plot(time_array/60,mass_rate,'b',label='m_dot')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Vent rate (kg/s)')
 plt.show()
