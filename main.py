@@ -31,8 +31,8 @@ method=input['calculation']['type']
 if method=="energybalance": eta=input['calculation']['eta']  
 
 # Reading valve specific data
-p_back=input['valve']['back_pressure']
 if input['valve']['type']=='orifice' or input['valve']['type']=='psv':
+    p_back=input['valve']['back_pressure']
     D_orifice=input['valve']['diameter']
     CD=input['valve']['discharge_coef']
     if input['valve']['type']=='psv':
@@ -40,9 +40,13 @@ if input['valve']['type']=='orifice' or input['valve']['type']=='psv':
         blowdown=input['valve']['blowdown']
         psv_state='closed'
 elif input['valve']['type']=="controlvalve":
+    p_back=input['valve']['back_pressure']
     Cv=input['valve']['Cv']
     if 'xT' in input['valve ']: xT=input['valve']['xT']
     if 'Fp' in input['valve ']: Fp=input['valve']['Fp']
+# valve type 
+# - constant_mass 
+# - functional mass flow
 
 # Reading heat transfer related data/information
 heat_method=input['heat_transfer']['type']
@@ -106,11 +110,22 @@ mass_fluid[0] = m0
 cpcv=PropsSI('CP0MOLAR','T',T0,'P',p0,species)/PropsSI('CVMOLAR','T',T0,'P',p0,species)
 
 if input['valve']['type']=='orifice':
-    mass_rate[0] = gas_release_rate(p0,p_back,rho0,cpcv,CD,D_orifice**2/4*math.pi)
+    if input['valve']['flow']=='filling':
+        k=PropsSI('CP0MOLAR','T',T0,'P',p_back,species)/PropsSI('CVMOLAR','T',T0,'P',p_back,species)
+        mass_rate[0] = -gas_release_rate(p_back,p0,PropsSI('D','T',T0,'P',p_back,species),k,CD,D_orifice**2/4*math.pi)
+    else:
+        mass_rate[0] = gas_release_rate(p0,p_back,rho0,cpcv,CD,D_orifice**2/4*math.pi)
+elif input['valve']['type']=='mdot':
+    if input['valve']['flow']=='filling':
+        mass_rate[0]= -input['valve']['mass_flow']
+    else:
+        mass_rate[0]= input['valve']['mass_flow']
 elif input['valve']['type']=='psv':
+    if input['valve']['flow']=='filling': raise ValueError("Unsupported valve: ", input['valve']['type'], " for vessel filling.")
     mass_rate[0] = relief_valve(p0,p_back,Pset,blowdown,rho0,cpcv,CD,D_orifice**2/4*math.pi)
-time_array[0] = 0
 
+
+time_array[0] = 0
 # Run actual integration
 for i in range(1,len(time_array)):
     time_array[i]=time_array[i-1]+tstep
@@ -131,7 +146,6 @@ for i in range(1,len(time_array)):
         P[i]=PropsSI('P','D',rho[i],'U',U_mass[i-1],species)
     elif method=="energybalance":
         P1 = PropsSI('P','D',rho[i],'T',T_fluid[i-1],species)
-        #T1 = PropsSI('T','P',P1,'H',H_mass[i-1]+Q_inner[i-1]*tstep/mass_fluid[i],species)
         T1 = PropsSI('T','P',P1,'H',H_mass[i-1],species)
         NMOL=mass_fluid[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
         
@@ -153,9 +167,9 @@ for i in range(1,len(time_array)):
         else:
             Q_inner[i]=0.0
             T_vessel[i]=T_vessel[0]
+
         #print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i], " h_inner: ",h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species))
         U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q_inner[i]*tstep
-        #U_start=NMOL*PropsSI('UMOLAR','P',P[i-1],'T',T_fluid[i-1],species)
         
         U=0
         nn=0
@@ -168,9 +182,8 @@ for i in range(1,len(time_array)):
         while abs(rho[i]-rho1)>0.01 and m<itermax:
             m=m+1
             rho1=PropsSI('D','T',T1,'P',P1,species)
-            #nn=vol*PropsSI('D','T',T1,'P',P1,species)/PropsSI('M',species)
             dd=rho[i]-rho1#NMOL-nn
-            P1 = P1 + dd*1e4
+            P1 = P1 + dd*1e5
             if m==itermax:
                 raise Exception("Iter max exceeded for rho/P")
             while abs(U_start-U)/U_start>0.00001 and n<itermax:
@@ -181,7 +194,6 @@ for i in range(1,len(time_array)):
                 if n==itermax:
                     raise Exception("Iter max exceeded for U/T")
             
-                #print(n,d,T1)
         m_iter[i]=dd
         n_iter[i]=d
         U_iter[i]=U/NMOL*mass_fluid[i]
@@ -198,7 +210,16 @@ for i in range(1,len(time_array)):
     cpcv=PropsSI('CP0MOLAR','T',T_fluid[i],'P',P[i],species)/PropsSI('CVMOLAR','T',T_fluid[i],'P',P[i],species)
     
     if input['valve']['type']=='orifice':
-        mass_rate[i] = gas_release_rate(P[i],p_back,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
+        if input['valve']['flow']=='filling':
+            k=PropsSI('CP0MOLAR','T',T0,'P',p_back,species)/PropsSI('CVMOLAR','T',T0,'P',p_back,species)
+            mass_rate[i] = -gas_release_rate(p_back,P[i],PropsSI('D','T',T0,'P',p_back,species),k,CD,D_orifice**2/4*math.pi)
+        else:
+            mass_rate[i] = gas_release_rate(P[i],p_back,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
+    elif input['valve']['type']=='mdot':
+        if input['valve']['flow']=='filling':
+            mass_rate[i]= -input['valve']['mass_flow']
+        else:
+            mass_rate[i]= input['valve']['mass_flow']
     elif input['valve']['type']=='psv':
         mass_rate[i] = relief_valve(P[i],p_back,Pset,blowdown,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
 

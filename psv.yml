@@ -12,6 +12,7 @@ calculation:
   end_time: 6000.
   eta: 0
 valve:
+  flow: "discharge"
   type: "psv"
   diameter: 0.009507891862878782
   discharge_coef: 0.975
