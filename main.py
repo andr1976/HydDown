@@ -2,12 +2,30 @@
 # Copyright (c) 2021 Anders Andreasen
 # Published under an MIT license
 
-from CoolProp.CoolProp import PropsSI
 import math
-import numpy as np
-import yaml
 import sys
+import yaml
+import numpy as np
+from CoolProp.CoolProp import PropsSI
 from transport import *
+
+class HydDown:
+    def __init__(self,input):
+        self.input=input
+        self.initialize()
+
+    def initialize(self):
+        pass
+
+    def run(self):
+        pass
+
+    def plot(self):
+        pass
+    
+    def report(self):
+        pass
+
 
 if len(sys.argv) > 1:
     input_filename=sys.argv[1]
