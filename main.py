@@ -61,29 +61,29 @@ if input['valve']['type'] == 'orifice' or input['valve']['type'] == 'psv':
 elif input['valve']['type'] == "controlvalve":
     p_back = input['valve']['back_pressure']
     Cv = input['valve']['Cv']
-    if 'xT' in input['valve ']:
+    if 'xT' in input['valve']:
         xT = input['valve']['xT']
-    if 'Fp' in input['valve ']:
+    if 'Fp' in input['valve']:
         Fp = input['valve']['Fp']
 
 # valve type
 # - constant_mass
 # - functional mass flow
-
-# Reading heat transfer related data/information
-heat_method = input['heat_transfer']['type']
 thickness = 0
-if heat_method == "specified_h" or heat_method == "specified_U":
-    Tamb = input['heat_transfer']['temp_ambient']
-if heat_method == "specified_U": Ufix = input['heat_transfer']['U_fix']
-if heat_method == "specified_Q": Qfix = input['heat_transfer']['Q_fix']
-if heat_method == "specified_h":
-    vessel_cp = input['vessel']['heat_capacity']
-    vessel_density = input['vessel']['density']
-    vessel_orientation = input['vessel']['orientation']
-    thickness = input['vessel']['thickness']
-    h_out = input['heat_transfer']['h_outer']
-    h_in = input['heat_transfer']['h_inner']
+# Reading heat transfer related data/information
+if 'heat_transfer' in input:
+    heat_method = input['heat_transfer']['type']
+    if heat_method == "specified_h" or heat_method == "specified_U":
+        Tamb = input['heat_transfer']['temp_ambient']
+    if heat_method == "specified_U": Ufix = input['heat_transfer']['U_fix']
+    if heat_method == "specified_Q": Qfix = input['heat_transfer']['Q_fix']
+    if heat_method == "specified_h":
+        vessel_cp = input['vessel']['heat_capacity']
+        vessel_density = input['vessel']['density']
+        vessel_orientation = input['vessel']['orientation']
+        thickness = input['vessel']['thickness']
+        h_out = input['heat_transfer']['h_outer']
+        h_in = input['heat_transfer']['h_inner']
 
 
 vol = diameter**2/4 * math.pi * length  # m3
@@ -180,7 +180,7 @@ for i in range(1, len(time_array)):
         P1 = PropsSI('P', 'D', rho[i], 'T', T_fluid[i-1], species)
         T1 = PropsSI('T', 'P', P1, 'H', H_mass[i-1], species)
         NMOL = mass_fluid[i] / PropsSI('M', species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
-        
+
         if heat_method == "specified_h" or heat_method == "detailed":
             if h_in == "calc":
                 hi = h_inner(length, T_fluid[i-1], T_vessel[i-1], P[i-1], species)
@@ -214,7 +214,7 @@ for i in range(1, len(time_array)):
         while abs(rho[i] - rho1) > 0.01 and m < itermax:
             m = m + 1
             rho1 = PropsSI('D', 'T', T1,'P', P1, species)
-            dd = rho[i] - rho1#NMOL-nn
+            dd = rho[i] - rho1  #NMOL-nn
             P1 = P1 + dd * 1e5
             if m == itermax:
                 raise Exception("Iter max exceeded for rho/P")
@@ -233,7 +233,7 @@ for i in range(1, len(time_array)):
         T_fluid[i] = T1
         
     else:
-        raise NameError("Unknown calculation method: "+method)
+        raise NameError("Unknown calculation method: " + method)
 
     H_mass[i] = PropsSI('H', 'T', T_fluid[i], 'P', P[i], species)
     S_mass[i] = PropsSI('S', 'T', T_fluid[i], 'P', P[i], species)
@@ -248,9 +248,9 @@ for i in range(1, len(time_array)):
             mass_rate[i] = gas_release_rate(P[i], p_back, rho[i], cpcv, CD, D_orifice**2/4 * math.pi)
     elif input['valve']['type'] == 'controlvalve':
         if input['valve']['flow'] == 'filling':
-            Z = PropsSI('Z', 'T', T0, 'P', p_back,species)
-            MW = PropsSI('M', 'T', T0, 'P', p_back,species)
-            k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back,species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back,species)
+            Z = PropsSI('Z', 'T', T0, 'P', p_back, species)
+            MW = PropsSI('M', 'T', T0, 'P', p_back, species)
+            k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back,species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back, species)
             mass_rate[i] = -control_valve(p_back, P[i], T0, Z, MW, k, Cv)
         else:
             Z = PropsSI('Z', 'T', T_fluid[i], 'P', P[i], species)
@@ -270,10 +270,10 @@ import pylab as plt
 
 plt.figure()
 plt.subplot(221)
-plt.plot(time_array/60, T_fluid-273.15, 'b', label = "Fluid")
-plt.plot(time_array/60, T_vessel-273.15, 'g', label = "Vessel")
+plt.plot(time_array/60, T_fluid-273.15, 'b', label="Fluid")
+plt.plot(time_array/60, T_vessel-273.15, 'g', label="Vessel")
 if 'validation' in input:
-    if 'temperature'in input['validation']:
+    if 'temperature' in input['validation']:
         temp = input['validation']['temperature']
         if 'gas_mean' in temp:
             plt.plot(np.asarray(temp['gas_mean']['time']) / 60, np.asarray(temp['gas_mean']['temp']) - 273.15, 'b:', label="Gas mean")
@@ -301,18 +301,15 @@ plt.xlabel('Time (minutes)')
 plt.ylabel('Pressure (bar)')
 
 plt.subplot(223)
-plt.plot(time_array / 60, H_mass, 'b', label = 'H (J/kg)')
-plt.plot(time_array / 60, U_mass, 'g', label = 'U (J/kg)')
-plt.plot(time_array / 60, S_mass * 100, 'r', label = 'S*100 (J/kg K)')
+plt.plot(time_array / 60, H_mass, 'b', label='H (J/kg)')
+plt.plot(time_array / 60, U_mass, 'g', label='U (J/kg)')
+plt.plot(time_array / 60, S_mass * 100, 'r', label='S*100 (J/kg K)')
 plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Enthalpy/Internal Energy/Entropy')
 
 plt.subplot(224)
-plt.plot(time_array / 60, mass_rate, 'b', label = 'm_dot')
+plt.plot(time_array / 60, mass_rate, 'b', label='m_dot')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Vent rate (kg/s)')
 plt.show()
-
-
-

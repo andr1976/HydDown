@@ -99,12 +99,14 @@ def control_valve(P1,P2,T,Z,MW,gamma,Cv,xT=0.75,FP=1):
     Equation 19 pp. 132 in
     Control Valves / Guy Borden, editor; Paul Friedmann, style editor
     """
+    print((P1-P2)/P1,T,Z,MW,gamma)
     P1=P1/1e5
     P2=P2/1e5
     MW=MW*1000
     N8=94.8
     Fk=gamma/1.4
     x = (P1-P2)/P1
+    if x < 0: x=0
     Y= 1. - min(x,Fk*xT) / (3. * Fk * xT)
     mass_flow = N8 * FP * Cv * P1 * Y * (MW  * min(x,xT*Fk) / T / Z)**0.5
     return mass_flow/3600 # kg/s
