@@ -9,9 +9,10 @@ import numpy as np
 from CoolProp.CoolProp import PropsSI
 from transport import *
 
+
 class HydDown:
-    def __init__(self,input):
-        self.input=input
+    def __init__(self, input):
+        self.input = input
         self.initialize()
 
     def initialize(self):
@@ -22,71 +23,73 @@ class HydDown:
 
     def plot(self):
         pass
-    
     def report(self):
         pass
 
 
 if len(sys.argv) > 1:
-    input_filename=sys.argv[1]
+    input_filename = sys.argv[1]
 else:
-    input_filename="input.yml"
+    input_filename = "input.yml"
 
 with open(input_filename) as infile:
-    input = yaml.load(infile,Loader=yaml.FullLoader)
+    input = yaml.load(infile, Loader=yaml.FullLoader)
 
 # Intial parameters and setup
-length=input['vessel']['length']
-diameter=input['vessel']['diameter']
+length = input['vessel']['length']
+diameter = input['vessel']['diameter']
 
-p0=input['initial']['pressure']
-T0=input['initial']['temperature']
-species='HEOS::'+input['initial']['fluid'] 
+p0 = input['initial']['pressure']
+T0 = input['initial']['temperature']
+species = 'HEOS::'+input['initial']['fluid'] 
 
-tstep=input['calculation']['time_step']
+tstep = input['calculation']['time_step']
 time_tot = input['calculation']['end_time']
-method=input['calculation']['type'] 
-if method=="energybalance": eta=input['calculation']['eta']  
+method = input['calculation']['type'] 
+if method == "energybalance": eta = input['calculation']['eta']  
 
 # Reading valve specific data
-if input['valve']['type']=='orifice' or input['valve']['type']=='psv':
-    p_back=input['valve']['back_pressure']
-    D_orifice=input['valve']['diameter']
-    CD=input['valve']['discharge_coef']
-    if input['valve']['type']=='psv':
-        Pset=input['valve']['set_pressure']
-        blowdown=input['valve']['blowdown']
-        psv_state='closed'
-elif input['valve']['type']=="controlvalve":
-    p_back=input['valve']['back_pressure']
-    Cv=input['valve']['Cv']
-    if 'xT' in input['valve ']: xT=input['valve']['xT']
-    if 'Fp' in input['valve ']: Fp=input['valve']['Fp']
-# valve type 
-# - constant_mass 
+if input['valve']['type'] == 'orifice' or input['valve']['type'] == 'psv':
+    p_back = input['valve']['back_pressure']
+    D_orifice = input['valve']['diameter']
+    CD = input['valve']['discharge_coef']
+    if input['valve']['type'] == 'psv':
+        Pset = input['valve']['set_pressure']
+        blowdown = input['valve']['blowdown']
+        psv_state = 'closed'
+elif input['valve']['type'] == "controlvalve":
+    p_back = input['valve']['back_pressure']
+    Cv = input['valve']['Cv']
+    if 'xT' in input['valve ']:
+        xT = input['valve']['xT']
+    if 'Fp' in input['valve ']:
+        Fp = input['valve']['Fp']
+
+# valve type
+# - constant_mass
 # - functional mass flow
 
 # Reading heat transfer related data/information
-heat_method=input['heat_transfer']['type']
-thickness=0
-if heat_method=="specified_h" or heat_method=="specified_U":
-    Tamb=input['heat_transfer']['temp_ambient']
-if heat_method=="specified_U": Ufix=input['heat_transfer']['U_fix']
-if heat_method=="specified_Q": Qfix=input['heat_transfer']['Q_fix']
-if heat_method=="specified_h":
-    vessel_cp=input['vessel']['heat_capacity']
-    vessel_density=input['vessel']['density']
-    vessel_orientation=input['vessel']['orientation']
-    thickness=input['vessel']['thickness']
-    h_out=input['heat_transfer']['h_outer']
-    h_in=input['heat_transfer']['h_inner']
+heat_method = input['heat_transfer']['type']
+thickness = 0
+if heat_method == "specified_h" or heat_method == "specified_U":
+    Tamb = input['heat_transfer']['temp_ambient']
+if heat_method == "specified_U": Ufix = input['heat_transfer']['U_fix']
+if heat_method == "specified_Q": Qfix = input['heat_transfer']['Q_fix']
+if heat_method == "specified_h":
+    vessel_cp = input['vessel']['heat_capacity']
+    vessel_density = input['vessel']['density']
+    vessel_orientation = input['vessel']['orientation']
+    thickness = input['vessel']['thickness']
+    h_out = input['heat_transfer']['h_outer']
+    h_in = input['heat_transfer']['h_inner']
 
 
-vol=diameter**2/4*math.pi*length #m3
-vol_tot=(diameter+2*thickness)**2/4*math.pi*(length+2*thickness) #m3
-vol_solid=vol_tot-vol
-surf_area_outer=(diameter+2*thickness)**2/4*math.pi*2+(diameter+2*thickness)*math.pi*(length+2*thickness)
-surf_area_inner=(diameter)**2/4*math.pi*2+(diameter)*math.pi*length
+vol = diameter**2/4 * math.pi * length  # m3
+vol_tot = (diameter + 2 * thickness)**2/4 * math.pi * (length + 2 * thickness)  # m3
+vol_solid = vol_tot-vol
+surf_area_outer = (diameter + 2 * thickness)**2/4 * math.pi * 2 + (diameter + 2 * thickness) * math.pi * (length + 2 * thickness)
+surf_area_inner = (diameter)**2/4 * math.pi * 2 + (diameter) * math.pi * length
 
 # data storage
 data_len = int(time_tot / tstep)
@@ -101,28 +104,27 @@ H_mass = np.zeros(data_len)
 S_mass = np.zeros(data_len)
 U_mass = np.zeros(data_len)
 U_tot = np.zeros(data_len)
-U_iter=np.zeros(data_len)
-m_iter=np.zeros(data_len)
-n_iter=np.zeros(data_len)
-Qo=np.zeros(data_len)
-Qi=np.zeros(data_len)
+U_iter = np.zeros(data_len)
+m_iter = np.zeros(data_len)
+n_iter = np.zeros(data_len)
+Qo = np.zeros(data_len)
+Qi = np.zeros(data_len)
 P = np.zeros(data_len)
 mass_fluid = np.zeros(data_len)
 mass_rate = np.zeros(data_len)
 time_array = np.zeros(data_len)
 
-rho0 = PropsSI('D','T',T0,'P',p0,species)
-m0 = rho0*vol
+rho0 = PropsSI('D', 'T', T0, 'P', p0, species)
+m0 = rho0 * vol
 
-
-# Inititialise 
+# Inititialise
 rho[0] = rho0
 T_fluid[0] = T0
 T_vessel[0] = T0
-H_mass[0] = PropsSI('H','T',T0,'P',p0,species)
-S_mass[0] = PropsSI('S','T',T0,'P',p0,species)
-U_mass[0] = PropsSI('U','T',T0,'P',p0,species)
-U_tot[0] = PropsSI('U','T',T0,'P',p0,species)*m0
+H_mass[0] = PropsSI('H', 'T', T0, 'P', p0, species)
+S_mass[0] = PropsSI('S', 'T', T0, 'P', p0, species)
+U_mass[0] = PropsSI('U', 'T', T0, 'P', p0, species)
+U_tot[0] = PropsSI('U', 'T', T0, 'P', p0, species) * m0
 P[0] = p0
 mass_fluid[0] = m0
 cpcv=PropsSI('CP0MOLAR','T',T0,'P',p0,species)/PropsSI('CVMOLAR','T',T0,'P',p0,species)
