@@ -10,7 +10,7 @@ initial:
   pressure: 100000.
   fluid: "N2" 
 calculation:
-  type: "isenthalpic"
+  type: "isentropic"
   time_step: 0.05
   end_time: 30.
   eta: 1.0
