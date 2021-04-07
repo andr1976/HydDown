@@ -23,6 +23,7 @@ class HydDown:
 
     def plot(self):
         pass
+
     def report(self):
         pass
 
@@ -46,7 +47,7 @@ species = 'HEOS::'+input['initial']['fluid']
 tstep = input['calculation']['time_step']
 time_tot = input['calculation']['end_time']
 method = input['calculation']['type'] 
-if method == "energybalance": eta = input['calculation']['eta']  
+if method == "energybalance": eta = input['calculation']['eta'] 
 
 # Reading valve specific data
 if input['valve']['type'] == 'orifice' or input['valve']['type'] == 'psv':
@@ -127,142 +128,141 @@ U_mass[0] = PropsSI('U', 'T', T0, 'P', p0, species)
 U_tot[0] = PropsSI('U', 'T', T0, 'P', p0, species) * m0
 P[0] = p0
 mass_fluid[0] = m0
-cpcv=PropsSI('CP0MOLAR','T',T0,'P',p0,species)/PropsSI('CVMOLAR','T',T0,'P',p0,species)
+cpcv = PropsSI('CP0MOLAR', 'T', T0, 'P', p0, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p0, species)
 
-if input['valve']['type']=='orifice':
-    if input['valve']['flow']=='filling':
-        k=PropsSI('CP0MOLAR','T',T0,'P',p_back,species)/PropsSI('CVMOLAR','T',T0,'P',p_back,species)
-        mass_rate[0] = -gas_release_rate(p_back,p0,PropsSI('D','T',T0,'P',p_back,species),k,CD,D_orifice**2/4*math.pi)
+if input['valve']['type'] == 'orifice':
+    if input['valve']['flow'] == 'filling':
+        k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back, species)
+        mass_rate[0] = -gas_release_rate(p_back, p0, PropsSI('D', 'T', T0, 'P', p_back, species), k, CD, D_orifice**2/4 * math.pi)
     else:
-        mass_rate[0] = gas_release_rate(p0,p_back,rho0,cpcv,CD,D_orifice**2/4*math.pi)
-elif input['valve']['type']=='mdot':
-    if input['valve']['flow']=='filling':
-        mass_rate[0]= -input['valve']['mass_flow']
+        mass_rate[0] = gas_release_rate(p0, p_back, rho0, cpcv, CD, D_orifice**2/4 * math.pi)
+elif input['valve']['type'] == 'mdot':
+    if input['valve']['flow'] == 'filling':
+        mass_rate[0] = -input['valve']['mass_flow']
     else:
-        mass_rate[0]= input['valve']['mass_flow']
-elif input['valve']['type']=='controlvalve':
-    if input['valve']['flow']=='filling':
-        Z=PropsSI('Z','T',T0,'P',p_back,species)
-        MW=PropsSI('M','T',T0,'P',p_back,species)
-        k=PropsSI('CP0MOLAR','T',T0,'P',p_back,species)/PropsSI('CVMOLAR','T',T0,'P',p_back,species)
-        mass_rate[0] = -control_valve(p_back,p0,T0,Z,MW,k,Cv)
+        mass_rate[0] = input['valve']['mass_flow']
+elif input['valve']['type'] == 'controlvalve':
+    if input['valve']['flow'] == 'filling':
+        Z = PropsSI('Z', 'T', T0, 'P', p_back, species)
+        MW = PropsSI('M', 'T', T0, 'P', p_back, species)
+        k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back, species)
+        mass_rate[0] = -control_valve(p_back, p0, T0, Z, MW, k, Cv)
     else:
-        Z=PropsSI('Z','T',T0,'P',p0,species)
-        MW=PropsSI('M','T',T0,'P',p0,species)
-        k=PropsSI('CP0MOLAR','T',T0,'P',p0,species)/PropsSI('CVMOLAR','T',T0,'P',p0,species)
-        mass_rate[0] = control_valve(p0,p_back,T0,Z,MW,k,Cv)
-elif input['valve']['type']=='psv':
-    if input['valve']['flow']=='filling': raise ValueError("Unsupported valve: ", input['valve']['type'], " for vessel filling.")
-    mass_rate[0] = relief_valve(p0,p_back,Pset,blowdown,rho0,cpcv,CD,D_orifice**2/4*math.pi)
+        Z = PropsSI('Z', 'T', T0, 'P', p0, species)
+        MW = PropsSI('M', 'T', T0, 'P', p0, species)
+        k = PropsSI('CP0MOLAR', 'T', T0, 'P', p0, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p0, species)
+        mass_rate[0] = control_valve(p0, p_back, T0, Z, MW, k, Cv)
+elif input['valve']['type'] == 'psv':
+    if input['valve']['flow'] == 'filling': raise ValueError("Unsupported valve: ", input['valve']['type'], " for vessel filling.")
+    mass_rate[0] = relief_valve(p0, p_back, Pset, blowdown, rho0, cpcv, CD, D_orifice**2/4 * math.pi)
 
 
 time_array[0] = 0
 # Run actual integration
-for i in range(1,len(time_array)):
-    time_array[i]=time_array[i-1]+tstep
-    mass_fluid[i]=mass_fluid[i-1]-mass_rate[i-1]*tstep
-    rho[i]=mass_fluid[i]/vol
+for i in range(1, len(time_array)):
+    time_array[i] = time_array[i-1] + tstep
+    mass_fluid[i] = mass_fluid[i-1] - mass_rate[i-1] * tstep
+    rho[i] = mass_fluid[i] / vol
 
     if method == "isenthalpic":
-        T_fluid[i]=PropsSI('T','D',rho[i],'H',H_mass[i-1],species)
-        P[i]=PropsSI('P','D',rho[i],'H',H_mass[i-1],species)
-    elif method=="isentropic":
-        T_fluid[i]=PropsSI('T','D',rho[i],'S',S_mass[i-1],species)
-        P[i]=PropsSI('P','D',rho[i],'S',S_mass[i-1],species)
-    elif method=="isothermal":
-        T_fluid[i]=T0
-        P[i]=PropsSI('P','D',rho[i],'T',T0,species)
-    elif method=="constantU":
-        T_fluid[i]=PropsSI('T','D',rho[i],'U',U_mass[i-1],species)
-        P[i]=PropsSI('P','D',rho[i],'U',U_mass[i-1],species)
-    elif method=="energybalance":
-        P1 = PropsSI('P','D',rho[i],'T',T_fluid[i-1],species)
-        T1 = PropsSI('T','P',P1,'H',H_mass[i-1],species)
-        NMOL=mass_fluid[i]/PropsSI('M',species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
+        T_fluid[i] = PropsSI('T', 'D', rho[i], 'H', H_mass[i-1], species)
+        P[i] = PropsSI('P', 'D', rho[i], 'H', H_mass[i-1], species)
+    elif method == "isentropic":
+        T_fluid[i] = PropsSI('T', 'D', rho[i], 'S', S_mass[i-1], species)
+        P[i] = PropsSI('P', 'D', rho[i], 'S', S_mass[i-1], species)
+    elif method == "isothermal":
+        T_fluid[i] = T0
+        P[i] = PropsSI('P', 'D', rho[i], 'T', T0, species)
+    elif method == "constantU":
+        T_fluid[i] = PropsSI('T', 'D', rho[i], 'U', U_mass[i-1], species)
+        P[i] = PropsSI('P', 'D', rho[i], 'U', U_mass[i-1], species)
+    elif method == "energybalance":
+        P1 = PropsSI('P', 'D', rho[i], 'T', T_fluid[i-1], species)
+        T1 = PropsSI('T', 'P', P1, 'H', H_mass[i-1], species)
+        NMOL = mass_fluid[i] / PropsSI('M', species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
         
-        if heat_method=="specified_h" or heat_method=="detailed":
-            if h_in=="calc":
-                hi=h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species)
+        if heat_method == "specified_h" or heat_method == "detailed":
+            if h_in == "calc":
+                hi = h_inner(length, T_fluid[i-1], T_vessel[i-1], P[i-1], species)
             else:
-                hi=h_in
-            h_inside[i]=hi
-            Q_inner[i]=surf_area_inner*hi*(T_vessel[i-1]-T_fluid[i-1])
-            Q_outer[i]=surf_area_outer*h_out*(Tamb-T_vessel[i-1])
-            T_vessel[i]=T_vessel[i-1]+(Q_outer[i]-Q_inner[i])*tstep/(vessel_cp*vessel_density*vol_solid)
-        elif heat_method=="specified_U":
-            Q_inner[i]=surf_area_outer*Ufix*(Tamb-T_fluid[i-1])
-            T_vessel[i]=T_vessel[0] 
-        elif heat_method=="specified_Q":
-            Q_inner[i]=Qfix
-            T_vessel[i]=T_vessel[0]
+                hi = h_in
+            h_inside[i] = hi
+            Q_inner[i] = surf_area_inner * hi * (T_vessel[i-1] - T_fluid[i-1])
+            Q_outer[i] = surf_area_outer * h_out * (Tamb - T_vessel[i-1])
+            T_vessel[i] = T_vessel[i-1] + (Q_outer[i] - Q_inner[i]) * tstep / (vessel_cp * vessel_density * vol_solid)
+        elif heat_method == "specified_U":
+            Q_inner[i] = surf_area_outer * Ufix * (Tamb - T_fluid[i-1])
+            T_vessel[i] = T_vessel[0] 
+        elif heat_method == "specified_Q":
+            Q_inner[i] = Qfix
+            T_vessel[i] = T_vessel[0]
         else:
-            Q_inner[i]=0.0
-            T_vessel[i]=T_vessel[0]
+            Q_inner[i] = 0.0
+            T_vessel[i] = T_vessel[0]
 
         #print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i], " h_inner: ",h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species))
-        U_start=NMOL*PropsSI('HMOLAR','P',P[i-1],'T',T_fluid[i-1],species)-eta*P[i-1]*vol+Q_inner[i]*tstep
+        U_start = NMOL * PropsSI('HMOLAR', 'P', P[i-1], 'T', T_fluid[i-1], species) - eta *  P[i-1] * vol + Q_inner[i] * tstep
         
-        U=0
-        nn=0
-        rho1=0
-        itermax=1000
-        m=0
-        n=0
-        relax=0.1
+        U = 0
+        nn = 0
+        rho1 = 0
+        itermax = 1000
+        m = 0
+        n = 0
+        relax = 0.1
 
-        while abs(rho[i]-rho1)>0.01 and m<itermax:
-            m=m+1
-            rho1=PropsSI('D','T',T1,'P',P1,species)
-            dd=rho[i]-rho1#NMOL-nn
-            P1 = P1 + dd*1e5
-            if m==itermax:
+        while abs(rho[i] - rho1) > 0.01 and m < itermax:
+            m = m + 1
+            rho1 = PropsSI('D', 'T', T1,'P', P1, species)
+            dd = rho[i] - rho1#NMOL-nn
+            P1 = P1 + dd * 1e5
+            if m == itermax:
                 raise Exception("Iter max exceeded for rho/P")
-            while abs(U_start-U)/U_start>0.00001 and n<itermax:
-                n=n+1
-                U=NMOL*PropsSI('HMOLAR','P',P1,'T',T1,species)-eta*P1*vol#Q_inner[i]*tstep
-                d=U_start - U 
-                T1 = T1 + 0.1* d / U_start* T1
-                if n==itermax:
+            while abs(U_start - U) / U_start > 0.00001 and n < itermax:
+                n = n + 1
+                U = NMOL * PropsSI('HMOLAR', 'P', P1, 'T', T1, species) - eta * P1 * vol  #Q_inner[i]*tstep
+                d = U_start - U 
+                T1 = T1 + 0.1 * d / U_start * T1
+                if n == itermax:
                     raise Exception("Iter max exceeded for U/T")
             
-        m_iter[i]=dd
-        n_iter[i]=d
-        U_iter[i]=U/NMOL*mass_fluid[i]
-        P[i]=P1
-        T_fluid[i]=T1
+        m_iter[i] = dd
+        n_iter[i] = d
+        U_iter[i] = U / NMOL * mass_fluid[i]
+        P[i] = P1
+        T_fluid[i] = T1
         
     else:
         raise NameError("Unknown calculation method: "+method)
 
-
-    H_mass[i]=PropsSI('H','T',T_fluid[i],'P',P[i],species)
-    S_mass[i]=PropsSI('S','T',T_fluid[i],'P',P[i],species)
-    U_mass[i]=(mass_fluid[i]*PropsSI('H','P',P[i],'T',T_fluid[i],species)-P[i]*vol)/mass_fluid[i]#PropsSI('U','T',T_fluid[i],'P',P[i],species)#-(P[i-1]-P[i])*vol/mass_fluid[i]
-    cpcv=PropsSI('CP0MOLAR','T',T_fluid[i],'P',P[i],species)/PropsSI('CVMOLAR','T',T_fluid[i],'P',P[i],species)
+    H_mass[i] = PropsSI('H', 'T', T_fluid[i], 'P', P[i], species)
+    S_mass[i] = PropsSI('S', 'T', T_fluid[i], 'P', P[i], species)
+    U_mass[i] = (mass_fluid[i] * PropsSI('H', 'P', P[i], 'T', T_fluid[i], species) - P[i] * vol) / mass_fluid[i]  #PropsSI('U','T',T_fluid[i],'P',P[i],species)#-(P[i-1]-P[i])*vol/mass_fluid[i]
+    cpcv = PropsSI('CP0MOLAR', 'T', T_fluid[i], 'P', P[i], species) / PropsSI('CVMOLAR', 'T', T_fluid[i], 'P', P[i], species)
     
-    if input['valve']['type']=='orifice':
-        if input['valve']['flow']=='filling':
-            k=PropsSI('CP0MOLAR','T',T0,'P',p_back,species)/PropsSI('CVMOLAR','T',T0,'P',p_back,species)
-            mass_rate[i] = -gas_release_rate(p_back,P[i],PropsSI('D','T',T0,'P',p_back,species),k,CD,D_orifice**2/4*math.pi)
+    if input['valve']['type'] == 'orifice':
+        if input['valve']['flow'] == 'filling':
+            k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back,species)
+            mass_rate[i] = -gas_release_rate(p_back, P[i], PropsSI('D', 'T', T0, 'P', p_back, species), k, CD, D_orifice**2/4 * math.pi)
         else:
-            mass_rate[i] = gas_release_rate(P[i],p_back,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
-    elif input['valve']['type']=='controlvalve':
-        if input['valve']['flow']=='filling':
-            Z=PropsSI('Z','T',T0,'P',p_back,species)
-            MW=PropsSI('M','T',T0,'P',p_back,species)
-            k=PropsSI('CP0MOLAR','T',T0,'P',p_back,species)/PropsSI('CVMOLAR','T',T0,'P',p_back,species)
-            mass_rate[i] = -control_valve(p_back,P[i],T0,Z,MW,k,Cv)
+            mass_rate[i] = gas_release_rate(P[i], p_back, rho[i], cpcv, CD, D_orifice**2/4 * math.pi)
+    elif input['valve']['type'] == 'controlvalve':
+        if input['valve']['flow'] == 'filling':
+            Z = PropsSI('Z', 'T', T0, 'P', p_back,species)
+            MW = PropsSI('M', 'T', T0, 'P', p_back,species)
+            k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back,species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back,species)
+            mass_rate[i] = -control_valve(p_back, P[i], T0, Z, MW, k, Cv)
         else:
-            Z=PropsSI('Z','T',T_fluid[i],'P',P[i],species)
-            MW=PropsSI('M','T',T_fluid[i],'P',P[i],species)
-            mass_rate[i] = control_valve(P[i],p_back,T_fluid[i],Z,MW,cpcv,Cv)
-    elif input['valve']['type']=='mdot':
-        if input['valve']['flow']=='filling':
-            mass_rate[i]= -input['valve']['mass_flow']
+            Z = PropsSI('Z', 'T', T_fluid[i], 'P', P[i], species)
+            MW = PropsSI('M','T', T_fluid[i], 'P', P[i], species)
+            mass_rate[i] = control_valve(P[i], p_back, T_fluid[i], Z, MW, cpcv, Cv)
+    elif input['valve']['type'] == 'mdot':
+        if input['valve']['flow'] == 'filling':
+            mass_rate[i] = -input['valve']['mass_flow']
         else:
-            mass_rate[i]= input['valve']['mass_flow']
-    elif input['valve']['type']=='psv':
-        mass_rate[i] = relief_valve(P[i],p_back,Pset,blowdown,rho[i],cpcv,CD,D_orifice**2/4*math.pi)
+            mass_rate[i] = input['valve']['mass_flow']
+    elif input['valve']['type'] == 'psv':
+        mass_rate[i] = relief_valve(P[i], p_back, Pset, blowdown, rho[i], cpcv, CD, D_orifice**2/4 * math.pi)
 
 
 import pylab as plt 
@@ -270,46 +270,46 @@ import pylab as plt
 
 plt.figure()
 plt.subplot(221)
-plt.plot(time_array/60, T_fluid-273.15,'b',label="Fluid")
-plt.plot(time_array/60, T_vessel-273.15,'g',label="Vessel")
+plt.plot(time_array/60, T_fluid-273.15, 'b', label = "Fluid")
+plt.plot(time_array/60, T_vessel-273.15, 'g', label = "Vessel")
 if 'validation' in input:
     if 'temperature'in input['validation']:
-        temp=input['validation']['temperature']
+        temp = input['validation']['temperature']
         if 'gas_mean' in temp:
-            plt.plot(np.asarray(temp['gas_mean']['time'])/60,np.asarray(temp['gas_mean']['temp'])-273.15,'b:',label="Gas mean")
+            plt.plot(np.asarray(temp['gas_mean']['time']) / 60, np.asarray(temp['gas_mean']['temp']) - 273.15, 'b:', label="Gas mean")
         if 'gas_high' in temp:
-            plt.plot(np.asarray(temp['gas_high']['time'])/60,np.asarray(temp['gas_high']['temp'])-273.15,'b-.',label="Gas high")
+            plt.plot(np.asarray(temp['gas_high']['time']) / 60, np.asarray(temp['gas_high']['temp']) - 273.15, 'b-.', label="Gas high")
         if 'gas_low' in temp:
-            plt.plot(np.asarray(temp['gas_low']['time'])/60,np.asarray(temp['gas_low']['temp'])-273.15,'b--',label="Gas low")
+            plt.plot(np.asarray(temp['gas_low']['time']) / 60, np.asarray(temp['gas_low']['temp']) - 273.15, 'b--', label="Gas low")
         if 'wall_mean' in temp:
-            plt.plot(np.asarray(temp['wall_mean']['time'])/60,np.asarray(temp['wall_mean']['temp'])-273.15,'g:',label="Wall mean")
+            plt.plot(np.asarray(temp['wall_mean']['time']) / 60, np.asarray(temp['wall_mean']['temp']) - 273.15, 'g:', label="Wall mean")
         if 'wall_high' in temp:
-            plt.plot(np.asarray(temp['wall_high']['time'])/60,np.asarray(temp['wall_high']['temp'])-273.15,'g-.',label="Wall high")
+            plt.plot(np.asarray(temp['wall_high']['time']) / 60, np.asarray(temp['wall_high']['temp']) - 273.15, 'g-.', label="Wall high")
         if 'wall_low' in temp:
-            plt.plot(np.asarray(temp['wall_low']['time'])/60,np.asarray(temp['wall_low']['temp'])-273.15,'g--',label="Wall low")
+            plt.plot(np.asarray(temp['wall_low']['time']) / 60, np.asarray(temp['wall_low']['temp']) - 273.15, 'g--', label="Wall low")
 plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Temperature ($^\circ$C)')
 
 plt.subplot(222)
-plt.plot(time_array/60,P/1e5,'b',label="Calculated")
+plt.plot(time_array / 60, P / 1e5, 'b', label="Calculated")
 if 'validation' in input:
-    if 'pressure'in input['validation']:
-        plt.plot(np.asarray(input['validation']['pressure']['time'])/60,input['validation']['pressure']['pres'],'ko',label="Experimental")
+    if 'pressure' in input['validation']:
+        plt.plot(np.asarray(input['validation']['pressure']['time']) / 60, input['validation']['pressure']['pres'], 'ko', label="Experimental")
 plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Pressure (bar)')
 
 plt.subplot(223)
-plt.plot(time_array/60,H_mass,'b',label='H (J/kg)')
-plt.plot(time_array/60,U_mass,'g',label='U (J/kg)')
-plt.plot(time_array/60, S_mass*100,'r',label='S*100 (J/kg K)')
+plt.plot(time_array / 60, H_mass, 'b', label = 'H (J/kg)')
+plt.plot(time_array / 60, U_mass, 'g', label = 'U (J/kg)')
+plt.plot(time_array / 60, S_mass * 100, 'r', label = 'S*100 (J/kg K)')
 plt.legend(loc='best')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Enthalpy/Internal Energy/Entropy')
 
 plt.subplot(224)
-plt.plot(time_array/60,mass_rate,'b',label='m_dot')
+plt.plot(time_array / 60, mass_rate, 'b', label = 'm_dot')
 plt.xlabel('Time (minutes)')
 plt.ylabel('Vent rate (kg/s)')
 plt.show()
