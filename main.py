@@ -16,7 +16,54 @@ class HydDown:
         self.initialize()
 
     def initialize(self):
-        pass
+        length = input['vessel']['length']
+        diameter = input['vessel']['diameter']
+
+        p0 = input['initial']['pressure']
+        T0 = input['initial']['temperature']
+        species = 'HEOS::'+input['initial']['fluid'] 
+
+        tstep = input['calculation']['time_step']
+        time_tot = input['calculation']['end_time']
+        method = input['calculation']['type'] 
+        if method == "energybalance": eta = input['calculation']['eta'] 
+
+        # Reading valve specific data
+        if input['valve']['type'] == 'orifice' or input['valve']['type'] == 'psv':
+            p_back = input['valve']['back_pressure']
+            D_orifice = input['valve']['diameter']
+            CD = input['valve']['discharge_coef']
+            if input['valve']['type'] == 'psv':
+                Pset = input['valve']['set_pressure']
+                blowdown = input['valve']['blowdown']
+                psv_state = 'closed'
+        elif input['valve']['type'] == "controlvalve":
+            p_back = input['valve']['back_pressure']
+            Cv = input['valve']['Cv']
+            if 'xT' in input['valve']:
+                xT = input['valve']['xT']
+            if 'Fp' in input['valve']:
+                Fp = input['valve']['Fp']
+
+        # valve type    
+        # - constant_mass
+        # - functional mass flow
+        thickness = 0
+        # Reading heat transfer related data/information
+        if 'heat_transfer' in input:
+            heat_method = input['heat_transfer']['type']
+            if heat_method == "specified_h" or heat_method == "specified_U":
+                Tamb = input['heat_transfer']['temp_ambient']
+            if heat_method == "specified_U": Ufix = input['heat_transfer']['U_fix']
+            if heat_method == "specified_Q": Qfix = input['heat_transfer']['Q_fix']
+            if heat_method == "specified_h":
+                vessel_cp = input['vessel']['heat_capacity']
+                vessel_density = input['vessel']['density']
+                vessel_orientation = input['vessel']['orientation']
+                thickness = input['vessel']['thickness']
+                h_out = input['heat_transfer']['h_outer']
+                h_in = input['heat_transfer']['h_inner']
+
 
     def run(self):
         pass
