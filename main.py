@@ -7,7 +7,7 @@ import sys
 import yaml
 import numpy as np
 from CoolProp.CoolProp import PropsSI
-from transport import *
+from hyddown import transport as tp
 
 
 class HydDown:
