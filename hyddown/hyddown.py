@@ -177,8 +177,8 @@ class HydDown:
                 NMOL = self.mass_fluid[i-1] / PropsSI('M', self.species) 
                 NMOL_ADD = (self.mass_fluid[i]-self.mass_fluid[i-1]) / PropsSI('M', self.species) 
                 if input['valve']['flow'] == 'filling':
-                    T_used = T0
-                    P_used = p_back
+                    T_used = self.T0
+                    P_used = self.p_back
                 else:
                     T_used = self.T_fluid[i-1]
                     P_used = self.P[i-1]
@@ -244,7 +244,7 @@ class HydDown:
                 else:
                     self.mass_rate[i] = input['valve']['mass_flow']
             elif input['valve']['type'] == 'psv':
-                mass_rate[i] = tp.relief_valve(self.P[i], self.p_back, self.Pset, self.blowdown, self.rho[i], cpcv, self.CD, self.D_orifice**2/4 * math.pi)
+                self.mass_rate[i] = tp.relief_valve(self.P[i], self.p_back, self.Pset, self.blowdown, self.rho[i], cpcv, self.CD, self.D_orifice**2/4 * math.pi)
 
     def plot(self):
         import pylab as plt 
