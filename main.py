@@ -180,9 +180,9 @@ cpcv = PropsSI('CP0MOLAR', 'T', T0, 'P', p0, species) / PropsSI('CVMOLAR', 'T', 
 if input['valve']['type'] == 'orifice':
     if input['valve']['flow'] == 'filling':
         k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back, species)
-        mass_rate[0] = -gas_release_rate(p_back, p0, PropsSI('D', 'T', T0, 'P', p_back, species), k, CD, D_orifice**2/4 * math.pi)
+        mass_rate[0] = -tp.gas_release_rate(p_back, p0, PropsSI('D', 'T', T0, 'P', p_back, species), k, CD, D_orifice**2/4 * math.pi)
     else:
-        mass_rate[0] = gas_release_rate(p0, p_back, rho0, cpcv, CD, D_orifice**2/4 * math.pi)
+        mass_rate[0] = tp.gas_release_rate(p0, p_back, rho0, cpcv, CD, D_orifice**2/4 * math.pi)
 elif input['valve']['type'] == 'mdot':
     if input['valve']['flow'] == 'filling':
         mass_rate[0] = -input['valve']['mass_flow']
@@ -193,15 +193,15 @@ elif input['valve']['type'] == 'controlvalve':
         Z = PropsSI('Z', 'T', T0, 'P', p_back, species)
         MW = PropsSI('M', 'T', T0, 'P', p_back, species)
         k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back, species)
-        mass_rate[0] = -control_valve(p_back, p0, T0, Z, MW, k, Cv)
+        mass_rate[0] = -tp.control_valve(p_back, p0, T0, Z, MW, k, Cv)
     else:
         Z = PropsSI('Z', 'T', T0, 'P', p0, species)
         MW = PropsSI('M', 'T', T0, 'P', p0, species)
         k = PropsSI('CP0MOLAR', 'T', T0, 'P', p0, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p0, species)
-        mass_rate[0] = control_valve(p0, p_back, T0, Z, MW, k, Cv)
+        mass_rate[0] = tp.control_valve(p0, p_back, T0, Z, MW, k, Cv)
 elif input['valve']['type'] == 'psv':
     if input['valve']['flow'] == 'filling': raise ValueError("Unsupported valve: ", input['valve']['type'], " for vessel filling.")
-    mass_rate[0] = relief_valve(p0, p_back, Pset, blowdown, rho0, cpcv, CD, D_orifice**2/4 * math.pi)
+    mass_rate[0] = tp.relief_valve(p0, p_back, Pset, blowdown, rho0, cpcv, CD, D_orifice**2/4 * math.pi)
 
 
 time_array[0] = 0
@@ -230,7 +230,7 @@ for i in range(1, len(time_array)):
 
         if heat_method == "specified_h" or heat_method == "detailed":
             if h_in == "calc":
-                hi = h_inner(length, T_fluid[i-1], T_vessel[i-1], P[i-1], species)
+                hi = tp.h_inner(length, T_fluid[i-1], T_vessel[i-1], P[i-1], species)
             else:
                 hi = h_in
             h_inside[i] = hi
@@ -298,26 +298,26 @@ for i in range(1, len(time_array)):
     if input['valve']['type'] == 'orifice':
         if input['valve']['flow'] == 'filling':
             k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back, species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back,species)
-            mass_rate[i] = -gas_release_rate(p_back, P[i], PropsSI('D', 'T', T0, 'P', p_back, species), k, CD, D_orifice**2/4 * math.pi)
+            mass_rate[i] = -tp.gas_release_rate(p_back, P[i], PropsSI('D', 'T', T0, 'P', p_back, species), k, CD, D_orifice**2/4 * math.pi)
         else:
-            mass_rate[i] = gas_release_rate(P[i], p_back, rho[i], cpcv, CD, D_orifice**2/4 * math.pi)
+            mass_rate[i] = tp.gas_release_rate(P[i], p_back, rho[i], cpcv, CD, D_orifice**2/4 * math.pi)
     elif input['valve']['type'] == 'controlvalve':
         if input['valve']['flow'] == 'filling':
             Z = PropsSI('Z', 'T', T0, 'P', p_back, species)
             MW = PropsSI('M', 'T', T0, 'P', p_back, species)
             k = PropsSI('CP0MOLAR', 'T', T0, 'P', p_back,species) / PropsSI('CVMOLAR', 'T', T0, 'P', p_back, species)
-            mass_rate[i] = -control_valve(p_back, P[i], T0, Z, MW, k, Cv)
+            mass_rate[i] = -tp.control_valve(p_back, P[i], T0, Z, MW, k, Cv)
         else:
             Z = PropsSI('Z', 'T', T_fluid[i], 'P', P[i], species)
             MW = PropsSI('M','T', T_fluid[i], 'P', P[i], species)
-            mass_rate[i] = control_valve(P[i], p_back, T_fluid[i], Z, MW, cpcv, Cv)
+            mass_rate[i] = tp.control_valve(P[i], p_back, T_fluid[i], Z, MW, cpcv, Cv)
     elif input['valve']['type'] == 'mdot':
         if input['valve']['flow'] == 'filling':
             mass_rate[i] = -input['valve']['mass_flow']
         else:
             mass_rate[i] = input['valve']['mass_flow']
     elif input['valve']['type'] == 'psv':
-        mass_rate[i] = relief_valve(P[i], p_back, Pset, blowdown, rho[i], cpcv, CD, D_orifice**2/4 * math.pi)
+        mass_rate[i] = tp.relief_valve(P[i], p_back, Pset, blowdown, rho[i], cpcv, CD, D_orifice**2/4 * math.pi)
 
 
 import pylab as plt 
