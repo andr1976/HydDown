@@ -3,3 +3,4 @@ main.pyc
 __pycache__/test_main.cpython-38-pytest-6.2.3.pyc
 .gitignore
 __pycache__/main.cpython-38-pytest-6.2.3.pyc
+hyddown/__pycache__/hyddown.cpython-38.pyc
