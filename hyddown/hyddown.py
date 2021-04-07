@@ -215,7 +215,7 @@ class HydDown:
                 self.T_fluid[i] = T1
         
             else:
-                raise NameError("Unknown calculation method: " + method)
+                raise NameError("Unknown calculation method: " + self.method)
 
             self.H_mass[i] = PropsSI('H', 'T', self.T_fluid[i], 'P', self.P[i], self.species)
             self.S_mass[i] = PropsSI('S', 'T', self.T_fluid[i], 'P', self.P[i], self.species)
