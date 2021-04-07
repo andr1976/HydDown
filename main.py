@@ -179,7 +179,7 @@ for i in range(1, len(time_array)):
     elif method == "energybalance":
         P1 = PropsSI('P', 'D', rho[i], 'T', T_fluid[i-1], species)
         T1 = PropsSI('T', 'P', P1, 'H', H_mass[i-1], species)
-        NMOL = mass_fluid[i] / PropsSI('M', species) #vol*PropsSI('D','T',T_fluid[i-1],'P',P[i-1],species)/PropsSI('M',species)
+        
 
         if heat_method == "specified_h" or heat_method == "detailed":
             if h_in == "calc":
@@ -200,9 +200,17 @@ for i in range(1, len(time_array)):
             Q_inner[i] = 0.0
             T_vessel[i] = T_vessel[0]
 
-        #print("i: ",i," Time: ",time_array[i]," Qinner: ",Q_inner[i]," Qouter: ", Q_outer[i], " h_inner: ",h_inner(length,T_fluid[i-1],T_vessel[i-1],P[i-1],species))
-        U_start = NMOL * PropsSI('HMOLAR', 'P', P[i-1], 'T', T_fluid[i-1], species) - eta *  P[i-1] * vol + Q_inner[i] * tstep
-        
+        NMOL = mass_fluid[i-1] / PropsSI('M', species) 
+        NMOL_ADD = (mass_fluid[i]-mass_fluid[i-1]) / PropsSI('M', species) 
+        if input['valve']['flow'] == 'filling':
+            T_used = T0
+            P_used = p_back
+        else:
+            T_used = T_fluid[i-1]
+            P_used = P[i-1]
+        U_start = NMOL_ADD * PropsSI('HMOLAR', 'P', P_used, 'T', T_used, species) + NMOL * PropsSI('HMOLAR', 'P', P[i-1], 'T', T_fluid[i-1], species) - eta *  P[i-1] * vol + Q_inner[i] * tstep
+        NMOL=NMOL+NMOL_ADD
+
         U = 0
         nn = 0
         rho1 = 0
