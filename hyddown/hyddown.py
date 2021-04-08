@@ -166,7 +166,7 @@ class HydDown:
                         else:
                             L = self.length
                         hi = tp.h_inner(L, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species)
-                        hi = tp.h_inner_mixed(L, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species,self.mass_rate[i-1],self.diameter)
+                        #hi = tp.h_inner_mixed(L, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species,self.mass_rate[i-1],self.diameter)
                     else:
                         hi = self.h_in
                     self.h_inside[i] = hi
@@ -183,6 +183,7 @@ class HydDown:
                     self.Q_inner[i] = 0.0
                     self.T_vessel[i] = self.T_vessel[0]
 
+                
                 NMOL = self.mass_fluid[i-1] / PropsSI('M', self.species) 
                 NMOL_ADD = (self.mass_fluid[i]-self.mass_fluid[i-1]) / PropsSI('M', self.species) 
                 if input['valve']['flow'] == 'filling':
