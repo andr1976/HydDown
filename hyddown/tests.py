@@ -1,3 +1,7 @@
+# HydDown hydrogen/other gas depressurisation
+# Copyright (c) 2021 Anders Andreasen
+# Published under an MIT license
+
 from hyddown import transport as tp
 from CoolProp.CoolProp import PropsSI
 import pytest
@@ -56,3 +60,6 @@ def test_NRa():
 
 def test_NGr():
     assert tp.Gr(0.305, 311, 505.4, 1e5, 'HEOS::air') == pytest.approx(1.8e8, 0.1e8)
+
+if __name__ == "__main__":
+    test_NGr()

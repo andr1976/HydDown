@@ -1,3 +1,7 @@
+# HydDown hydrogen/other gas depressurisation
+# Copyright (c) 2021 Anders Andreasen
+# Published under an MIT license
+
 import math
 import numpy as np
 from CoolProp.CoolProp import PropsSI
@@ -10,22 +14,22 @@ class HydDown:
         self.initialize()
 
     def read_input(self):
-        self.length =  self.input['vessel']['length']
-        self.diameter =  self.input['vessel']['diameter']
+        self.length = self.input['vessel']['length']
+        self.diameter = self.input['vessel']['diameter']
 
-        self.p0 =  self.input['initial']['pressure']
-        self.T0 =  self.input['initial']['temperature']
+        self.p0 = self.input['initial']['pressure']
+        self.T0 = self.input['initial']['temperature']
         self.species = 'HEOS::'+ self.input['initial']['fluid'] 
 
-        self.tstep =  self.input['calculation']['time_step']
-        self.time_tot =  self.input['calculation']['end_time']
-        self.method =  self.input['calculation']['type'] 
+        self.tstep = self.input['calculation']['time_step']
+        self.time_tot = self.input['calculation']['end_time']
+        self.method = self.input['calculation']['type'] 
         if self.method == "energybalance": self.eta =  self.input['calculation']['eta'] 
 
         # Reading valve specific data
         if  self.input['valve']['type'] == 'orifice' or  self.input['valve']['type'] == 'psv':
-            self.p_back =  self.input['valve']['back_pressure']
-            self.D_orifice =  self.input['valve']['diameter']
+            self.p_back = self.input['valve']['back_pressure']
+            self.D_orifice = self.input['valve']['diameter']
             self.CD =  self.input['valve']['discharge_coef']
             if  self.input['valve']['type'] == 'psv':
                 self.Pset =  self.input['valve']['set_pressure']
@@ -157,7 +161,11 @@ class HydDown:
         
                 if self.heat_method == "specified_h" or self.heat_method == "detailed":
                     if self.h_in == "calc":
-                        hi = tp.h_inner(self.length, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species)
+                        if self.vessel_orientation == "horizontal":
+                            L = self.diameter
+                        else:
+                            L = self.length
+                        hi = tp.h_inner(L, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species)
                     else:
                         hi = self.h_in
                     self.h_inside[i] = hi
