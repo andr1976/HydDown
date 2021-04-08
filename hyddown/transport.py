@@ -50,6 +50,15 @@ def h_inner(L, Tfluid, Tvessel, P, species):
     NNu=Nu(NRa, NPr)
     return NNu * PropsSI('L', 'T', (Tfluid + Tvessel) / 2, 'P', P, species) / L
 
+def h_inner_mixed(L,Tfluid,Tvessel,P,species,mdot,D):
+    NPr=Pr((Tfluid + Tvessel) / 2, P, species)
+    NGr=Gr(L, Tfluid, Tvessel, P, species)
+    NRa=NPr * NGr
+    NNu_free = 0.13 * NRa**0.333
+    Re = 4*abs(mdot)/(PropsSI('V', 'T', Tfluid, 'P', P, species)*math.pi*D)
+    NNu_forced = 0.56 * Re**0.67
+    return (NNu_free + NNu_forced)*PropsSI('L', 'T', (Tfluid + Tvessel) / 2, 'P', P, species) / L
+
 def gas_release_rate(P1, P2, rho, k, CD, area):
     """
     Gas massflow (kg/s) trough a hole at critical (sonic) or subcritical
