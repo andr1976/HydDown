@@ -2,13 +2,11 @@
 # Copyright (c) 2021 Anders Andreasen
 # Published under an MIT license
 
-import math
-import sys
 import yaml
-import numpy as np
-from hyddown.hyddown import HydDown
+import sys
+from hyddown import HydDown
 
-if __name__=="__main__":
+if __name__ == "__main__":
     if len(sys.argv) > 1:
         input_filename = sys.argv[1]
     else:

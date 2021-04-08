@@ -1,3 +1,7 @@
+# HydDown hydrogen/other gas depressurisation
+# Copyright (c) 2021 Anders Andreasen
+# Published under an MIT license
+
 import math
 import numpy as np
 from CoolProp.CoolProp import PropsSI
