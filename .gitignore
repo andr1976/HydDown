@@ -5,3 +5,8 @@ __pycache__/test_main.cpython-38-pytest-6.2.3.pyc
 __pycache__/main.cpython-38-pytest-6.2.3.pyc
 hyddown/__pycache__/hyddown.cpython-38.pyc
 hyddown/__pycache__/tests.cpython-38-pytest-6.2.3.pyc
+hyddown/transport.pyc
+hyddown/__pycache__/transport.cpython-38.pyc
+hyddown/__init__.pyc
+
+
