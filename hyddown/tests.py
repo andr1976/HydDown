@@ -89,6 +89,29 @@ def test_pool_fire_scandpower():
     assert fire.pool_fire_scandpower(273+20) == pytest.approx(88.5e3,50)
 
 
+def test_sim_orifice_full():
+    import yaml
+    from hyddown import HydDown
+    fname = r'..//examples//input.yml'
+
+    with open(fname) as infile:
+        input = yaml.load(infile, Loader=yaml.FullLoader)
+
+    hdown=HydDown(input)
+    hdown.run()
+
+
+def test_sim_controlvalve():
+    import yaml
+    from hyddown import HydDown
+    fname = r'..//examples//controlvalve.yml'
+
+    with open(fname) as infile:
+        input = yaml.load(infile, Loader=yaml.FullLoader)
+
+    hdown=HydDown(input)
+    hdown.run()
+   
 
 if __name__ == "__main__":
     test_NGr()
