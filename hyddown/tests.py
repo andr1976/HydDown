@@ -92,7 +92,7 @@ def test_pool_fire_scandpower():
 def test_sim_orifice_full():
     import yaml
     from hyddown import HydDown
-    fname = r'..//examples//input.yml'
+    fname = r'//home//runner//work//HydDown//HydDown//examples//input.yml'
 
     with open(fname) as infile:
         input = yaml.load(infile, Loader=yaml.FullLoader)
@@ -103,8 +103,9 @@ def test_sim_orifice_full():
 
 def test_sim_controlvalve():
     import yaml
+    import os 
     from hyddown import HydDown
-    fname = r'..//examples//controlvalve.yml'
+    fname = r'//home//runner//work//HydDown//HydDown//examples//controlvalve.yml'
 
     with open(fname) as infile:
         input = yaml.load(infile, Loader=yaml.FullLoader)
