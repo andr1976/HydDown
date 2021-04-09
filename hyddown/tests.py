@@ -8,6 +8,20 @@ from CoolProp.CoolProp import PropsSI
 import pytest
 
 
+def get_example_input(fname):
+    import os 
+    import yaml
+
+    if 'C:\\Users\\ANRA' in os.getcwd():
+        fname = r'C:\\Users\\ANRA\\Documents\\GitHub\\HydDown\\examples\\'+ fname
+    else:
+        fname = r'//home//runner//work//HydDown//HydDown//examples//' + fname
+
+    with open(fname) as infile:
+        input = yaml.load(infile, Loader=yaml.FullLoader)
+
+    return input
+
 def test_orifice():
     P1 = 10.e5
     P2 = 5.5e5
@@ -90,26 +104,17 @@ def test_pool_fire_scandpower():
 
 
 def test_sim_orifice_full():
-    import yaml
     from hyddown import HydDown
-    fname = r'//home//runner//work//HydDown//HydDown//examples//input.yml'
 
-    with open(fname) as infile:
-        input = yaml.load(infile, Loader=yaml.FullLoader)
-
+    input = get_example_input('input.yml')
     hdown=HydDown(input)
     hdown.run()
 
 
 def test_sim_controlvalve():
-    import yaml
-    import os 
     from hyddown import HydDown
-    fname = r'//home//runner//work//HydDown//HydDown//examples//controlvalve.yml'
 
-    with open(fname) as infile:
-        input = yaml.load(infile, Loader=yaml.FullLoader)
-
+    input = get_example_input('controlvalve.yml')
     hdown=HydDown(input)
     hdown.run()
    
