@@ -192,6 +192,18 @@ class HydDown:
                 else:
                     T_used = self.T_fluid[i-1]
                     P_used = self.P[i-1]
+                
+                # New
+                # U_start = self.U_mass[i-1]*self.mass_fluid[i-1]
+                # h_in = PropsSI('H','T',T_used,'P',P_used,self.species)
+                # T_in = PropsSI('T','P',self.P[i-1],'H',h_in,self.species)
+                # D_in = PropsSI('D','P',self.P[i-1],'T',T_in,self.species)
+                # v_in = (self.mass_rate[i-1]/D_in)/(self.diameter**2/4 * math.pi)
+                # U_end = U_start - self.tstep*(self.mass_rate[i-1]*(h_in + (v_in**2)/2) -  self.Q_inner[i])
+                # print(U_start/self.mass_fluid[i-1],U_end/self.mass_fluid[i],h_in*self.mass_rate[i],self.Q_inner[i])
+                # self.U_mass[i]=U_end/self.mass_fluid[i]
+                # P1 = PropsSI('P','D',self.rho[i],'U',U_end/self.mass_fluid[i],self.species)
+                # T1 = PropsSI('T','D',self.rho[i],'U',U_end/self.mass_fluid[i],self.species)
                 U_start = NMOL_ADD * PropsSI('HMOLAR', 'P', P_used, 'T', T_used, self.species) + NMOL * PropsSI('HMOLAR', 'P', self.P[i-1], 'T', self.T_fluid[i-1], self.species) - self.eta *  self.P[i-1] * self.vol + self.Q_inner[i] * self.tstep
                 NMOL=NMOL+NMOL_ADD
 
@@ -229,7 +241,7 @@ class HydDown:
 
             self.H_mass[i] = PropsSI('H', 'T', self.T_fluid[i], 'P', self.P[i], self.species)
             self.S_mass[i] = PropsSI('S', 'T', self.T_fluid[i], 'P', self.P[i], self.species)
-            self.U_mass[i] = (self.mass_fluid[i] * PropsSI('H', 'P', self.P[i], 'T', self.T_fluid[i], self.species) - self.P[i] * self.vol) / self.mass_fluid[i]  
+            self.U_mass[i] = PropsSI('U', 'T', self.T_fluid[i], 'P', self.P[i], self.species)#(self.mass_fluid[i] * PropsSI('H', 'P', self.P[i], 'T', self.T_fluid[i], self.species) - self.P[i] * self.vol) / self.mass_fluid[i]  
             cpcv = PropsSI('CP0MOLAR', 'T', self.T_fluid[i], 'P', self.P[i], self.species) / PropsSI('CVMOLAR', 'T', self.T_fluid[i], 'P', self.P[i], self.species)
     
             if input['valve']['type'] == 'orifice':

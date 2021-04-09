@@ -3,6 +3,7 @@
 # Published under an MIT license
 
 from hyddown import transport as tp
+from hyddown import fire
 from CoolProp.CoolProp import PropsSI
 import pytest
 
@@ -60,6 +61,34 @@ def test_NRa():
 
 def test_NGr():
     assert tp.Gr(0.305, 311, 505.4, 1e5, 'HEOS::air') == pytest.approx(1.8e8, 0.1e8)
+
+
+def test_stefan_boltzmann():
+    alpha = 1
+    e_flame = 1
+    e_surface = 0
+    h = 100
+    Tflame = 635 + 273.15
+    Tradiative = 635 + 273.15
+    assert (fire.stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, 20+273.15)) == pytest.approx(1e5,100)
+
+
+def test_pool_fire_api521():
+    assert fire.pool_fire_api521(273+50) == pytest.approx(45.5e3, 100)
+
+
+def test_jet_fire_api521():
+    assert fire.jet_fire_api521(273+50) == pytest.approx(83.5e3, 500)
+
+
+def test_jet_fire_scandpower():
+    assert fire.jet_fire_scandpower(273+20) == pytest.approx(94.5e3,100)
+
+
+def test_pool_fire_scandpower():
+    assert fire.pool_fire_scandpower(273+20) == pytest.approx(88.5e3,50)
+
+
 
 if __name__ == "__main__":
     test_NGr()
