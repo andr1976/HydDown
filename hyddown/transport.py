@@ -102,12 +102,13 @@ def gas_release_rate(P1, P2, rho, k, CD, area):
         return 0
 
 
-def relief_valve(P1, Pback, Pset, blowdown, rho, k, CD, area):
+def relief_valve(P1, Pback, Pset, blowdown, k, CD, T1, Z, MW, area):
     """
     Pop action relief valve model including hysteresis.
     The pressure shall rise above P_set to open and
     decrease below P_reseat (P_set*(1-blowdown)) to close
     """
+
     global psv_state
     if P1 > Pset:
         eff_area = area
@@ -124,9 +125,29 @@ def relief_valve(P1, Pback, Pset, blowdown, rho, k, CD, area):
             raise ValueError("Unknown PSV open/close state.")
 
     if eff_area > 0:
-        return gas_release_rate(P1, Pback, rho, k, CD, area)
+        return api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area)
     else:
         return 0.0
+
+
+def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
+    """
+    PSV vapour relief rate calculated according to API 520 Part I 2014
+    Eq. 5, 9, 15, 18
+    """
+    P1 = P1 / 1000
+    Pback = Pback / 1000
+    area = area * 1e6 
+    MW = MW * 1000
+    C = 0.03948 * (k * (2 / (k + 1)) ** ((k + 1) / (k - 1))) ** 0.5
+    if P1 / Pback > ((k + 1) / 2) ** ((k) / (k - 1)):
+        w = CD * area * C * P1 / math.sqrt(T1 * Z / MW)
+    else:
+        r = Pback / P1
+        f2 = ((k / (k - 1)) * r ** (2 / k) * (1 - r**((k - 1) / k)) / (1 - r))**0.5
+        print(f2)
+        w = CD * area * f2 / (T1 * Z / (MW * P1 * (P1 - Pback)))**0.5 / 17.9
+    return w/3600
 
 
 def control_valve(P1, P2, T, Z, MW, gamma, Cv, xT=0.75, FP=1):

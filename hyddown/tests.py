@@ -66,32 +66,42 @@ def test_psv3():
     blowdown = 0.1
     P1 = 0.99 * Pset * (1 - blowdown)
     T1 = 100.0 + 273.15
-    rho = PropsSI("D", "P", P1, "T", T1, "HEOS::N2")
+    Z = PropsSI("Z", "P", P1, "T", T1, "HEOS::N2")
+    MW = PropsSI("M",  "HEOS::N2")
     gamma = PropsSI("CP0MOLAR", "T", T1, "P", P1, "HEOS::N2") / PropsSI(
         "CVMOLAR", "T", T1, "P", P1, "HEOS::N2"
     )
     CD = 0.975
     area = 71e-6
     assert tp.relief_valve(
-        P1, Pback, Pset, blowdown, rho, gamma, CD, area
+        P1, Pback, Pset, blowdown, gamma, CD, T1, Z, MW, area
+    ) == 0
+    psv_state = "closed"
+    assert tp.relief_valve(
+        P1*1.01, Pback, Pset, blowdown, gamma, CD, T1, Z, MW, area
     ) == 0
 
 
 def test_psv2():
     P1 = 21.0e5
     Pback = 1e5
-    Pset = 18.2e5
+    Pset = 20.99e5
     blowdown = 0.1
     T1 = 100.0 + 273.15
-    rho = PropsSI("D", "P", P1, "T", T1, "HEOS::N2")
+    Z = PropsSI("Z", "P", P1, "T", T1, "HEOS::N2")
+    MW = PropsSI("M",  "HEOS::N2")
     gamma = PropsSI("CP0MOLAR", "T", T1, "P", P1, "HEOS::N2") / PropsSI(
         "CVMOLAR", "T", T1, "P", P1, "HEOS::N2"
     )
     CD = 0.975
     area = 71e-6
     assert tp.relief_valve(
-        P1, Pback, Pset, blowdown, rho, gamma, CD, area
-    ) == pytest.approx(1046 / 3600, 1)
+        P1, Pback, Pset, blowdown, gamma, CD, T1, Z, MW, area
+    ) == pytest.approx(1046 / 3600, 0.1)
+    psv_state = "open"
+    assert tp.relief_valve(
+        Pset*0.99, Pback, Pset, blowdown, gamma, CD, T1, Z, MW, area
+    ) == pytest.approx(1046 / 3600, 0.1)
 
 
 def test_psv():
@@ -100,15 +110,21 @@ def test_psv():
     Pset = 99.2e5
     blowdown = 0.1
     T1 = 25.0 + 273.15
-    rho = PropsSI("D", "P", P1, "T", T1, "HEOS::N2")
+    Z = PropsSI("Z", "P", P1, "T", T1, "HEOS::N2")
+    MW = PropsSI("M",  "HEOS::N2")
     gamma = PropsSI("CP0MOLAR", "T", T1, "P", P1, "HEOS::N2") / PropsSI(
         "CVMOLAR", "T", T1, "P", P1, "HEOS::N2"
     )
     CD = 0.975
     area = 71e-6
     assert tp.relief_valve(
-        P1, Pback, Pset, blowdown, rho, gamma, CD, area
+        P1, Pback, Pset, blowdown, gamma, CD, T1, Z, MW, area
     ) == pytest.approx(1.57, 0.02)
+
+
+def test_api_psv_relief():
+    assert tp.api_psv_release_rate(121.9e5, 71e5, 1.39, 0.975, 298.15, 1.01, 2/1e3, 71e-6) == pytest.approx(1846/3600,0.01)
+    assert tp.api_psv_release_rate(121.9e5, 1e5, 1.39, 0.975, 298.15, 1.01, 2/1e3, 71e-6) == pytest.approx(1860/3600,0.01)
 
 
 def test_hinner():
@@ -182,6 +198,8 @@ def test_sim_orifice_full():
     input = get_example_input("input.yml")
     hdown = HydDown(input)
     hdown.run()
+    hdown.plot()
+    hdown.generate_report()
 
 
 def test_sim_controlvalve():
