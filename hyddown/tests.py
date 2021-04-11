@@ -40,12 +40,26 @@ def test_controlvalve():
     assert tp.control_valve(P1, P2, T1, Z1, MW, gamma, 500) == pytest.approx(21.92,0.07)
 
 
+def test_psv2():
+    P1 = 21.e5
+    Pback = 1e5
+    Pset = 18.2e5
+    blowdown = 0.1
+    T1 = 100. + 273.15
+    rho = PropsSI('D', 'P', P1, 'T', T1, 'HEOS::N2')
+    gamma = PropsSI('CP0MOLAR', 'T', T1, 'P', P1, 'HEOS::N2') / PropsSI('CVMOLAR', 'T', T1, 'P', P1, 'HEOS::N2')
+    CD = 0.975
+    area = 71e-6
+    assert tp.relief_valve(P1, Pback, Pset, blowdown, rho, gamma, CD, area) == pytest.approx(1046/3600, 1)
+
+
+
 def test_psv():
     P1 = 100e5
     Pback = 1e5
-    Pset = 90e5
+    Pset = 99.2e5
     blowdown = 0.1
-    T1 = 27. + 273.15
+    T1 = 25. + 273.15
     rho = PropsSI('D', 'P', P1, 'T', T1, 'HEOS::N2')
     gamma = PropsSI('CP0MOLAR', 'T', T1, 'P', P1, 'HEOS::N2') / PropsSI('CVMOLAR', 'T', T1, 'P', P1, 'HEOS::N2')
     CD = 0.975
@@ -55,7 +69,7 @@ def test_psv():
 
 def test_hinner():
     h = tp.h_inner(0.305, 311, 505.4, 1e5, 'HEOS::air')
-    assert h == pytest.approx(7,0.1)
+    assert h == pytest.approx(7, 0.1)
 
 
 def test_NNu():

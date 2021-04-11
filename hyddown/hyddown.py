@@ -27,7 +27,7 @@ class HydDown:
         if self.method == "energybalance": self.eta =  self.input['calculation']['eta'] 
 
         # Reading valve specific data
-        if  self.input['valve']['type'] == 'orifice' or  self.input['valve']['type'] == 'psv':
+        if  self.input['valve']['type'] == 'orifice' or  self.input['valve']['type'] == 'psv': 
             self.p_back = self.input['valve']['back_pressure']
             self.D_orifice = self.input['valve']['diameter']
             self.CD =  self.input['valve']['discharge_coef']
@@ -42,11 +42,13 @@ class HydDown:
                 self.xT =  self.input['valve']['xT']
             if 'Fp' in  self.input['valve']:
                 self.Fp =  self.input['valve']['Fp']
+        elif self.input['valve']['type'] == 'mdot' and self.input['valve']['flow'] == 'filling':
+            self.p_back =  self.input['valve']['back_pressure']    
 
         # valve type    
         # - constant_mass
         # - functional mass flow
-        thickness = 0
+        self.thickness = 0
         # Reading heat transfer related data/information
         if 'heat_transfer' in  self.input:
             self.heat_method =  self.input['heat_transfer']['type']
@@ -61,6 +63,8 @@ class HydDown:
                 self.thickness =  self.input['vessel']['thickness']
                 self.h_out =  self.input['heat_transfer']['h_outer']
                 self.h_in =  self.input['heat_transfer']['h_inner']
+                if self.input['valve']['flow'] == 'filling':
+                    self.D_throat = self.input['heat_transfer']['D_throat']
 
     def initialize(self):
         self.vol = self.diameter**2/4 * math.pi * self.length  # m3
@@ -116,10 +120,21 @@ class HydDown:
             else:
                 self.mass_rate[0] = tp.gas_release_rate(self.p0, self.p_back, self.rho0, cpcv, self.CD, self.D_orifice**2/4 * math.pi)
         elif input['valve']['type'] == 'mdot':
-            if input['valve']['flow'] == 'filling':
-                self.mass_rate[0] = -input['valve']['mass_flow']
+            if 'mdot' in input['valve'].keys() and 'time' in input['valve'].keys():
+                mdot = np.asarray(input['valve']['mdot'])
+                time = np.asarray(input['valve']['time'])
+                max_i = int(time[-1]/self.tstep)
+                interp_time = np.linspace(0,self.tstep * len(self.time_array), len(self.time_array), endpoint=False)[:max_i]
+                self.mass_rate[:max_i] = np.interp(interp_time,time,mdot) 
+                if input['valve']['flow'] == 'filling': 
+                    self.mass_rate *= -1 
+                
             else:
-                self.mass_rate[0] = input['valve']['mass_flow']
+                if input['valve']['flow'] == 'filling':
+                    self.mass_rate[:] = -input['valve']['mass_flow']
+                else:
+                    self.mass_rate[:] = input['valve']['mass_flow']
+
         elif input['valve']['type'] == 'controlvalve':
             if input['valve']['flow'] == 'filling':
                 Z = PropsSI('Z', 'T', self.T0, 'P', self.p_back, self.species)
@@ -165,8 +180,10 @@ class HydDown:
                             L = self.diameter
                         else:
                             L = self.length
-                        hi = tp.h_inner(L, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species)
-                        #hi = tp.h_inner_mixed(L, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species,self.mass_rate[i-1],self.diameter)
+                        if input['valve']['flow'] == 'filling':
+                            hi = tp.h_inner_mixed(L, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species, self.mass_rate[i-1], (self.D_throat) / 1)
+                        else:
+                            hi = tp.h_inner(L, self.T_fluid[i-1], self.T_vessel[i-1], self.P[i-1], self.species)
                     else:
                         hi = self.h_in
                     self.h_inside[i] = hi
@@ -194,45 +211,52 @@ class HydDown:
                     P_used = self.P[i-1]
                 
                 # New
-                # U_start = self.U_mass[i-1]*self.mass_fluid[i-1]
-                # h_in = PropsSI('H','T',T_used,'P',P_used,self.species)
-                # T_in = PropsSI('T','P',self.P[i-1],'H',h_in,self.species)
-                # D_in = PropsSI('D','P',self.P[i-1],'T',T_in,self.species)
-                # v_in = (self.mass_rate[i-1]/D_in)/(self.diameter**2/4 * math.pi)
-                # U_end = U_start - self.tstep*(self.mass_rate[i-1]*(h_in + (v_in**2)/2) -  self.Q_inner[i])
-                # print(U_start/self.mass_fluid[i-1],U_end/self.mass_fluid[i],h_in*self.mass_rate[i],self.Q_inner[i])
-                # self.U_mass[i]=U_end/self.mass_fluid[i]
-                # P1 = PropsSI('P','D',self.rho[i],'U',U_end/self.mass_fluid[i],self.species)
-                # T1 = PropsSI('T','D',self.rho[i],'U',U_end/self.mass_fluid[i],self.species)
-                U_start = NMOL_ADD * PropsSI('HMOLAR', 'P', P_used, 'T', T_used, self.species) + NMOL * PropsSI('HMOLAR', 'P', self.P[i-1], 'T', self.T_fluid[i-1], self.species) - self.eta *  self.P[i-1] * self.vol + self.Q_inner[i] * self.tstep
-                NMOL=NMOL+NMOL_ADD
+                U_start = self.U_mass[i-1]*self.mass_fluid[i-1]
+                x = 1 - math.exp(-1 * self.time_array[i])**0.66
+                h_in = x * PropsSI('H','T',T_used,'P',P_used,self.species) + (1-x) * PropsSI('U','T',T_used,'P',P_used,self.species)
+                T_in = PropsSI('T','P',self.P[i-1],'H',h_in,self.species)
+                D_in = PropsSI('D','P',self.P[i-1],'T',T_in,self.species)
+                v_in = (self.mass_rate[i-1]/D_in)/(self.diameter**2/4 * math.pi)
+                P2=self.P[i-1]
+                if i > 1:
+                    P1=self.P[i-2]
+                else:
+                    P1=self.P[i-1]
+                U_end = U_start - self.tstep*self.mass_rate[i-1]*h_in + self.tstep * self.Q_inner[i] #+ (P2-P1) * self.vol
+                #print(U_start/self.mass_fluid[i-1],U_end/self.mass_fluid[i],h_in*self.mass_rate[i],self.Q_inner[i])
+                self.U_mass[i]=U_end/self.mass_fluid[i]
+                P1 = PropsSI('P','D',self.rho[i],'U',U_end/self.mass_fluid[i],self.species)
+                T1 = PropsSI('T','D',self.rho[i],'U',U_end/self.mass_fluid[i],self.species)
+                #print('P1',P1,'T1',T1)
+                # U_start = NMOL_ADD * PropsSI('HMOLAR', 'P', P_used, 'T', T_used, self.species) + NMOL * PropsSI('HMOLAR', 'P', self.P[i-1], 'T', self.T_fluid[i-1], self.species) - self.eta *  self.P[i-1] * self.vol + self.Q_inner[i] * self.tstep
+                # NMOL=NMOL+NMOL_ADD
 
-                U = 0
-                nn = 0
-                rho1 = 0
-                itermax = 1000
-                m = 0
-                n = 0
-                relax = 0.1
+                # U = 0
+                # nn = 0
+                # rho1 = 0
+                # itermax = 1000
+                # m = 0
+                # n = 0
+                # relax = 0.1
 
-                while abs(self.rho[i] - rho1) > 0.01 and m < itermax:
-                    m = m + 1
-                    rho1 = PropsSI('D', 'T', T1,'P', P1, self.species)
-                    dd = self.rho[i] - rho1  #NMOL-nn
-                    P1 = P1 + dd * 1e5
-                    if m == itermax:
-                        raise Exception("Iter max exceeded for rho/P")
-                    while abs(U_start - U) / U_start > 0.00001 and n < itermax:
-                        n = n + 1
-                        U = NMOL * PropsSI('HMOLAR', 'P', P1, 'T', T1, self.species) - self.eta * P1 * self.vol  #Q_inner[i]*tstep
-                        d = U_start - U 
-                        T1 = T1 + 0.1 * d / U_start * T1
-                        if n == itermax:
-                            raise Exception("Iter max exceeded for U/T")
+                # while abs(self.rho[i] - rho1) > 0.01 and m < itermax:
+                #     m = m + 1
+                #     rho1 = PropsSI('D', 'T', T1,'P', P1, self.species)
+                #     dd = self.rho[i] - rho1  #NMOL-nn
+                #     P1 = P1 + dd * 1e5
+                #     if m == itermax:
+                #         raise Exception("Iter max exceeded for rho/P")
+                #     while abs(U_start - U) / U_start > 0.00001 and n < itermax:
+                #         n = n + 1
+                #         U = NMOL * PropsSI('HMOLAR', 'P', P1, 'T', T1, self.species) - self.eta * P1 * self.vol  #Q_inner[i]*tstep
+                #         d = U_start - U 
+                #         T1 = T1 + 0.1 * d / U_start * T1
+                #         if n == itermax:
+                #             raise Exception("Iter max exceeded for U/T")
             
-                self.m_iter[i] = dd
-                self.n_iter[i] = d
-                self.U_iter[i] = U / NMOL * self.mass_fluid[i]
+                # self.m_iter[i] = dd
+                # self.n_iter[i] = d
+                # self.U_iter[i] = U / NMOL * self.mass_fluid[i]
                 self.P[i] = P1
                 self.T_fluid[i] = T1
         
@@ -260,11 +284,11 @@ class HydDown:
                     Z = PropsSI('Z', 'T', self.T_fluid[i], 'P', self.P[i], self.species)
                     MW = PropsSI('M','T', self.T_fluid[i], 'P', self.P[i], self.species)
                     self.mass_rate[i] = tp.control_valve(self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, self.Cv)
-            elif input['valve']['type'] == 'mdot':
-                if input['valve']['flow'] == 'filling':
-                    self.mass_rate[i] = -input['valve']['mass_flow']
-                else:
-                    self.mass_rate[i] = input['valve']['mass_flow']
+            # elif input['valve']['type'] == 'mdot':
+            #     if input['valve']['flow'] == 'filling':
+            #         self.mass_rate[i] = -input['valve']['mass_flow']
+            #     else:
+            #         self.mass_rate[i] = input['valve']['mass_flow']
             elif input['valve']['type'] == 'psv':
                 self.mass_rate[i] = tp.relief_valve(self.P[i], self.p_back, self.Pset, self.blowdown, self.rho[i], cpcv, self.CD, self.D_orifice**2/4 * math.pi)
 
@@ -317,5 +341,41 @@ class HydDown:
         plt.ylabel('Vent rate (kg/s)')
         plt.show()
 
-    def report(self):
-        pass
+    def generate_report(self):
+        report={}
+
+        report['start_time']=self.time_array[0]
+        report['end_time']=self.time_array[-1]
+
+        # Pressure    
+        report['max_pressure']=max(self.P)
+        report['time_max_pressure']=self.time_array[np.argmax(self.P)]
+        report['min_pressure']=min(self.P)
+        report['time_min_pressure']=self.time_array[np.argmin(self.P)]
+        
+        # Temperatures
+        report['max_fluid_temp']=max(self.T_fluid)
+        report['time_max_fluid_temp']=self.time_array[np.argmax(self.T_fluid)]
+        report['min_fluid_temp']=min(self.T_fluid)
+        report['time_min_fluid_temp']=self.time_array[np.argmin(self.T_fluid)]
+    
+        report['max_wall_temp']=max(self.T_vessel)
+        report['time_max_wall_temp']=self.time_array[np.argmax(self.T_vessel)]
+        report['min_wall_temp']=min(self.T_vessel)
+        report['time_min_wall_temp']=self.time_array[np.argmin(self.T_vessel)]
+
+        # Mass flows and inventory
+        report['max_mass_rate']=max(self.mass_rate)
+        report['initial_mass']=self.mass_fluid[0]
+        report['final_mass']=self.mass_fluid[-1]
+        report['volume']=self.vol
+
+        report['max_Q_inside']=max(self.Q_inner)
+        report['time_max_Q_inside']=self.time_array[np.argmax(self.Q_inner)]
+        report['max_heat_flux_inside']=max(self.Q_inner/self.surf_area_inner)
+        
+        report['max_Q_outside']=max(self.Q_outer)
+        report['time_max_Q_outside']=self.time_array[np.argmax(self.Q_outer)]
+        report['max_heat_flux_outside']=max(self.Q_outer/self.surf_area_outer)
+
+        self.report = report
