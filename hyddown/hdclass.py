@@ -5,12 +5,14 @@
 import math
 import numpy as np
 from CoolProp.CoolProp import PropsSI
+from numpy.core.numeric import _move_axis_to_0
 from hyddown import transport as tp
 
 
 class HydDown:
     def __init__(self, input):
         self.input = input
+        self.verbose = 0
         self.read_input()
         self.initialize()
 
@@ -210,9 +212,11 @@ class HydDown:
                 self.p_back,
                 self.Pset,
                 self.blowdown,
-                self.rho0,
                 cpcv,
                 self.CD,
+                self.T0,
+                PropsSI('Z', 'T', self.T0, 'P', self.p0, self.species),
+                PropsSI('M', self.species),
                 self.D_orifice ** 2 / 4 * math.pi,
             )
 
@@ -440,22 +444,20 @@ class HydDown:
                     self.mass_rate[i] = tp.control_valve(
                         self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, self.Cv
                     )
-            # elif input['valve']['type'] == 'mdot':
-            #     if input['valve']['flow'] == 'filling':
-            #         self.mass_rate[i] = -input['valve']['mass_flow']
-            #     else:
-            #         self.mass_rate[i] = input['valve']['mass_flow']
             elif input["valve"]["type"] == "psv":
                 self.mass_rate[i] = tp.relief_valve(
                     self.P[i],
                     self.p_back,
                     self.Pset,
                     self.blowdown,
-                    self.rho[i],
                     cpcv,
                     self.CD,
+                    self.T_fluid[i],
+                    PropsSI('Z', 'T', self.T_fluid[i], 'P', self.P[i], self.species),
+                    PropsSI('M', self.species),
                     self.D_orifice ** 2 / 4 * math.pi,
                 )
+                
 
     def plot(self):
         import pylab as plt
@@ -539,7 +541,8 @@ class HydDown:
         plt.plot(self.time_array / 60, self.mass_rate, "b", label="m_dot")
         plt.xlabel("Time (minutes)")
         plt.ylabel("Vent rate (kg/s)")
-        plt.show()
+        if self.verbose:
+            plt.show()
 
     def generate_report(self):
         report = {}
