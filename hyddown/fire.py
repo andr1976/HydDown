@@ -67,16 +67,3 @@ def jet_fire_scandpower(Tvessel):
     Tflame = 635 + 273.15
     Tradiative = 635 + 273.15
     return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
-
-
-if __name__ == "__main__":
-    print(jet_fire_scandpower(20 + 273.15))
-    alpha = 1
-    e_flame = 1
-    e_surface = 0
-    h = 100
-    Tflame = 635 + 273.15
-    Tradiative = 635 + 273.15
-    print(
-        stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, 20 + 273.15)
-    )
