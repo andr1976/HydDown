@@ -1,6 +1,5 @@
 [![DOI](https://zenodo.org/badge/353152239.svg)](https://zenodo.org/badge/latestdoi/353152239)
-[build-image]: https://github.com/andr1976/HydDown/.github/workflows/python-app.yml/badge.svg
-[build-url]: https://github.com/andr1976/HydDown/.github/workflows/python-app.yml
+
 # HydDown
 Hydrogen (or other pure gas phase species) depressurization calculations
 
