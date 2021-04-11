@@ -151,9 +151,3 @@ def test_sim_controlvalve():
     input = get_example_input("controlvalve.yml")
     hdown = HydDown(input)
     hdown.run()
-
-
-if __name__ == "__main__":
-    import transport as tp
-    import fire
-    test_NGr()
