@@ -35,6 +35,18 @@ def test_orifice():
     ) == pytest.approx(9.2 / 60, 0.001)
 
 
+def test_orifice1():
+    P1 = 10.0e5
+    P2 = 6.5e5
+    D = PropsSI("D", "P", P1, "T", 298.15, "HEOS::N2")
+    cpcv = PropsSI("CP0MOLAR", "T", 298.15, "P", P1, "HEOS::N2") / PropsSI(
+        "CVMOLAR", "T", 298.15, "P", P1, "HEOS::N2"
+    )
+    assert tp.gas_release_rate(
+        P1, P2, D, cpcv, 0.85, 0.01 ** 2 / 4 * 3.1415
+    ) == pytest.approx(9.2 / 60, 0.1)
+
+
 def test_controlvalve():
     P1 = 10.0e5
     P2 = 5.5e5
@@ -47,6 +59,22 @@ def test_controlvalve():
     assert tp.control_valve(P1, P2, T1, Z1, MW, gamma, 500) == pytest.approx(
         21.92, 0.07
     )
+
+def test_psv3():
+    Pback = 1e5
+    Pset = 18.2e5
+    blowdown = 0.1
+    P1 = 0.99 * Pset * (1 - blowdown)
+    T1 = 100.0 + 273.15
+    rho = PropsSI("D", "P", P1, "T", T1, "HEOS::N2")
+    gamma = PropsSI("CP0MOLAR", "T", T1, "P", P1, "HEOS::N2") / PropsSI(
+        "CVMOLAR", "T", T1, "P", P1, "HEOS::N2"
+    )
+    CD = 0.975
+    area = 71e-6
+    assert tp.relief_valve(
+        P1, Pback, Pset, blowdown, rho, gamma, CD, area
+    ) == 0
 
 
 def test_psv2():
@@ -88,6 +116,13 @@ def test_hinner():
     assert h == pytest.approx(7, 0.1)
 
 
+def test_hinner_mixed():
+    mdot = 1e-10
+    D = 0.010
+    h = tp.h_inner_mixed(0.305, 311, 505.4, 1e5, "HEOS::air", mdot, D)
+    assert h == pytest.approx(7, 0.1)
+
+
 def test_NNu():
     NGr = tp.Gr(0.305, 311, 505.4, 1e5, "HEOS::air")
     NPr = tp.Pr((311 + 505.4) / 2, 1e5, "HEOS::air")
@@ -105,6 +140,10 @@ def test_NRa():
 
 def test_NGr():
     assert tp.Gr(0.305, 311, 505.4, 1e5, "HEOS::air") == pytest.approx(1.8e8, 0.1e8)
+
+
+def test_NPr():
+    assert tp.Pr((311 + 505.4) / 2, 1e5, "HEOS::air") == pytest.approx(0.7, 0.01)
 
 
 def test_stefan_boltzmann():

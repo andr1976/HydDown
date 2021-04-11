@@ -63,7 +63,7 @@ def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
     NPr = Pr((Tfluid + Tvessel) / 2, P, species)
     NGr = Gr(L, Tfluid, Tvessel, P, species)
     NRa = NPr * NGr
-    NNu_free = h_inner(L, Tfluid, Tvessel, P, species)  # 0.13 * NRa**0.333
+    NNu_free = Nu(NRa,NPr)  # 0.13 * NRa**0.333
     Re = 4 * abs(mdot) / (PropsSI("V", "T", Tfluid, "P", P, species) * math.pi * D)
     NNu_forced = 0.56 * Re ** 0.67
     return (
@@ -147,22 +147,3 @@ def control_valve(P1, P2, T, Z, MW, gamma, Cv, xT=0.75, FP=1):
     Y = 1.0 - min(x, Fk * xT) / (3.0 * Fk * xT)
     mass_flow = N8 * FP * Cv * P1 * Y * (MW * min(x, xT * Fk) / T / Z) ** 0.5
     return mass_flow / 3600  # kg/s
-
-
-if __name__ == "__main__":
-    gamma = 1.2
-    P1 = 10.0e5  # bar
-    P2 = 5.5e5  # bar
-    xT = 0.75  # default
-    MW = 20.0
-    T1 = 20.0 + 273.15  # Kelvin
-    Z1 = 0.9
-    print(Gr(0.305, 311, 505.4, 1e5, "HEOS::air"))
-    print(PropsSI("D", "T", (311 + 504) / 2, "P", 1e5, "HEOS::air"))
-    print(
-        PropsSI("V", "T", (311 + 504) / 2, "P", 1e5, "HEOS::air")
-        / PropsSI("D", "T", (311 + 504) / 2, "P", 1e5, "HEOS::air")
-    )
-
-    print(gas_release_rate(P1, P2, 9.12, 1.1, 0.85, 0.01))
-    print(Pr((311 + 504) / 2, 1e5, "HEOS::air"))
