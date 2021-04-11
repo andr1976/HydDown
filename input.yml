@@ -18,13 +18,13 @@ valve:
   flow: "discharge"
   type: "orifice"
   diameter: 0.00635
-  discharge_coef: 0.84
+  discharge_coef: 0.8
   back_pressure: 101300.
 heat_transfer:
   type: "specified_h"
   temp_ambient: 288.
-  h_outer: 5. 
-  h_inner: "calc"
+  h_outer: 5 
+  h_inner: 'calc' 
 validation:
   temperature:
     gas_high:
