@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/353152239.svg)](https://zenodo.org/badge/latestdoi/353152239) 
+[![DOI](https://zenodo.org/badge/353152239.svg)](https://zenodo.org/badge/latestdoi/353152239) ![license](https://img.shields.io/github/license/andr1976/HydDown)
 
 # HydDown
 Hydrogen (or other pure gas phase species) depressurization calculations
