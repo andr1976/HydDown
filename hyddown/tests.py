@@ -32,7 +32,7 @@ def test_orifice():
     )
     assert tp.gas_release_rate(
         P1, P2, D, cpcv, 0.85, 0.01 ** 2 / 4 * 3.1415
-    ) == pytest.approx(9.2 / 60, 0.001)
+    ) == pytest.approx(9.2 / 60, rel=0.001)
 
 
 def test_orifice1():
@@ -44,7 +44,7 @@ def test_orifice1():
     )
     assert tp.gas_release_rate(
         P1, P2, D, cpcv, 0.85, 0.01 ** 2 / 4 * 3.1415
-    ) == pytest.approx(9.2 / 60, 0.1)
+    ) == pytest.approx(9.2 / 60, rel=0.2)
 
 
 def test_controlvalve():
@@ -57,7 +57,7 @@ def test_controlvalve():
         "CVMOLAR", "T", T1, "P", P1, "HEOS::N2"
     )
     assert tp.control_valve(P1, P2, T1, Z1, MW, gamma, 500) == pytest.approx(
-        21.92, 0.07
+        21.92, rel=0.05
     )
 
 def test_psv3():
@@ -97,11 +97,11 @@ def test_psv2():
     area = 71e-6
     assert tp.relief_valve(
         P1, Pback, Pset, blowdown, gamma, CD, T1, Z, MW, area
-    ) == pytest.approx(1046 / 3600, 0.1)
+    ) == pytest.approx(1046 / 3600, rel=0.03)
     psv_state = "open"
     assert tp.relief_valve(
         Pset*0.99, Pback, Pset, blowdown, gamma, CD, T1, Z, MW, area
-    ) == pytest.approx(1046 / 3600, 0.1)
+    ) == pytest.approx(1046 / 3600, rel=0.03)
 
 
 def test_psv():
@@ -119,24 +119,24 @@ def test_psv():
     area = 71e-6
     assert tp.relief_valve(
         P1, Pback, Pset, blowdown, gamma, CD, T1, Z, MW, area
-    ) == pytest.approx(1.57, 0.02)
+    ) == pytest.approx(1.57, rel=0.02)
 
 
 def test_api_psv_relief():
-    assert tp.api_psv_release_rate(121.9e5, 71e5, 1.39, 0.975, 298.15, 1.01, 2/1e3, 71e-6) == pytest.approx(1846/3600,0.01)
-    assert tp.api_psv_release_rate(121.9e5, 1e5, 1.39, 0.975, 298.15, 1.01, 2/1e3, 71e-6) == pytest.approx(1860/3600,0.01)
+    assert tp.api_psv_release_rate(121.9e5, 71e5, 1.39, 0.975, 298.15, 1.01, 2/1e3, 71e-6) == pytest.approx(1846/3600, rel=0.01)
+    assert tp.api_psv_release_rate(121.9e5, 1e5, 1.39, 0.975, 298.15, 1.01, 2/1e3, 71e-6) == pytest.approx(1860/3600, rel=0.01)
 
 
 def test_hinner():
     h = tp.h_inner(0.305, 311, 505.4, 1e5, "HEOS::air")
-    assert h == pytest.approx(7, 0.1)
+    assert h == pytest.approx(7, abs=0.1)
 
 
 def test_hinner_mixed():
     mdot = 1e-10
     D = 0.010
     h = tp.h_inner_mixed(0.305, 311, 505.4, 1e5, "HEOS::air", mdot, D)
-    assert h == pytest.approx(7, 0.1)
+    assert h == pytest.approx(7, abs=0.1)
 
 
 def test_NNu():
@@ -145,21 +145,21 @@ def test_NNu():
     NRa = NGr * NPr
     NNu = tp.Nu(NRa, NPr)
     print(NNu)
-    assert NNu == pytest.approx(7.5e7, 0.1e7)
+    assert NNu == pytest.approx(62.2, abs=1.0)
 
 
 def test_NRa():
     NGr = tp.Gr(0.305, 311, 505.4, 1e5, "HEOS::air")
     NPr = tp.Pr((311 + 505.4) / 2, 1e5, "HEOS::air")
-    assert (NGr * NPr) == pytest.approx(1.3e8, 0.1e8)
+    assert (NGr * NPr) == pytest.approx(1.3e8, abs=0.1e8)
 
 
 def test_NGr():
-    assert tp.Gr(0.305, 311, 505.4, 1e5, "HEOS::air") == pytest.approx(1.8e8, 0.1e8)
+    assert tp.Gr(0.305, 311, 505.4, 1e5, "HEOS::air") == pytest.approx(1.8e8, abs=0.1e8)
 
 
 def test_NPr():
-    assert tp.Pr((311 + 505.4) / 2, 1e5, "HEOS::air") == pytest.approx(0.7, 0.01)
+    assert tp.Pr((311 + 505.4) / 2, 1e5, "HEOS::air") == pytest.approx(0.7, rel=0.01)
 
 
 def test_stefan_boltzmann():
@@ -173,23 +173,23 @@ def test_stefan_boltzmann():
         fire.stefan_boltzmann(
             alpha, e_flame, e_surface, h, Tflame, Tradiative, 20 + 273.15
         )
-    ) == pytest.approx(1e5, 100)
+    ) == pytest.approx(1e5, abs=100)
 
 
 def test_pool_fire_api521():
-    assert fire.pool_fire_api521(273 + 50) == pytest.approx(45.5e3, 100)
+    assert fire.pool_fire_api521(273 + 50) == pytest.approx(45.5e3, abs=100)
 
 
 def test_jet_fire_api521():
-    assert fire.jet_fire_api521(273 + 50) == pytest.approx(83.5e3, 500)
+    assert fire.jet_fire_api521(273 + 50) == pytest.approx(83.5e3, abs=500)
 
 
 def test_jet_fire_scandpower():
-    assert fire.jet_fire_scandpower(273 + 20) == pytest.approx(94.5e3, 100)
+    assert fire.jet_fire_scandpower(273 + 20) == pytest.approx(94.5e3, abs=1000)
 
 
 def test_pool_fire_scandpower():
-    assert fire.pool_fire_scandpower(273 + 20) == pytest.approx(88.5e3, 50)
+    assert fire.pool_fire_scandpower(273 + 20) == pytest.approx(88.5e3, abs=500)
 
 
 def test_sim_orifice_full():
@@ -200,7 +200,11 @@ def test_sim_orifice_full():
     hdown.run()
     hdown.plot()
     hdown.generate_report()
-
+    assert hdown.report['final_mass'] == pytest.approx(0.14, rel=0.01)
+    assert hdown.report['min_wall_temp'] == pytest.approx(284.9, rel=0.01)
+    assert hdown.report['min_fluid_temp'] == pytest.approx(193.7, rel=0.01)
+    assert hdown.report['time_min_fluid_temp'] == pytest.approx(38.2, rel=0.01)
+    assert hdown.report['max_mass_rate'] == pytest.approx(0.869, rel=0.01)
 
 def test_sim_controlvalve():
     from hyddown import HydDown
@@ -208,3 +212,21 @@ def test_sim_controlvalve():
     input = get_example_input("controlvalve.yml")
     hdown = HydDown(input)
     hdown.run()
+
+
+def test_sim_psv():
+    from hyddown import HydDown
+
+    input = get_example_input("psv.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+
+def test_sim_cv_filling():
+    from hyddown import HydDown
+
+    input = get_example_input("cv_filling.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+
