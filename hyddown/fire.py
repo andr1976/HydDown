@@ -7,7 +7,7 @@ def stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel):
     """
     Heat flux from flame to vessel surface from combined radiative
     and convective heat transfer. Returns the heat flux in W/m2
-    See also API521 and Scandpower guidelines.
+    See also API 521 and Scandpower guidelines.
     """
     sigma = 5.67e-8  # Stefan-Botlzmann constant W/m^2 K^4
     return (
