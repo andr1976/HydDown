@@ -4,6 +4,7 @@
 
 from hyddown import transport as tp
 from hyddown import fire
+from hyddown import validator
 from CoolProp.CoolProp import PropsSI
 import pytest
 
@@ -206,6 +207,20 @@ def test_sim_orifice_full():
     assert hdown.report['time_min_fluid_temp'] == pytest.approx(38.2, rel=0.01)
     assert hdown.report['max_mass_rate'] == pytest.approx(0.869, rel=0.01)
 
+
+def test_validator():
+    from cerberus import Validator
+    import os 
+    import yaml
+    schema = validator.define_mandatory_ruleset()
+    v = Validator(schema, allow_unknown=True)
+
+    for fname in os.listdir("examples/"):
+        with open("examples//" + fname) as infile:
+            input = yaml.load(infile, Loader=yaml.FullLoader)
+        assert v.validate(input) == True
+
+
 def test_sim_controlvalve():
     from hyddown import HydDown
 
@@ -228,5 +243,3 @@ def test_sim_cv_filling():
     input = get_example_input("cv_filling.yml")
     hdown = HydDown(input)
     hdown.run()
-
-

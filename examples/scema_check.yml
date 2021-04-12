@@ -1,0 +1,23 @@
+vessel:
+  length: 10
+  diameter: 3
+  orientation: "vertical"
+initial:
+  temperature: 298.15
+  pressure: 1601000.
+  fluid: "N2" 
+calculation:
+  type: "energybalance"
+  time_step: 5.
+  end_time: 6000.
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.009507891862878782
+  discharge_coef: 0.975
+  set_pressure: 2021000
+  blowdown: 0.1
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_Q"
+  Q_fix: 100000
