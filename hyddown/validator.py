@@ -1,19 +1,5 @@
 from cerberus import Validator 
 
-def get_example_input(fname):
-    import os
-    import yaml
-
-    if "C:\\Users\\ANRA" in os.getcwd():
-        fname = r"C:\\Users\\ANRA\\Documents\\GitHub\\HydDown\\examples\\" + fname
-    else:
-        fname = r"//home//runner//work//HydDown//HydDown//examples//" + fname
-
-    with open(fname) as infile:
-        input = yaml.load(infile, Loader=yaml.FullLoader)
-
-    return input
-
 
 def define_mandatory_ruleset():
     schema = {
@@ -79,10 +65,12 @@ def define_mandatory_ruleset():
 
 if __name__=="__main__":
     import os 
+    import yaml
     schema=define_mandatory_ruleset()
     v = Validator(schema,allow_unknown=True)
     
     for fname in os.listdir("..//examples/"):
-        input = get_example_input("..//examples//"+fname)
+        with open("..//examples//"+fname) as infile:
+            input = yaml.load(infile, Loader=yaml.FullLoader)
         print(v.validate(input))
         print(v.errors)
