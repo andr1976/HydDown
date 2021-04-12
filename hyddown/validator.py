@@ -14,49 +14,75 @@ def get_example_input(fname):
 
     return input
 
+
 def define_mandatory_ruleset():
     schema = {
         'initial': {
             'type': 'dict',
-            'allow_unknown': True,
+            'allow_unknown': False,
             'schema': {
                 'temperature':{'type':'number'},
                 'pressure':{'type': 'number'},
                 'fluid': {'type': 'string'},
-                'orientation': {'type': 'string', 'required': 'false'},
-            }
-        },
+                },
+            },
         'calculation': {
             'type': 'dict',
             'allow_unknown': True,
             'schema': {
-                'type': {'type': 'string'},
-                'time_step': {'type': 'number'},
-                'end_time': {'type': 'number'},
+                'type': {
+                    'type': 'string', 
+                    'allowed': ['energybalance',
+                                'isenthalpic',
+                                'isentropic',
+                                'isothermal',
+                                'constant_U']
+                    },
+                'time_step': {'type': 'number', 'min': 0.000001},
+                'end_time': {'type': 'number', 'min': 0},
             }
         },
         'vessel': {
             'type': 'dict',
-            'allow_unknown': True,  # this overrides the behaviour for
+            'allow_unknown': False,  # this overrides the behaviour for
             'schema': {             # the validation of this definition
                 'length': {'type': 'number'},
                 'diameter': {'type': 'number'},
+                'thickness': {'required': False,'type': 'number', 'min': 0.0},
+                'heat_capacity': {'required': False, 'type': 'number', 'min': 1},
+                'density': {'required': False, 'type': 'number', 'min': 1},
+                'orientation': {
+                    'required': False, 
+                    'type': 'string', 
+                    'allowed': ['vertical', 'horizontal']
+                }
             }
         },
         'valve':{
             'type': 'dict',
             'allow_unknown': True,
             'schema':{
-                'type': {'type': 'string'},
-                'flow': {'type': 'string'},
+                'type': {'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
+                'flow': {'type': 'string', 'allowed': ['discharge', 'filling']},
+            }
+        },
+        'heat_transfer':{
+            'required': False,
+            'type': 'dict',
+            'allow_unknown': True,
+            'schema':{
+                'type': {'type': 'string','allowed': ['specified_Q','specified_h','specified_U']}, 
             }
         }
     }
     return schema
 
 if __name__=="__main__":
-    scema=define_mandatory_ruleset()
-    v = Validator(scema,allow_unknown=True)
-        
-    input = get_example_input("..//examples//psv.yml")
-    print(v.validate(input))
+    import os 
+    schema=define_mandatory_ruleset()
+    v = Validator(schema,allow_unknown=True)
+    
+    for fname in os.listdir("..//examples/"):
+        input = get_example_input("..//examples//"+fname)
+        print(v.validate(input))
+        print(v.errors)
