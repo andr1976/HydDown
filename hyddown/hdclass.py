@@ -7,14 +7,23 @@ import numpy as np
 from CoolProp.CoolProp import PropsSI
 from numpy.core.numeric import _move_axis_to_0
 from hyddown import transport as tp
+from hyddown import validator 
 
 
 class HydDown:
     def __init__(self, input):
         self.input = input
         self.verbose = 0
+        self.validate_input()
         self.read_input()
         self.initialize()
+
+
+    def validate_input(self):
+        valid = validator.validation(input)
+        if valid == False:
+            raise ValueError("Error in input file")
+
 
     def read_input(self):
         self.length = self.input["vessel"]["length"]

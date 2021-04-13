@@ -2,7 +2,7 @@ from cerberus import Validator
 from cerberus.errors import ValidationError 
 
 
-def define_mandatory_ruleset():
+def validate_mandatory_ruleset(input):
     schema = {
         'initial': {
             'type': 'dict',
@@ -129,7 +129,9 @@ def define_mandatory_ruleset():
             }
         }
     }
-    return schema
+
+    v = Validator(schema)
+    return v.validate(schema)
 
 
 def heat_transfer_validation(input):
@@ -181,3 +183,6 @@ def valve_validation(input):
             return True
         else: 
             return False
+
+def validation(input):
+    return validate_mandatory_ruleset and valve_validation and heat_transfer_validation

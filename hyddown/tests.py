@@ -194,16 +194,13 @@ def test_pool_fire_scandpower():
 
 
 def test_validator():
-    from cerberus import Validator
     import os 
     import yaml
-    schema = validator.define_mandatory_ruleset()
-    v = Validator(schema, allow_unknown=True)
 
     for fname in os.listdir("examples/"):
         with open("examples//" + fname) as infile:
             input = yaml.load(infile, Loader=yaml.FullLoader)
-        assert v.validate(input) == True
+        assert validator.validate_mandatory_ruleset(input) == True
 
 
 def test_validator():
