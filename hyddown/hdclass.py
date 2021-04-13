@@ -27,8 +27,6 @@ class HydDown:
         self.tstep = self.input["calculation"]["time_step"]
         self.time_tot = self.input["calculation"]["end_time"]
         self.method = self.input["calculation"]["type"]
-        if self.method == "energybalance":
-            self.eta = self.input["calculation"]["eta"]
 
         # Reading valve specific data
         if (
