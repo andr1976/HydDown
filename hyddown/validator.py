@@ -181,21 +181,3 @@ def valve_validation(input):
             return True
         else: 
             return False
-
-
-
-
-if __name__=="__main__":
-    import os 
-    import yaml
-    schema=define_mandatory_ruleset()
-    v = Validator(schema, allow_unknown = True)
-    
-    for fname in os.listdir("..//examples/"):
-        with open("..//examples//" + fname) as infile:
-            input = yaml.load(infile, Loader = yaml.FullLoader)
-        print(v.validate(input))
-        print(v.errors)
-        #print(fname,heat_transfer_validation(input), valve_validation(input))
-
-
