@@ -1,10 +1,10 @@
 vessel:
   length: 0.515
   diameter: 0.20
-  thickness: 0.05
+  thickness: 0.0818
   heat_capacity: 500
   density: 7800. 
-  orientation: "vertical"
+  orientation: "horizontal"
 initial:
   temperature: 298.0
   pressure: 3700.
@@ -12,7 +12,7 @@ initial:
 calculation:
   type: "energybalance"
   time_step: 0.05
-  end_time: 30.
+  end_time: 80.
   eta: 1
 valve:
   flow: "filling"
@@ -25,4 +25,4 @@ heat_transfer:
   temp_ambient: 298.
   h_outer: 5. 
   h_inner: "calc"
-  D_throat : 0.010
+  D_throat : 0.10

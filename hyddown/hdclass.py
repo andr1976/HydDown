@@ -144,6 +144,7 @@ class HydDown:
         cpcv = PropsSI("CP0MOLAR", "T", self.T0, "P", self.p0, self.species) / PropsSI(
             "CVMOLAR", "T", self.T0, "P", self.p0, self.species
         )
+        massflow_stop_switch = 0 
 
         if input["valve"]["type"] == "orifice":
             if input["valve"]["flow"] == "filling":
@@ -234,6 +235,7 @@ class HydDown:
             self.mass_fluid[i] = (
                 self.mass_fluid[i - 1] - self.mass_rate[i - 1] * self.tstep
             )
+             
             self.rho[i] = self.mass_fluid[i] / self.vol
 
             if self.method == "isenthalpic":
@@ -464,7 +466,11 @@ class HydDown:
                     PropsSI('M', self.species),
                     self.D_orifice ** 2 / 4 * math.pi,
                 )
-                
+            if 'end_pressure' in self.input['valve'] and self.P[i] > self.input['valve']['end_pressure']:
+                massflow_stop_switch = 1
+            if massflow_stop_switch:
+                self.mass_rate[i]=0
+
 
     def plot(self):
         import pylab as plt

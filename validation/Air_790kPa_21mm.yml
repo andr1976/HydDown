@@ -4,7 +4,7 @@ vessel:
   thickness: 0.05
   heat_capacity: 500
   density: 7800. 
-  orientation: "vertical"
+  orientation: "horizontal"
 initial:
   temperature: 298.0
   pressure: 790000.
