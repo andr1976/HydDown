@@ -1,0 +1,29 @@
+vessel:
+  length: 0.463
+  diameter: 0.254
+  thickness: 0.016
+  heat_capacity: 470
+  density: 7740. 
+  orientation: "horizontal"
+initial:
+  temperature: 298.0
+  pressure: 10000000.
+  fluid: "H2" 
+calculation:
+  type: "energybalance"
+  time_step: 0.02
+  end_time: 240.
+  eta: 1
+valve:
+  flow: "filling"
+  type: "orifice"
+  diameter: 0.0003
+  discharge_coef: 0.84
+  back_pressure: 48000000
+  end_pressure: 24000000
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 298.
+  h_outer: 5. 
+  h_inner: "calc"
+  D_throat: 0.254

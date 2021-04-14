@@ -18,4 +18,5 @@ if __name__ == "__main__":
 
     hdown=HydDown(input)
     hdown.run()
+    hdown.verbose=1
     hdown.plot()
