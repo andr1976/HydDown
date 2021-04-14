@@ -7,7 +7,7 @@ vessel:
   orientation: "horizontal"
 initial:
   temperature: 298.0
-  pressure: 10000000.
+  pressure: 5000000.
   fluid: "H2" 
 calculation:
   type: "energybalance"
@@ -17,7 +17,7 @@ calculation:
 valve:
   flow: "filling"
   type: "orifice"
-  diameter: 0.0003
+  diameter: 0.00069 #30 Mpa/min #0.00042 10 MPa/min,  #0.000301 5MPa/min
   discharge_coef: 0.84
   back_pressure: 48000000
   end_pressure: 24000000
@@ -26,4 +26,4 @@ heat_transfer:
   temp_ambient: 298.
   h_outer: 5. 
   h_inner: "calc"
-  D_throat: 0.254
+  D_throat: 0.252
