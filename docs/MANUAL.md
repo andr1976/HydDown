@@ -1,4 +1,22 @@
+---
+title: HydDown
+subtitle: User guide
+author: Anders Andreasen
+titlepage: true
+toc-own-page: true
+book: true
+logo: img/Sketch.png
+logo-width: 100mm
+reference-section-title: References
+bibliography: references.bib
+---
+
 # HydDown
+
+![HydDown logo](img/Sketch.png){#fig:logo}
+
+The HydDown logo shown in [@Fig:logo] visualizes the key parameters and transport phenomena during gas vessel filling or discharging  [@wrigstad2017mastery]. 
+
 Hydrogen (or other pure gas phase species) depressurization calculations
 
 This code is published under an MIT license.

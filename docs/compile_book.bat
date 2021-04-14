@@ -1,0 +1,1 @@
+pandoc -o MANUAL.pdf --toc  --filter pandoc-crossref --citeproc --top-level-division=chapter --template eisvogel.tex --number-sections --highlight-style=tango MANUAL.md
