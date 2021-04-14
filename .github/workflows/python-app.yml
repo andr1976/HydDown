@@ -23,8 +23,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest coverage black numpy matplotlib PyYAML Cython cerberus
-        pip install CoolProp==6.4.1
+        streamlit==0.80.0
+        pip install flake8 pytest coverage black Cython
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Code formatting with Black
       run: |
