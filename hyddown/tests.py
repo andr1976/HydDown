@@ -203,7 +203,7 @@ def test_validator():
         assert validator.validate_mandatory_ruleset(input) == True
 
 
-def test_validator():
+def test_validator2():
     import os 
     import yaml
 
@@ -251,3 +251,11 @@ def test_sim_cv_filling():
     input = get_example_input("cv_filling.yml")
     hdown = HydDown(input)
     hdown.run()
+
+def test_sim_stefan_boltzmann():
+    from hyddown import HydDown
+
+    input = get_example_input("psv_sb.yml")
+    hdown = HydDown(input)
+    hdown.run()
+

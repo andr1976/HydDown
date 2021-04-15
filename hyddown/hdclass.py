@@ -507,7 +507,7 @@ class HydDown:
                 self.mass_rate[i]=0
 
 
-    def plot(self):
+    def plot(self,filename=None):
         import pylab as plt
 
         plt.figure()
