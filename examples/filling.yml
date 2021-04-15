@@ -25,3 +25,4 @@ heat_transfer:
   temp_ambient: 298.
   h_outer: 5. 
   h_inner: "calc"
+  D_throat: 0.2
