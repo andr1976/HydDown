@@ -67,3 +67,18 @@ def jet_fire_scandpower(Tvessel):
     Tflame = 635 + 273.15
     Tradiative = 635 + 273.15
     return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
+
+
+def sb_fire(T_vessel, fire_type):
+    if fire_type == "api_jet":
+        Q=jet_fire_api521(T_vessel)
+    elif fire_type == "api_pool":
+        Q=pool_fire_api521(T_vessel)
+    elif fire_type == "scandpower_pool":
+        Q=pool_fire_scandpower(T_vessel)
+    elif fire_type == "scandpower_jet":
+        Q=jet_fire_scandpower(T_vessel)
+    else:
+        raise ValueError("Unknown Stefan-Bolzmann fire heat load")
+    return Q
+
