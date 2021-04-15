@@ -193,6 +193,17 @@ def test_pool_fire_scandpower():
     assert fire.pool_fire_scandpower(273 + 20) == pytest.approx(88.5e3, abs=500)
 
 
+def test_sb():
+    assert fire.sb_fire(273 + 50, "api_jet") == pytest.approx(83.5e3, abs=500)
+    assert fire.sb_fire(273 + 50, "api_pool") == pytest.approx(45.5e3, abs=100)
+    assert fire.sb_fire(273 + 20, "scandpower_pool") == pytest.approx(88.5e3, abs=500)
+    assert fire.sb_fire(273 + 20, "scandpower_jet") == pytest.approx(94.5e3, abs=1000)
+    try:
+        Q = fire.sb_fire(273 + 20, "scand_jet") == pytest.approx(94.5e3, abs=1000)
+    except ValueError:
+        pass
+
+
 def test_validator():
     import os 
     import yaml
@@ -249,6 +260,13 @@ def test_sim_cv_filling():
     from hyddown import HydDown
 
     input = get_example_input("cv_filling.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+def test_sim_filling():
+    from hyddown import HydDown
+
+    input = get_example_input("filling.yml")
     hdown = HydDown(input)
     hdown.run()
 

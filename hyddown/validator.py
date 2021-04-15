@@ -66,7 +66,7 @@ def validate_mandatory_ruleset(input):
             'required': False,
             'type': 'dict',
             'allow_unknown': False,
-            'allowed': ['Q_fix','h_inner','h_outer','temp_ambient','type','fire','s-b'],
+            'allowed': ['Q_fix','h_inner','h_outer','temp_ambient','type','fire','s-b','D_throat'],
             'schema':{
                 'type': {'type': 'string','allowed': ['specified_Q','specified_h','specified_U','s-b']}, 
                 'Q_fix': {'required': False, 'type': 'number'},
@@ -75,6 +75,7 @@ def validate_mandatory_ruleset(input):
                 'h_outer': {'required': False, 'type': 'number', 'min': 0},
                 'h_inner': {'required': False, 'type': ['number','string']},
                 'fire': {'required': False, 'type': 'string','allowed': ['api_pool','api_jet','scandpower_pool','scandpower_jet']},
+                'D_throat' : {'required': False, 'type': 'number', 'min': 0},
             }
         },
         'validation':{
@@ -132,7 +133,8 @@ def validate_mandatory_ruleset(input):
     }
 
     v = Validator(schema)
-    return v.validate(input)
+    retval = v.validate(input)
+    return retval
 
 
 def heat_transfer_validation(input):
