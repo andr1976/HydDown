@@ -8,6 +8,7 @@ from CoolProp.CoolProp import PropsSI
 from numpy.core.numeric import _move_axis_to_0
 from hyddown import transport as tp
 from hyddown import validator 
+from hyddown import fire
 
 
 class HydDown:
@@ -20,7 +21,7 @@ class HydDown:
 
 
     def validate_input(self):
-        valid = validator.validation(input)
+        valid = validator.validation(self.input)
         if valid == False:
             raise ValueError("Error in input file")
 
@@ -84,6 +85,16 @@ class HydDown:
                 self.h_in = self.input["heat_transfer"]["h_inner"]
                 if self.input["valve"]["flow"] == "filling":
                     self.D_throat = self.input["heat_transfer"]["D_throat"]
+            if self.heat_method == "s-b":
+                self.fire_type = self.input["heat_transfer"]["fire"]
+                self.h_in = "calc"
+                self.vessel_cp = self.input["vessel"]["heat_capacity"]
+                self.vessel_density = self.input["vessel"]["density"]
+                self.vessel_orientation = self.input["vessel"]["orientation"]
+                self.thickness = self.input["vessel"]["thickness"]
+                if self.input["valve"]["flow"] == "filling":
+                    raise ValueError("Filling and Fire heat load not implemented")
+                
 
     def initialize(self):
         self.vol = self.diameter ** 2 / 4 * math.pi * self.length  # m3
@@ -310,6 +321,30 @@ class HydDown:
                     ) * self.tstep / (
                         self.vessel_cp * self.vessel_density * self.vol_solid
                     )
+                elif self.heat_method == "s-b":
+                    if self.vessel_orientation == "horizontal":
+                        L = self.diameter
+                    else:
+                        L = self.length
+                    hi = tp.h_inner(
+                        L,
+                        self.T_fluid[i - 1],
+                        self.T_vessel[i - 1],
+                        self.P[i - 1],
+                        self.species,
+                    )
+                    self.h_inside[i] = hi
+                    self.Q_inner[i] = (
+                        self.surf_area_inner
+                        * hi
+                        * (self.T_vessel[i - 1] - self.T_fluid[i - 1])
+                    )
+                    self.Q_outer[i] = fire.sb_fire(self.T_vessel[i-1], self.fire_type) * self.surf_area_outer
+                    self.T_vessel[i] = self.T_vessel[i - 1] + (
+                        self.Q_outer[i] - self.Q_inner[i]
+                    ) * self.tstep / (
+                        self.vessel_cp * self.vessel_density * self.vol_solid
+                    )
                 elif self.heat_method == "specified_U":
                     self.Q_inner[i] = (
                         self.surf_area_outer
@@ -472,7 +507,7 @@ class HydDown:
                 self.mass_rate[i]=0
 
 
-    def plot(self):
+    def plot(self,filename=None):
         import pylab as plt
 
         plt.figure()

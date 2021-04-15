@@ -66,14 +66,15 @@ def validate_mandatory_ruleset(input):
             'required': False,
             'type': 'dict',
             'allow_unknown': False,
-            'allowed': ['Q_fix','h_inner','h_outer','temp_ambient','type'],
+            'allowed': ['Q_fix','h_inner','h_outer','temp_ambient','type','fire','s-b'],
             'schema':{
-                'type': {'type': 'string','allowed': ['specified_Q','specified_h','specified_U']}, 
-                'Q_fix': {'type': 'number'},
-                'U_fix': {'type': 'number', 'min': 0},
-                'temp_ambient': {'type': 'number', 'min': 0},
-                'h_outer': {'type': 'number', 'min': 0},
-                'h_inner': {'type': ['number','string']},
+                'type': {'type': 'string','allowed': ['specified_Q','specified_h','specified_U','s-b']}, 
+                'Q_fix': {'required': False, 'type': 'number'},
+                'U_fix': {'required': False, 'type': 'number', 'min': 0},
+                'temp_ambient': {'required': False, 'type': 'number', 'min': 0},
+                'h_outer': {'required': False, 'type': 'number', 'min': 0},
+                'h_inner': {'required': False, 'type': ['number','string']},
+                'fire': {'required': False, 'type': 'string','allowed': ['api_pool','api_jet','scandpower_pool','scandpower_jet']},
             }
         },
         'validation':{
@@ -131,7 +132,7 @@ def validate_mandatory_ruleset(input):
     }
 
     v = Validator(schema)
-    return v.validate(schema)
+    return v.validate(input)
 
 
 def heat_transfer_validation(input):
@@ -152,6 +153,11 @@ def heat_transfer_validation(input):
                     return False
             if 'specified_U' in input['heat_transfer'] and 'temp_ambient' in input['heat_transfer']:
                 if 'Q_fix' in input['heat_transfer']['type']:
+                    return True
+                else:
+                    return False
+            if 's-b' in input['heat_transfer']['type']:
+                if 'fire' in input['heat_transfer'] and 'orientation' in input['vessel'] and 'thickness' in input['vessel'] and 'heat_capacity' in input['vessel'] and 'density' in input['vessel']:
                     return True
                 else:
                     return False
@@ -176,7 +182,6 @@ def valve_validation(input):
         else: 
             return False
     if input['valve']['type'] == 'mdot':
-
         return True
     if input['valve']['type'] == 'controlvalve':
         if ('Cv' in input['valve'] and 'back_pressure' in input['valve']):
@@ -185,4 +190,4 @@ def valve_validation(input):
             return False
 
 def validation(input):
-    return validate_mandatory_ruleset and valve_validation and heat_transfer_validation
+    return validate_mandatory_ruleset(input) and valve_validation(input) and heat_transfer_validation(input)

@@ -1,0 +1,1 @@
+pandoc  --toc  --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --template eisvogel.tex --number-sections MANUAL.md -o MANUAL.pdf
