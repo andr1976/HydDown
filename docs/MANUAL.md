@@ -7,6 +7,7 @@ toc-own-page: true
 book: true
 reference-section-title: References
 bibliography: references.bib
+float-placement-figure: htbp
 listings: True
 ---
 
@@ -68,6 +69,8 @@ Density | kg/m$^3$
 Heat capacity | J/(kg K)
 
 : Unit system {#tbl:units}
+
+As will be noted when presentaing the equations implemented in the code, some of the equations utilise different units than the ones listed in [@tbl:units]. However, it is important to note that the unit conversions are built in to the methods implemented, so the user shall not worry about unit conversion.  
 
 ## Credit 
 In the making of this document I have sourced a great deal of material (and modified it) from a good collegues M.Sc. thesis [@iskov], co-published papers [@Bjerre2017][@safety4010011] and from on-line material published under permissive licenses (with proper citation). Further, the making of this project would not have possible without the awesome [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999]. I am thankful for enlightning discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark)  and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurisation, nozzle flow and heat transfer considerations.
@@ -159,6 +162,11 @@ if __name__ == "__main__":
 ## Input file 
 
 # Theory
+In this chapter the basic theory and governing equations for the model implementation in HydDown is presented. The following main topics are covered: 
+
+- thermodynamics
+- mass transfer
+- heat transfer
 
 ## Thermodynamics
 
@@ -227,11 +235,111 @@ The EOS is set up with temperature and density as the two independent properties
 
 ## Flow devices
 ### Restriction Orifice
+When a fluid flows through a constriction or opening such as an orifice, the velocity will be affected by conditions upstream and downstream.
+If the upstream pressure is high enough, relative to the downstream pressure, the velocity will reach the speed of sound (Ma = 1) and the flow rate obtained will be the critical flow rate. The maximum downstream pressure for the flow to still be sonic (Ma = 1), is when $P_d = P_c$. The ratio of the critical and upstream pressure is defined by equation [@eq:P_critical].
 
-### Relief valve
+$$ \frac{P_{c}}{P_u}=\left (\frac{2}{k+1} \right)^\frac{k}{k-1} $$ {#eq:P_critical}
 
-![Relief valve hysteresis](img/hysteresis.pdf){#fig:psv_hyst}
+- $P_c$ is the critical pressure. [kPa]
+- $P_d$ is the downstream pressure. [kPa]
+- $P_u$ is the upstream pressure. [kPa]
+- k is the isentropic expansion factor, approximated by the ideal gas heat capacity ratio $C_p/C_v$. [-]
 
+In order to calculated the mass flow rate through an orifice equation 5.49 is used
+based on literature from the Committee for the Prevention of Disasters [@yellowbook]. It is
+assumed that only gas exits the orifice, as the PSV is positioned on the top of the
+vessel
+
+To account for the difference in choked and non-choked flow a set limit pressure is introduced as in equation [@eq:plimit]. If the downstream pressure, $P_{down}$, is below the pressure limit, $ P_{limit}$, then the flow is choked, and the pressure used, $P_{used}$, in equation [@eq:massfloworifice] should be the pressure limit, $P_{limit}$. Otherwise if the downstream pressure, $P_{down}$, is greater than or equal to the pressure limit, $P_{limit}$, the flow is no longer choked and the pressure used should be the downstream pressure, $P_{down}$ [@yellowbook].
+
+$$ P_{limit}=P_{up} \cdot \left ( \frac{2}{k+1} \right ) ^{\frac{k}{k-1}} $$ {#eq:plimit}
+
+$$ \dot{m}_{flow}= C_d  \cdot A \cdot\sqrt{\left ( \frac{2 k}{k-1}\right )  \cdot  P_{up} \cdot \rho \cdot \left (  \frac{P_{used}}{P_{up}} \right )^{\frac{2}{k}} \left (1-\left ( \frac{P_{used}}{P_{up}} \right ) ^{\frac{k-1}{k}} \right )} $$ {#eq:massfloworifice}
+
+- $\rho$ is the density of the gas upstream. $[kg/m^3]$
+- $P_{limit}$ is the pressure limit of the upstream absolute pressure. $[bara]$
+- $P_{up}$ is the absolute pressure upstream of the orifice. $[bara]$
+- $k$ is the ratio of the heat capacities at constant pressure, $C_p$, and at constant volume, $C_v$.
+- $P_{down}$ is the absolute pressure downstream of the orifice. $[bara]$
+- $P_{used}$ is the pressure used in the mass flow equation based on choked or non-coked conditions. $[bara]$
+- $\dot{m}_{flow}$ is the mass flow through the orifice. $[kg/s]$
+- $C_d$ is the discharge coefficient of the orifice opening. $[-]$
+- $A$ is the cross sectional area of the orifice. $[m^2]$
+
+### Pressure safety valve / Relief valve
+A PSV / relief valve is a mechanical device actuated by the static pressure in the vessel and
+a conventional PSV is often used for gas/vapor systems. A conventional PSV is
+a spring-loaded device which will activate at a predetermined opening pressure,
+and relieve the vessel pressure until a given reseat pressure has been reached. Both
+the opening pressure and the reset pressure is above the vessel operating pressure,
+and the PSV will remain closed until the pressure inside the vessel increases to the
+opening pressure.
+The operation of a conventional spring-loaded PSV is based on a force balance.
+A conventional PSV can be seen in [@Fig:psv]. A spring exerts a force on a disc
+blocking the inlet of the PSV. When the pressure inside the vessels reaches the
+opening pressure, the force exerted on the disc by the gas, will be larger than the
+force exerted by the spring and the PSV will open and allow the gas to flow out of
+the vessels. The flow of gas out of the vessels will lower the pressure and thereby
+also the force exerted on the disc. When the pressure in the vessels is reduced to
+the reset pressure, the PSV will close and the disc will again hinder the gas flow.
+
+![Convnetional/pop action PSV adapted from [@iskov] and [@API520]](img/PSV.pdf){#fig:psv}
+
+The relief valve model implemented in HydDown is the API 520 equations [@API520] for gas relief for both sonic/critical as well as subcritical flow. No corrections factors are implemeted in HydDown. 
+
+For sonic flow (critical flow), as indicated in equation, the  mass flow thorugh the PSV can be determined by equation [@eq:Sationary_sizing_sonic].
+
+$$ W = \frac{A {C \cdot K_d \cdot  K_b \cdot  K_c \cdot  P_1}}{\sqrt{\frac{T\cdot Z}{M}}} $$ {#eq:Sationary_sizing_sonic}
+
+- A is the effective discharge area. [mm$^2$]
+- W is the mass flow through the device. [kg/h]
+- C is a coefficient, as a function of k, as defined in equation [@eq:Sationary_sizing_C_function].
+- $K_d$, $K_b$, and $K_c$ are correction factors.
+- $P_1$ is the allowable upstream absolute pressure. [kPa]
+- T is the temperature of the inlet gas at relieving conditions. [K]
+- M is the molecular mass of the gas at relieving conditions. [kg/kmol]
+- Z is the compressibility factor for the gas.
+
+$K_d$ is the effective coefficient of discharge, with a typical value of 0.975, for an installed PSV. $K_b$ is a back-pressure correction factor between 0 and 1, assumed to be 1. $K_c$ is a correction factor used when a rupture disk is installed upstream, otherwise it is 1. In the present implementation a value of 1 is assumed. 
+
+$$ C=0.03948 \sqrt{k \left (\frac{2}{k+1}\right)^{\left (\frac{k+1}{k-1}\right)}} $$ {#eq:Sationary_sizing_C_function}
+
+For subsonic flow (subcritical flow), the effective discharge area of the PSV is determined by equation [@eq:Sationary_sizing_subsonic].
+
+$$ W = \frac{A \cdot {F_2 \cdot K_d  \cdot  K_c }}{17.9 \sqrt{\frac{T\cdot Z}{M\cdot P_1\cdot (P_1-P_2)}}} $$ {#eq:Sationary_sizing_subsonic}
+
+F$_2$ is the coefficient of subcritical flow which can be determined from [@eq:Sationary_sizing_F2].
+
+$$ F_2=\sqrt{\left ( \frac{k}{k-1} \right ) r^{\left (\frac{2}{k} \right )} \left (  \frac{1-r^{\left ( \frac{k-1}{k} \right )}}{1-r}\right )} $$ {#eq:Sationary_sizing_F2}
+
+where r is the ratio of backpressure to upstream relieving pressure, $P_2 / P_1$.
+
+When modelling a pop action PSV/relief valve under dynamic conditions, the valve will go from closed to fully open in a short
+period of time when the set pressure, $P_{set}$, is reached. The pop action is illustrated in [@Fig:psv_hyst] which shows the opening
+and closing hysteresis of the PSV as a function of pressure. In order to close the shall be reduced below the reseat pressure. 
+
+![Relief valve hysteresis adapted from [@iskov]](img/hysteresis.pdf){#fig:psv_hyst}
+
+When specifying PSV's it is comon to use standrd API sizes as shown in [@tbl:psv_sizes]
+
+Size    | Area [in$^2$]     |   Area [m$^2$] 
+--------|-------------------|----------------------------
+D       |   0.110           |   7.09676 $\cdot$ 10$^{-5}$
+E       |   0.196           |   1.26451 $\cdot$ 10$^{-4}$
+F       |   0.307           |   1.98064 $\cdot$ 10$^{-4}$
+G       |   0.503           |   3.24515 $\cdot$ 10$^{-4}$
+H       |   0.785           |   5.06450 $\cdot$ 10$^{-4}$
+J       |   1.287           |   8.30320 $\cdot$ 10$^{-4}$
+K       |   1.838           |   1.18580 $\cdot$ 10$^{-3}$
+L       |   2.853           |   1.84064 $\cdot$ 10$^{-3}$
+M       |   3.600           |   2.32257 $\cdot$ 10$^{-3}$
+N       |   4.340           |   2.79999 $\cdot$ 10$^{-3}$
+P       |   6.380           |   4.11612 $\cdot$ 10$^{-3}$
+Q       |   11.050          |   7.12901 $\cdot$ 10$^{-3}$
+R       |   16.000          |   1.03225 $\cdot$ 10$^{-2}$
+T       |   26.000          |   1.67741 $\cdot$ 10$^{-2}$
+
+: Standard PSV orifice sizes according to API {#tbl:psv_sizes}
 
 ### Control Valve
 
