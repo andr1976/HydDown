@@ -1,12 +1,13 @@
 ---
 title: HydDown
-subtitle: User guide
+subtitle: User guide and technical reference
 author: Anders Andreasen
 titlepage: true
 toc-own-page: true
 book: true
 reference-section-title: References
 bibliography: references.bib
+listings: True
 ---
 
 # Introduction
@@ -21,7 +22,7 @@ Run the code as simple as:
 where main.py is the main script and input.yml is the input file in Yaml syntax. 
 
 ## Background
-This is a small spare time project for calculation of vessel depressurisation behaviour. This is mainly to demonstrate, that although perceived as a very tedious/difficult task to write your own code for such an apparent complex problem, actually a fairly limited amount of code is necessary if you have a good thermodynamic backend. 
+This is a small spare time project for calculation of vessel filling and depressurisation behaviour. This is mainly to demonstrate, that although perceived as a very tedious/difficult task to write your own code for such an apparent complex problem, actually a fairly limited amount of code is necessary if you have a good thermodynamic backend. 
 
 A few choices is made to keep things simple to begin with:
 
@@ -34,7 +35,79 @@ A few choices is made to keep things simple to begin with:
 
 These choices makes the problem a lot more simple to solve, First of all the the pure substance Helmholtz energy based equation of state (HEOS) in coolprop offers a lot of convenience in terms of the property pairs/state variables that can be set independently. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
-## Description
+
+## Requirements
+
+- [Python](http://www.python.org) (3.8 - at least python3)
+- [Numpy](https://numpy.org/)
+- [matplotlib](https://matplotlib.org/)
+- [Coolprop (6.4.1)](http://www.coolprop.org/)
+- [cerberus](https://docs.python-cerberus.org/en/latest/)
+- [PyYaml](https://pypi.org/project/PyYAML/)
+- [pandas](https://pandas.pydata.org/)
+
+The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip. Should run om linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.
+
+## Units of measure
+The SI units are adapted for this project. The following common units are used in the present project and this also applies to the units used in the input files:
+
+Property | Unit | Comment 
+----    | ----  | ----
+Temperature | K | $^\circ$ C is used in plots
+Pressure | Pa    | bar is used in plots
+Mass | kg |
+Volume | m$^3$ |
+Time | s |
+Energy | J |
+Duty/power | W 
+Length | m
+Area | m$^2$
+Heat flux | W/m$^2$
+Heat transfer coefficient | W/(m$^2$ K)
+Density | kg/m$^3$
+Heat capacity | J/(kg K)
+
+: Unit system {#tbl:units}
+
+## Credit 
+In the making of this document I have sourced a great deal of material (and modified it) from a good collegues M.Sc. thesis [@iskov], co-published papers [@Bjerre2017][@safety4010011] and from on-line material published under permissive licenses (with proper citation). Further, the making of this project would not have possible without the awesome [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999]. I am thankful for enlightning discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark)  and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurisation, nozzle flow and heat transfer considerations.
+
+
+## License
+
+MIT License
+
+Copyright (c) 2021 Anders Andreasen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+# Usage 
+## Basic usage
+Run the code as simple as: 
+
+    python main.py input.yml
+
+where main.py is the main script and input.yml is the input file in Yaml syntax. 
+
+The Yaml input file is edited to reflect the system of interest. 
+
+## Calculation methods 
 The following methods are implemented:
 
 - Isothermal i.e. constant temperature of the fluid during depressurisation (for a very slow process with a large heat reservoir)
@@ -43,10 +116,7 @@ The following methods are implemented:
 - Constant internal energy
 - Energy balance. This is the most general case and includes both the ability to transfer heat with surroundings as well as accounting for PV work.
 
-A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. For the calculation methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. Coolprop is very convenient for this, however for a cubic EOS and for multicomponent Helmholtz energy EOS coolprop only supports a subset of state variables to be specified directly (T,P,quality). For this reason single component HEOS is the main target of this project.  
-
-## Basic usage
-The Yaml input file is edited to reflect the system of interest. For isothermal/isenthalpic/isentropic/isenergetic calculations the minimal input required are:
+For isothermal/isenthalpic/isentropic/isenergetic calculations the minimal input required are:
 
 - Initial conditions (pressure, temperature)
 - vessel dimensions (ID/length)
@@ -59,22 +129,30 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 - Fixed U (U-value required, and ambient temperature)
 - Fixed Q (Q to be applied to the fluid is requried)
 - Specified h, the external heat transfer coefficient is provided and either the internal is provided or calculated from assumption of natural convection from a vertical cylinder at high Gr number. Ambient temperature is required.
-- Detailed (not yet implememted)
-- Fire (Not yet implemented)
-
-## Requirements
-
-- [Python](http://www.python.org) (3.8 - at least python3)
-- [Numpy](https://numpy.org/)
-- [matplotlib](https://matplotlib.org/)
-- [Coolprop (6.4.1)](http://www.coolprop.org/)
-- Yaml 
-
-The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip. Should run om linux or in any conda environment as well, but I haven't checked.
-
-# Usage 
+- Fire (Stefan-Boltzmann equation heat duty)
 
 ## Script 
+
+~~~ {.Python}
+import yaml
+import sys
+from hyddown import HydDown
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        input_filename = sys.argv[1]
+    else:
+        input_filename = "input.yml"
+
+    with open(input_filename) as infile:
+        input = yaml.load(infile, Loader=yaml.FullLoader)
+
+
+    hdown=HydDown(input)
+    hdown.run()
+    hdown.verbose=1
+    hdown.plot()
+~~~
 
 ## Module import 
 
@@ -83,6 +161,61 @@ The script is running on Windows 10 x64, with stock python installation from pyt
 # Theory
 
 ## Thermodynamics
+
+### Equation of state
+The equation of state used by HydDown is the Helmholtz energy formulation as implemented in [CoolProp](http://www.coolprop.org/) [@doi:10.1021/ie4033999]. Most of the text in the present section has been sourced from the CoolProp documentation to be as accurate and true to the source as possible. The Helmholtz energy formulation is a convenient construction of the equation of state because all the thermodynamic properties of interest can be obtained directly from partial derivatives of the Helmholtz energy.
+
+It should be noted that the EOS are typically valid over the entire range of the fluid, from subcooled liquid to superheated vapor, to supercritical fluid.
+In general, the EOS are based on non-dimensional terms $\delta$ and $\tau$, where these terms are defined by
+
+$$ \delta=\rho/\rho_c $$    
+$$ \tau=T_c/T $$
+    
+where $\rho_c$ and $T_c$ are the critical density of the fluid if it is a pure fluid. For pseudo-pure mixtures, the critical point is typically not used as the reducing state point, and often the maximum condensing temperature on the saturation curve is used instead.
+
+The non-dimensional Helmholtz energy of the fluid is given by
+
+$$ \alpha=\alpha^0+\alpha^r $$
+    
+where $\alpha^0$ is the ideal-gas contribution to the Helmholtz energy, and $\alpha^r$ is the residual Helmholtz energy contribution which accounts for non-ideal behavior.  For a given set of $\delta$ and $\tau$, each of the terms $\alpha^0$ and $\alpha^r$ are known.  The exact form of the Helmholtz energy terms is fluid dependent, but a relatively simple example is that of Nitrogen, which has the ideal-gas Helmholtz energy of
+
+$$  \alpha^0=\ln\delta+a_1\ln\tau+a_2+a_3\tau+a_4\tau^{-1}+a_5\tau^{-2}+a_6\tau^{-3}+a_7\ln[1-\exp(-a_8\tau)] $$
+    
+and the non-dimensional residual Helmholtz energy of
+
+$$    \alpha^r=\sum_{k=1}^{6}{N_k\delta^{i_k}\tau^{j_k}}+\sum_{k=7}^{32}{N_k\delta^{i_k}\tau^{j_k}\exp(-\delta^{l_k})}+\sum_{k=33}^{36}{N_k\delta^{i_k}\tau^{j_k}\exp(-\phi_k(\delta-1)^2-\beta_k(\tau-\gamma_k)^2)} $$
+    
+and all the terms other than $\delta$ and $\tau$ are fluid-dependent correlation parameters.
+
+The other thermodynamic parameters can then be obtained through analytic derivatives of the Helmholtz energy terms.  For instance, the pressure is given by
+
+$$    p=\rho RT\left[1+\delta\left(\frac{\partial \alpha^r}{\partial \delta}\right)_{\tau} \right] $$
+    
+and the specific internal energy by
+
+$$    \frac{u}{RT}=\tau \left[\left(\frac{\partial \alpha^0}{\partial \tau}\right)_{\delta}+ \left(\frac{\partial \alpha^r}{\partial \tau}\right)_{\delta} \right] $$
+
+and the specific enthalpy by
+
+
+$$    \frac{h}{RT}=\tau \left[\left(\frac{\partial \alpha^0}{\partial \tau}\right)_{\delta}+ \left(\frac{\partial \alpha^r}{\partial \tau}\right)_{\delta} \right] +\delta\left(\frac{\partial \alpha^r}{\partial \delta}\right)_{\tau}+1 $$
+
+which can also be written as
+
+$$    \frac{h}{RT}=\frac{u}{RT}+\frac{p}{\rho RT} $$
+    
+The specific entropy is given by
+
+
+$$    \frac{s}{R}=\tau \left[\left(\frac{\partial \alpha^0}{\partial \tau}\right)_{\delta}+ \left(\frac{\partial \alpha^r}{\partial \tau}\right)_{\delta} \right]-\alpha^0-\alpha^r $$
+    
+and the specific heats at constant volume and constant pressure respectively are given by
+
+$$    \frac{c_v}{R}=-\tau^2 \left[\left(\frac{\partial^2 \alpha^0}{\partial \tau^2}\right)_{\delta}+ \left(\frac{\partial^2 \alpha^r}{\partial \tau^2}\right)_{\delta} \right] $$
+    
+$$ \frac{c_p}{R}=\frac{c_v}{R}+\dfrac{\left[1+\delta\left(\frac{\partial \alpha^r}{\partial \delta}\right)_{\tau}-\delta\tau\left(\frac{\partial^2 \alpha^r}{\partial \delta\partial\tau}\right)\right]^2}{\left[1+2\delta\left(\frac{\partial \alpha^r}{\partial \delta}\right)_{\tau}+\delta^2\left(\frac{\partial^2 \alpha^r}{\partial \delta^2}\right)_{\tau}\right]} $$
+    
+The EOS is set up with temperature and density as the two independent properties, but often other inputs are known, most often temperature and pressure because they can be directly measured.  As a result, if the density is desired for a known temperature and pressure, it can be obtained iteratively.
 
 ### Isothermal process
 
@@ -96,6 +229,9 @@ The script is running on Windows 10 x64, with stock python installation from pyt
 ### Restriction Orifice
 
 ### Relief valve
+
+![Relief valve hysteresis](img/hysteresis.pdf){#fig:psv_hyst}
+
 
 ### Control Valve
 
@@ -198,10 +334,25 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 
 ## Model implementation
 
+A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. For the calculation methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. Coolprop is very convenient for this, however for a cubic EOS and for multicomponent Helmholtz energy EOS coolprop only supports a subset of state variables to be specified directly (T,P,quality). For this reason single component HEOS is the main target of this project.  
+
 # Validation
+The code is provided as-is. However, comparisons have been made to a few experiments from the literature.
+
+The following gases and modes are considered:
+
+- High pressure nitrogen discharge
+- High pressure hydrogen filling
+- High pressure hydrogen discharge
+- Low pressure air discharge 
+- Low pressure air filling
 
 ## Nitrogen discharge
-The code is mainly for demonstration, and is provided as-is. However, a comparison has been made to experiment I1 from Haque et al. (see full ref below). The results are shown below.
+Calculations with HydDown is compared to  experiment I1 from ref. [@Haque1992b]. The experiment is a blowdown of a vertically oriented cylindrical vessel with flat ends. The vessel length is 1.524 m, the inside diameter is 0.273 m and the wall thickness is 25 mm. The vessel is filled with N$_2$ at 150 bar, at 15$^\circ$C. Ambient temperature is 15$^\circ$C. The blowdown orifice diameter is 6.35 mm. The results are shown in [@Fig:N2val]. The didirscharge coefficient of the orifice has been set to 0.8 in order to match the vessel pressure profile. The back pressure is set to atmospheric conditions.
+
+![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas an wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](img/N2_filling.png){#fig:N2val}
+
+As seen from [@Fig:N2val], the calculations compare well with the experimental results. The calculated temperature of the bulk vapor is within the experimental range of measured temperature at all times during the simulation. It is also noted that the minimum temperature is reached at approx. the same time as in the experiments. The calculated vessel inner wall temperature does not decline as rapidly as the experiments—but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature. The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperture. Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
 
 ## Hydrogen filling 
 

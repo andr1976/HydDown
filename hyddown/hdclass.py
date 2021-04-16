@@ -5,7 +5,6 @@
 import math
 import numpy as np
 from CoolProp.CoolProp import PropsSI
-from numpy.core.numeric import _move_axis_to_0
 from hyddown import transport as tp
 from hyddown import validator 
 from hyddown import fire
@@ -510,7 +509,7 @@ class HydDown:
     def plot(self,filename=None):
         import pylab as plt
 
-        plt.figure()
+        plt.figure(figsize=(8,7),dpi=300)
         plt.subplot(221)
         plt.plot(self.time_array / 60, self.T_fluid - 273.15, "b", label="Fluid")
         plt.plot(self.time_array / 60, self.T_vessel - 273.15, "g", label="Vessel")
@@ -548,7 +547,7 @@ class HydDown:
                 if "wall_high" in temp:
                     plt.plot(
                         np.asarray(temp["wall_high"]["time"]) / 60,
-                        np.asarray(temp["wall_high"]["temp"]) - 273.15,
+                            np.asarray(temp["wall_high"]["temp"]) - 273.15,
                         "g-.",
                         label="Wall high",
                     )
@@ -589,9 +588,16 @@ class HydDown:
         plt.plot(self.time_array / 60, self.mass_rate, "b", label="m_dot")
         plt.xlabel("Time (minutes)")
         plt.ylabel("Vent rate (kg/s)")
-        if self.verbose:
+
+        if filename != None:
+            plt.savefig(filename)
+        elif self.verbose:
             plt.show()
 
+
+    def __str__(self):
+        return "HydDown vessel filling/depressurization class"
+        
     def generate_report(self):
         report = {}
 
