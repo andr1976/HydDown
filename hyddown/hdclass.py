@@ -510,7 +510,7 @@ class HydDown:
     def plot(self,filename=None):
         import pylab as plt
 
-        plt.figure()
+        plt.figure(figsize=(8,7),dpi=300)
         plt.subplot(221)
         plt.plot(self.time_array / 60, self.T_fluid - 273.15, "b", label="Fluid")
         plt.plot(self.time_array / 60, self.T_vessel - 273.15, "g", label="Vessel")
@@ -589,7 +589,10 @@ class HydDown:
         plt.plot(self.time_array / 60, self.mass_rate, "b", label="m_dot")
         plt.xlabel("Time (minutes)")
         plt.ylabel("Vent rate (kg/s)")
-        if self.verbose:
+
+        if filename != None:
+            plt.savefig(filename)
+        elif self.verbose:
             plt.show()
 
     def generate_report(self):

@@ -1,6 +1,6 @@
 ---
 title: HydDown
-subtitle: User guide and Technical reference
+subtitle: User guide and technical reference
 author: Anders Andreasen
 titlepage: true
 toc-own-page: true
@@ -333,9 +333,22 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. For the calculation methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. Coolprop is very convenient for this, however for a cubic EOS and for multicomponent Helmholtz energy EOS coolprop only supports a subset of state variables to be specified directly (T,P,quality). For this reason single component HEOS is the main target of this project.  
 
 # Validation
+The code is provided as-is. However, comparisons have been made to a few experiments from the literature.
+
+The following gases and modes are considered:
+
+- High pressure nitrogen discharge
+- High pressure hydrogen filling
+- High pressure hydrogen discharge
+- Low pressure air discharge 
+- Low pressure air filling
 
 ## Nitrogen discharge
-The code is mainly for demonstration, and is provided as-is. However, a comparison has been made to experiment I1 from Haque et al. (see full ref below). The results are shown below.
+Calculations with HydDown is compared to  experiment I1 from ref. [@Haque1992b]. The experiment is a blowdown of a vertically oriented cylindrical vessel with flat ends. The vessel length is 1.524 m, the inside diameter is 0.273 m and the wall thickness is 25 mm. The vessel is filled with N$_2$ at 150 bar, at 15$^\circ$C. Ambient temperature is 15$^\circ$C. The blowdown orifice diameter is 6.35 mm. The results are shown in [@Fig:N2val]. The didirscharge coefficient of the orifice has been set to 0.8 in order to match the vessel pressure profile. The back pressure is set to atmospheric conditions.
+
+![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas an wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](img/N2_filling.png){#fig:N2val}
+
+As seen from [@Fig:N2val], the calculations compare well with the experimental results. The calculated temperature of the bulk vapor is within the experimental range of measured temperature at all times during the simulation. It is also noted that the minimum temperature is reached at approx. the same time as in the experiments. The calculated vessel inner wall temperature does not decline as rapidly as the experiments—but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature. The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperture. Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
 
 ## Hydrogen filling 
 
