@@ -5,7 +5,6 @@
 import math
 import numpy as np
 from CoolProp.CoolProp import PropsSI
-from numpy.core.numeric import _move_axis_to_0
 from hyddown import transport as tp
 from hyddown import validator 
 from hyddown import fire
@@ -548,7 +547,7 @@ class HydDown:
                 if "wall_high" in temp:
                     plt.plot(
                         np.asarray(temp["wall_high"]["time"]) / 60,
-                        np.asarray(temp["wall_high"]["temp"]) - 273.15,
+                            np.asarray(temp["wall_high"]["temp"]) - 273.15,
                         "g-.",
                         label="Wall high",
                     )
@@ -595,6 +594,10 @@ class HydDown:
         elif self.verbose:
             plt.show()
 
+
+    def __str__(self):
+        return "HydDown vessel filling/depressurization class"
+        
     def generate_report(self):
         report = {}
 
