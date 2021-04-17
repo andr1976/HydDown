@@ -7,7 +7,6 @@ toc-own-page: true
 book: true
 reference-section-title: References
 bibliography: references.bib
-float-placement-figure: htbp
 listings: True
 ---
 
@@ -75,6 +74,7 @@ As will be noted when presentaing the equations implemented in the code, some of
 ## Credit 
 In the making of this document I have sourced a great deal of material (and modified it) from a good collegues M.Sc. thesis [@iskov], co-published papers [@Bjerre2017][@safety4010011] and from on-line material published under permissive licenses (with proper citation). Further, the making of this project would not have possible without the awesome [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999]. I am thankful for enlightning discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark)  and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurisation, nozzle flow and heat transfer considerations.
 
+The present document is typeset using Markdown + [pandoc](https://pandoc.org/) with the [Eisvogel](https://github.com/Wandmalfarbe/pandoc-latex-template) template. 
 
 ## License
 
@@ -214,7 +214,6 @@ $$    \frac{h}{RT}=\frac{u}{RT}+\frac{p}{\rho RT} $$
     
 The specific entropy is given by
 
-
 $$    \frac{s}{R}=\tau \left[\left(\frac{\partial \alpha^0}{\partial \tau}\right)_{\delta}+ \left(\frac{\partial \alpha^r}{\partial \tau}\right)_{\delta} \right]-\alpha^0-\alpha^r $$
     
 and the specific heats at constant volume and constant pressure respectively are given by
@@ -225,13 +224,52 @@ $$ \frac{c_p}{R}=\frac{c_v}{R}+\dfrac{\left[1+\delta\left(\frac{\partial \alpha^
     
 The EOS is set up with temperature and density as the two independent properties, but often other inputs are known, most often temperature and pressure because they can be directly measured.  As a result, if the density is desired for a known temperature and pressure, it can be obtained iteratively.
 
-### Isothermal process
+### First law for flow process
+The control volume sketched in [@Fig:firstlaw], seprated from the surrounding by a control surface, is used as a basis for the analysis of an open thermodynamic system with flowing streams (fs) in and out, according to [@sva]
 
-### Isentropic process
+A general mass balance or continuity equation can be written: 
 
-### Isenthalpic process
+![Control volume with one entrance and one exit. The image has been sourced from [@firstlaw].](img/First_law_open_system.png){#fig:firstlaw}
 
-### General energy balance 
+$$ \frac{m_{cv}}{dt} + \Delta \left( \dot{m} \right)_{fs}= 0 $$ {#eq:continuity}
+
+The first term is the accumulation term i.e. the rate of change of the mass inside the control volume , $m_cv$ , and the $\Delta$ in the second term represents the diference between the outflow and the inflow
+
+$$ \Delta \left( \dot{m} \right) _{fs} = \dot{m}_2 - \dot{m}_1 $$
+
+An energy balance for the control volume, with the first law of thermodynamics applied, needs to account for all the energy modes with can cross the control surface. Each stream has a total energy 
+
+$$ U + \frac{1}{2}u^2 + zg $$
+
+where the first term is the specfic internal energy, the second term is the kinetic energy and the last term is the potential energy. The rate at which each stream transports energy in or out of the control volume is given by 
+
+$$ \dot{m} (U + \frac{1}{2}u^2 + zg) $$
+
+and in total 
+
+$$  \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs}$$
+
+Further work (not to be confused with shaft work) is also associated with each stream in order to move the stream into or out from the control volume (one can think of a hypothetical piston pushing the fluid at constant pressure), and the work is $PV$ on the basis of the specific fluid volume. The work rate for each stream is 
+
+$$ \dot{m}(PV) $$
+
+and in total 
+
+$$ \Delta\left[ \dot{m}(PV) \right]_{fs} $$
+
+Further, heat may be transfered to (or from) the control volume at a rate $\dot{Q}$ and shaft work may be applied, $\dot{W}_{shaft}$. Combining all this with the accumulation term given by the change in total internal energy the following general energy balance can be written 
+
+$$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs} + \Delta \left[ \dot{m}(PV) \right]_{fs} = \dot{Q} +\dot{W}_{shaft}   $$
+
+Applying the relation $H = U + PV$, setting $\dot{W}_{shaft} = 0$ since no shaft work is applied to the vessel, and assmuning that kinetic and potential energy changes can be omitted the energy balance simplifies to 
+
+$$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} H \right]_{fs} = \dot{Q}  $$
+
+The equation can be further simplified if only a single port acting as either inlet or outlet is present 
+
+$$ \frac{d(mU)_{cv}}{dt} + \dot{m} H  = \dot{Q}  $$ {#eq:energybalanmce}
+
+where the sign of $\dot{m}$ determines if the control volume is either emptied of filled. The continuity equation [@eq:continuity] and the energy balance [@eq:energybalanmce] combined with the equation of state are the key equations that shall be solved/intergrated in order to calculate the change in temperature and pressure as a function of time. 
 
 ## Flow devices
 ### Restriction Orifice
@@ -283,7 +321,7 @@ the vessels. The flow of gas out of the vessels will lower the pressure and ther
 also the force exerted on the disc. When the pressure in the vessels is reduced to
 the reset pressure, the PSV will close and the disc will again hinder the gas flow.
 
-![Convnetional/pop action PSV adapted from [@iskov] and [@API520]](img/PSV.pdf){#fig:psv}
+![Conventional/pop action PSV adapted from [@iskov] and [@API520]](img/PSV.pdf){#fig:psv}
 
 The relief valve model implemented in HydDown is the API 520 equations [@API520] for gas relief for both sonic/critical as well as subcritical flow. No corrections factors are implemeted in HydDown. 
 
@@ -342,10 +380,53 @@ T       |   26.000          |   1.67741 $\cdot$ 10$^{-2}$
 : Standard PSV orifice sizes according to API {#tbl:psv_sizes}
 
 ### Control Valve
+For calculating the the mass flow through a control valve the ANSI/ISA [@borden][@ISA] methodology also described in IEC 60534 [@IEC60534]. 
+
+The flow model for a compressible fluid in the turbulent regime is 
+
+$$ W = C N_6 F_P Y \sqrt{x_{sizing} p_1 \rho_1} $$ 
+
+or equivalent 
+
+$$ W = C N_8 F_P Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$ 
+
+- C is the flow coefficient ($C_v$ or $K_v$)
+- $N_8$ is a unit specific constant, 94.8 for $C_v$ and bar as pressure unit
+- $F_P$ is a piping geometry factor [-]
+- Y is the expansion factor [-]
+- $x_{sizing}$ is is the pressure drop used for sizing[-]
+- $p_1$ is the upstream pressure [bar]
+- $\rho_1$ is the upstream density [kg/m$^3$]
+- M is the molecular weight [kg/kmol]
+- $T_1$ is the upstream temperature [K]
+- $Z_1$ is the upstream compressibility [-]
+
+In HydDown the piping geometry factor is not yet implemented and asuumed to be 1. The pressure drop ratio $x_{sizing}$ used for sizing is determined as the lesser of the actual pressure drop ratio, $x$, and the choked pressure drop ratio $x_{choked}$. The actual pressure drop ratio is given by:
+
+$$ x \frac{\Delta p}{p_1}$$
+
+The pressure drop ratio at which flow no longer increases with increased value in pressure
+drop ratio, is the choked pressure drop ratio, given by the following equation
+
+$$ x_{choked} = F_\gamma x_{TP} $$
+
+The factor $x_T$ is based on air near atmospheric pressure as the flowing fluid with a specific
+heat ratio of 1.40. If the specific heat ratio for the flowing fluid is not 1.40, the factor $F_\gamma$ is used to adjust $x_T$. Use the following equation to calculate the specific heat ratio factor:
+
+$$ F_\gamma = \frac{\gamma}{1.4} $$
+
+where $\gamma$ is the ideal gas $C_p/C_v$. It should be noted that the above equation has been derived from perfect gas behaviour and externsion of an orifice model with $\gamma$ in the range of 1.08 to 1.65. If used outside the assumptions flow calculations may become inaccurate. 
+
+The expansion factor Y accounts for the change in density as the fluid passes from the valve
+inlet to the vena contracta. It also accounts for the change in the vena contracta area as the
+pressure differential is varied.
+
+$$ Y = 1 -  \frac{x_{sizing}}{3x_{choked}}$$
 
 ## Heat transfer
 
 ### Natural convection
+Experiments have indicated that the internal heat transfer mechanism for a vessel subject to depressurisation can be well approximated by that of natural convection as found from measured Nusselt numbers being well correlated with Rayleigh number, with no apparent improvement in model performance by included the Reynold number [@woodfield].
 
 To determine the heat transfer for the gas-wall interface, Newton's law of cooling is applied, as given in equation [@eq:newton].
 
@@ -395,10 +476,31 @@ $$ Pr=\frac{c_p \mu}{k} $$ {#eq:prandtl_gas}
 - $c_p$ is the heat capacity of gas. [J/kg$\cdot$K]
 - $k$ is the thermal conductivity of gas. [J/m$\cdot$K]
 
+It is important to note that the properties in the above equations shall be evaluated at the fluid film temperature which can be approximated by the average of the the fluid bulk temperature and the vessel wall temperature [@geankoplis].
 
 ### Mixed convection
+Experiments have indicated that the internal heat transfer mechanism for a vessel subject to filling can be well approximated by that of combined natural convection and forced convenction as found from measured Nusselt numbers being well correlated with Rayleigh and Reynolds number [@woodfield].
+
+For mixed convection the effective Nusselt number, $Nu$, can be approximated by 
+
+$$ Nu = (Nu_{forced}^n + Nu_{natural}^n)^{\frac{1}{n}} $$
+
+During charging with different gases (H$_2$, N$_2$ and Argon), Woodfield *et al.* demonstrated that in roder to provide a good fit to the experimentally determined Nusselt number a correlation based on both Reynolds and Rayleigh number was necessary. They found a good fit with the following formula (n=1)
+
+$$ Nu = Nu_{forced} +  Nu_{natural} = 0.56Re_d^{0.67} + 0.104Ra_H^{0.352} $$
 
 ### Conduction
+For accurate prediction of the outer and especially the inner wall temperature for correct estimation of internal convective heat transfer and the average materials temperature, the general equation of 1-D unsteady heat transfer shall be solved:
+
+$$ \frac{\delta T}{\delta t} = \frac{k}{C_p} \frac{\delta^2 T}{\delta x^2} $$
+
+- T is temperature
+- x is the spatial (1-D) coordinate
+- k is the thermal conductivity 
+- $C_p$ is the heat capacity 
+
+Here it is written in Cartesian coordinates, but for most applications to pressure equipment, cylindrical coordinates. To be solved the initial values and boundary values must be specified. In its present state HydDown does not include the vessel temperature unsteady heat tranfer model i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature. This is obviously a crude approaximation, but might be justified depending in the Biot number. 
+
 
 ### Fire heat loads
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower [@scandpower]. The heat transfer from the flame to the vessel shell is divided into radiation, convection and reradiation as seen in equation [@eq:flame].
@@ -443,6 +545,15 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 ## Model implementation
 
 A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. For the calculation methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. Coolprop is very convenient for this, however for a cubic EOS and for multicomponent Helmholtz energy EOS coolprop only supports a subset of state variables to be specified directly (T,P,quality). For this reason single component HEOS is the main target of this project.  
+
+
+
+### Isothermal process
+
+### Isentropic process
+
+### Isenthalpic process
+
 
 # Validation
 The code is provided as-is. However, comparisons have been made to a few experiments from the literature.
