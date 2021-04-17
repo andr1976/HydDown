@@ -74,6 +74,7 @@ As will be noted when presentaing the equations implemented in the code, some of
 ## Credit 
 In the making of this document I have sourced a great deal of material (and modified it) from a good collegues M.Sc. thesis [@iskov], co-published papers [@Bjerre2017][@safety4010011] and from on-line material published under permissive licenses (with proper citation). Further, the making of this project would not have possible without the awesome [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999]. I am thankful for enlightning discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark)  and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurisation, nozzle flow and heat transfer considerations.
 
+The present document is typeset using Markdown + [pandoc](https://pandoc.org/) with the [Eisvogel](https://github.com/Wandmalfarbe/pandoc-latex-template) $\LaTeX{}$ template. 
 
 ## License
 
@@ -486,7 +487,7 @@ $$ Nu = (Nu_{forced}^n + Nu_{natural}^n)^{\frac{1}{n}} $$
 
 During charging with different gases (H$_2$, N$_2$ and Argon), Woodfield *et al.* demonstrated that in roder to provide a good fit to the experimentally determined Nusselt number a correlation based on both Reynolds and Rayleigh number was necessary. They found a good fit with the following formula (n=1)
 
-$$ Nu = Nu_{forced} +  Nu_{natural} = 0.56Re_d^0.67 + 0.104Ra_H^0.352 $$
+$$ Nu = Nu_{forced} +  Nu_{natural} = 0.56Re_d^{0.67} + 0.104Ra_H^{0.352} $$
 
 ### Conduction
 
