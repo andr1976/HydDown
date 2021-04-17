@@ -258,9 +258,9 @@ $$ \Delta\left[ \dot{m}(PV) \right]_{fs} $$
 
 Further, heat may be transfered to (or from) the control volume at a rate $\dot{Q}$ and shaft work may be applied, $\dot{W}_{shaft}$. Combining all this with the accumulation term given by the change in total internal energy the following general energy balance can be written 
 
-$$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs} + \Delta \left[ \dot{m}(PV) \right]_{fs} = \dot{Q} +\dot{W_{shaft}}   $$
+$$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs} + \Delta \left[ \dot{m}(PV) \right]_{fs} = \dot{Q} +\dot{W}_{shaft}   $$
 
-Applying the relation $H = U + PV$, setting $\dot{W_{shaft}} = 0$ since no shaft work is applied to the vessel, and assmuning that kinetic and potential energy changes can be omitted the energy balance simplifies to 
+Applying the relation $H = U + PV$, setting $\dot{W}_{shaft} = 0$ since no shaft work is applied to the vessel, and assmuning that kinetic and potential energy changes can be omitted the energy balance simplifies to 
 
 $$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} H \right]_{fs} = \dot{Q}  $$
 
@@ -320,7 +320,7 @@ the vessels. The flow of gas out of the vessels will lower the pressure and ther
 also the force exerted on the disc. When the pressure in the vessels is reduced to
 the reset pressure, the PSV will close and the disc will again hinder the gas flow.
 
-![Convnetional/pop action PSV adapted from [@iskov] and [@API520]](img/PSV.pdf){#fig:psv}
+![Conventional/pop action PSV adapted from [@iskov] and [@API520]](img/PSV.pdf){#fig:psv}
 
 The relief valve model implemented in HydDown is the API 520 equations [@API520] for gas relief for both sonic/critical as well as subcritical flow. No corrections factors are implemeted in HydDown. 
 
@@ -383,28 +383,49 @@ For calculating the the mass flow through a control valve the ANSI/ISA [@borden]
 
 The flow model for a compressible fluid in the turbulent regime is 
 
-$$ W = C N_6 F_P Y \sqrt{x_{sizing}p_1\rho_1} 
+$$ W = C N_6 F_P Y \sqrt{x_{sizing} p_1 \rho_1} $$ 
 
 or equivalent 
 
 $$ W = C N_8 F_P Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$ 
 
-where the pressure drop ratio $x_{sizing}$ used fro sizing is determined as the lesser of the actual pressure drop ratio, $x$, and the choked pressure drop ratio $x_{choked}$ given by 
+- C is the flow coefficient ($C_v$ or $K_v$)
+- $N_8$ is a unit specific constant, 94.8 for $C_v$ and bar as pressure unit
+- $F_P$ is a piping geometry factor [-]
+- Y is the expansion factor [-]
+- $x_{sizing}$ is is the pressure drop used for sizing[-]
+- $p_1$ is the upstream pressure [bar]
+- $\rho_1$ is the upstream density [kg/m$^3$]
+- M is the molecular weight [kg/kmol]
+- $T_1$ is the upstream temperature [K]
+- $Z_1$ is the upstream compressibility [-]
 
-$$ x \frac{\delta p}{p_1}$$
+In HydDown the piping geometry factor is not yet implemented and asuumed to be 1. The pressure drop ratio $x_{sizing}$ used for sizing is determined as the lesser of the actual pressure drop ratio, $x$, and the choked pressure drop ratio $x_{choked}$. The actual pressure drop ratio is given by:
+
+$$ x \frac{\Delta p}{p_1}$$
+
+The pressure drop ratio at which flow no longer increases with increased value in pressure
+drop ratio, is the choked pressure drop ratio, given by the following equation
 
 $$ x_{choked} = F_\gamma x_{TP} $$
 
+The factor $x_T$ is based on air near atmospheric pressure as the flowing fluid with a specific
+heat ratio of 1.40. If the specific heat ratio for the flowing fluid is not 1.40, the factor $F_\gamma$ is used to adjust $x_T$. Use the following equation to calculate the specific heat ratio factor:
 
+$$ F_\gamma = \frac{\gamma}{1.4} $$
 
+where $\gamma$ is the ideal gas $C_p/C_v$. It should be noted that the above equation has been derived from perfect gas behaviour and externsion of an orifice model with $\gamma$ in the range of 1.08 to 1.65. If used outside the assumptions flow calculations may become inaccurate. 
 
+The expansion factor Y accounts for the change in density as the fluid passes from the valve
+inlet to the vena contracta. It also accounts for the change in the vena contracta area as the
+pressure differential is varied.
 
-
-
+$$ Y = 1 -  \frac{x_{sizing}}{3x_{choked}}$$
 
 ## Heat transfer
 
 ### Natural convection
+Experiments have indicated that the internal heat transfer mechanism for a vessel subject to depressurisation can be well approximated by that of natural convection as found from measured Nusselt numbers being well correlated with Rayleigh number, with no apparent improvement in model performance by included the Reynold number [@woodfield].
 
 To determine the heat transfer for the gas-wall interface, Newton's law of cooling is applied, as given in equation [@eq:newton].
 
@@ -454,10 +475,21 @@ $$ Pr=\frac{c_p \mu}{k} $$ {#eq:prandtl_gas}
 - $c_p$ is the heat capacity of gas. [J/kg$\cdot$K]
 - $k$ is the thermal conductivity of gas. [J/m$\cdot$K]
 
+It is important to note that the properties in the above equations shall be evaluated at the fluid film temperature which can be approximated by the average of the the fluid bulk temperature and the vessel wall temperature [@geankoplis].
 
 ### Mixed convection
+Experiments have indicated that the internal heat transfer mechanism for a vessel subject to filling can be well approximated by that of combined natural convection and forced convenction as found from measured Nusselt numbers being well correlated with Rayleigh and Reynolds number [@woodfield].
+
+For mixed convection the effective Nusselt number, $Nu$, can be approximated by 
+
+$$ Nu = (Nu_{forced}^n + Nu_{natural}^n)^{\frac{1}{n}} $$
+
+During charging with different gases (H$_2$, N$_2$ and Argon), Woodfield *et al.* demonstrated that in roder to provide a good fit to the experimentally determined Nusselt number a correlation based on both Reynolds and Rayleigh number was necessary. They found a good fit with the following formula (n=1)
+
+$$ Nu = Nu_{forced} +  Nu_{natural} = 0.56Re_d^0.67 + 0.104Ra_H^0.352 $$
 
 ### Conduction
+
 
 ### Fire heat loads
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower [@scandpower]. The heat transfer from the flame to the vessel shell is divided into radiation, convection and reradiation as seen in equation [@eq:flame].
