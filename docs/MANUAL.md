@@ -490,6 +490,16 @@ During charging with different gases (H$_2$, N$_2$ and Argon), Woodfield *et al.
 $$ Nu = Nu_{forced} +  Nu_{natural} = 0.56Re_d^{0.67} + 0.104Ra_H^{0.352} $$
 
 ### Conduction
+For accurate prediction of the outer and especially the inner wall temperature for correct estimation of internal convective heat transfer and the average materials temperature, the general equation of 1-D unsteady heat transfer shall be solved:
+
+&& \frac{\delta T}{\delta t} = \frac{k}{C_p} \frac{\delta^2 T}{\delta x^2} && 
+
+- T is temperature
+- x is the spatial (1-D) coordinate
+- k is the thermal conductivity 
+- $C_p$ is the heat capacity 
+
+Here it is written in Cartesian coordinates, but for most applications to pressure equipment, cylindrical coordinates. To be solved the initial values and boundary values must be specified. In its present state HydDown does not include the vessel temperature unsteady heat tranfer model i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature. This is obviously a crude approaximation, but might be justified depending in the Biot number. 
 
 
 ### Fire heat loads
