@@ -7,7 +7,6 @@ toc-own-page: true
 book: true
 reference-section-title: References
 bibliography: references.bib
-float-placement-figure: htbp
 listings: True
 ---
 
@@ -214,7 +213,6 @@ $$    \frac{h}{RT}=\frac{u}{RT}+\frac{p}{\rho RT} $$
     
 The specific entropy is given by
 
-
 $$    \frac{s}{R}=\tau \left[\left(\frac{\partial \alpha^0}{\partial \tau}\right)_{\delta}+ \left(\frac{\partial \alpha^r}{\partial \tau}\right)_{\delta} \right]-\alpha^0-\alpha^r $$
     
 and the specific heats at constant volume and constant pressure respectively are given by
@@ -225,13 +223,52 @@ $$ \frac{c_p}{R}=\frac{c_v}{R}+\dfrac{\left[1+\delta\left(\frac{\partial \alpha^
     
 The EOS is set up with temperature and density as the two independent properties, but often other inputs are known, most often temperature and pressure because they can be directly measured.  As a result, if the density is desired for a known temperature and pressure, it can be obtained iteratively.
 
-### Isothermal process
+### First law for flow process
+The control volume sketched in [@Fig:firstlaw], seprated from the surrounding by a control surface, is used as a basis for the analysis of an open thermodynamic system with flowing streams (fs) in and out, according to [@sva]
 
-### Isentropic process
+A general mass balance or continuity equation can be written: 
 
-### Isenthalpic process
+![Control volume with one entrance and one exit. The image has been sourced from [@firstlaw].](img/First_law_open_system.png){#fig:firstlaw}
 
-### General energy balance 
+$$ \frac{m_{cv}}{dt} + \Delta \left( \dot{m} \right)_{fs}= 0 $$ {#eq:continuity}
+
+The first term is the accumulation term i.e. the rate of change of the mass inside the control volume , $m_cv$ , and the $\Delta$ in the second term represents the diference between the outflow and the inflow
+
+$$ \Delta \left( \dot{m} \right) _{fs} = \dot{m}_2 - \dot{m}_1 $$
+
+An energy balance for the control volume, with the first law of thermodynamics applied, needs to account for all the energy modes with can cross the control surface. Each stream has a total energy 
+
+$$ U + \frac{1}{2}u^2 + zg $$
+
+where the first term is the specfic internal energy, the second term is the kinetic energy and the last term is the potential energy. The rate at which each stream transports energy in or out of the control volume is given by 
+
+$$ \dot{m} (U + \frac{1}{2}u^2 + zg) $$
+
+and in total 
+
+$$  \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs}$$
+
+Further work (not to be confused with shaft work) is also associated with each stream in order to move the stream into or out from the control volume (one can think of a hypothetical piston pushing the fluid at constant pressure), and the work is $PV$ on the basis of the specific fluid volume. The work rate for each stream is 
+
+$$ \dot{m}(PV) $$
+
+and in total 
+
+$$ \Delta\left[ \dot{m}(PV) \right]_{fs} $$
+
+Further, heat may be transfered to (or from) the control volume at a rate $\dot{Q}$ and shaft work may be applied, $\dot{W}_{shaft}$. Combining all this with the accumulation term given by the change in total internal energy the following general energy balance can be written 
+
+$$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs} + \Delta \left[ \dot{m}(PV) \right]_{fs} = \dot{Q} +\dot{W_{shaft}}   $$
+
+Applying the relation $H = U + PV$, setting $\dot{W_{shaft}} = 0$ since no shaft work is applied to the vessel, and assmuning that kinetic and potential energy changes can be omitted the energy balance simplifies to 
+
+$$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} H \right]_{fs} = \dot{Q}  $$
+
+The equation can be further simplified if only a single port acting as either inlet or outlet is present 
+
+$$ \frac{d(mU)_{cv}}{dt} + \dot{m} H  = \dot{Q}  $$ {#eq:energybalanmce}
+
+where the sign of $\dot{m}$ determines if the control volume is either emptied of filled. The continuity equation [@eq:continuity] and the energy balance [@eq:energybalanmce] combined with the equation of state are the key equations that shall be solved/intergrated in order to calculate the change in temperature and pressure as a function of time. 
 
 ## Flow devices
 ### Restriction Orifice
@@ -342,6 +379,28 @@ T       |   26.000          |   1.67741 $\cdot$ 10$^{-2}$
 : Standard PSV orifice sizes according to API {#tbl:psv_sizes}
 
 ### Control Valve
+For calculating the the mass flow through a control valve the ANSI/ISA [@borden][@ISA] methodology also described in IEC 60534 [@IEC60534]. 
+
+The flow model for a compressible fluid in the turbulent regime is 
+
+$$ W = C N_6 F_P Y \sqrt{x_{sizing}p_1\rho_1} 
+
+or equivalent 
+
+$$ W = C N_8 F_P Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$ 
+
+where the pressure drop ratio $x_{sizing}$ used fro sizing is determined as the lesser of the actual pressure drop ratio, $x$, and the choked pressure drop ratio $x_{choked}$ given by 
+
+$$ x \frac{\delta p}{p_1}$$
+
+$$ x_{choked} = F_\gamma x_{TP} $$
+
+
+
+
+
+
+
 
 ## Heat transfer
 
@@ -443,6 +502,15 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 ## Model implementation
 
 A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. For the calculation methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. Coolprop is very convenient for this, however for a cubic EOS and for multicomponent Helmholtz energy EOS coolprop only supports a subset of state variables to be specified directly (T,P,quality). For this reason single component HEOS is the main target of this project.  
+
+
+
+### Isothermal process
+
+### Isentropic process
+
+### Isenthalpic process
+
 
 # Validation
 The code is provided as-is. However, comparisons have been made to a few experiments from the literature.
