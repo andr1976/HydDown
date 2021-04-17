@@ -3,8 +3,6 @@
 # HydDown
 Hydrogen (or other pure gas phase species) depressurization calculations
 
-![Sketch](https://github.com/andr1976/HydDown/blob/main/docs/img/Sketch.png?raw=true)
-
 This code is published under an MIT license.
 
 Run the code as simple as: 
