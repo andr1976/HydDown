@@ -135,6 +135,8 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 - Fire (Stefan-Boltzmann equation heat duty)
 
 ## Script 
+HydDown comes with a script which can be used as a command-line tool to start calculations. If an input filename (path) is given as the first argument, this input file will be used. If no arguments are passed the script will look for an input file with the name `input.yml`. The content of the main script is shown below.
+
 
 ~~~ {.Python}
 import yaml
@@ -158,8 +160,36 @@ if __name__ == "__main__":
 ~~~
 
 ## Module import 
+To use HydDown simple import the main calculation class `HydDown`.
+
+~~~ {.Python}
+from hyddown import HydDown
+~~~
 
 ## Input file 
+When using HydDown a dictionary holding all relevant input in order for HydDown to do vessel calculations shall be provide when the class is initialized. One way is to read an input file. For HydDown a Yaml format is chosen, but is JSON is a preference this should also work. 
+
+An example of a minimal file for an isentropic vessel depressurisation (no heat transfer) is shown below 
+
+~~~ {.Yaml}
+vessel:
+  length: 1.524
+  diameter: 0.273
+initial:
+  temperature: 388.0
+  pressure: 15000000.
+  fluid: "N2" 
+calculation:
+  type: "isentropic"
+  time_step: 0.05
+  end_time: 100.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.00635
+  discharge_coef: 0.8
+  back_pressure: 101300.
+~~~
 
 # Theory
 In this chapter the basic theory and governing equations for the model implementation in HydDown is presented. The following main topics are covered: 
@@ -499,8 +529,14 @@ $$ \frac{\delta T}{\delta t} = \frac{k}{C_p} \frac{\delta^2 T}{\delta x^2} $$
 - k is the thermal conductivity 
 - $C_p$ is the heat capacity 
 
-Here it is written in Cartesian coordinates, but for most applications to pressure equipment, cylindrical coordinates. To be solved the initial values and boundary values must be specified. In its present state HydDown does not include the vessel temperature unsteady heat tranfer model i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature. This is obviously a crude approaximation, but might be justified depending in the Biot number. 
+Here it is written in Cartesian coordinates, but for most applications to pressure equipment, cylindrical coordinates are applicable, at elast for the shell. To be solved the initial values and boundary values must be specified. In its present state HydDown does not include the unsteady heat tranfer model i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature. This is obviously a crude approaximation, but might be justified depending in the Biot number:
 
+$$ Bi = \frac{hL}{k} $$
+
+The Biot number is a simple measure of the ratio of the heat transfer resistances at the surface of a body to the inside of a body. The ratio gives an indication to which extent the temperature will vary in space (gradient) when the body is subject to a displacement in temeprature at the surface boundary layer.
+Striednig *et al.* [@STRIEDNIG] concluded that for a type I (steel) cylinder the Biot number was approx. 0.03 and hence the error in assuming a uniform temperature in the vessel wall was low. 
+
+With a typical thermal conductivity of 45 $W/m K$ for steel and a heat transfer coefficient up to 600 $W/m^2 K$ [@woodfield] the Biot number for a vessel with a wall thichness of 2 cm is 0.27. This is significant higher that approximated by [@STRIEDNIG]. Anyway, the Biot number is lower than 1, and the assumption of a uniform temperature is reasonable. However, for increased wall thicness, and/or for different materials with lower thermal conductivity the error may grow to an unacceptable level. 
 
 ### Fire heat loads
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower [@scandpower]. The heat transfer from the flame to the vessel shell is divided into radiation, convection and reradiation as seen in equation [@eq:flame].
