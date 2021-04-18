@@ -116,10 +116,10 @@ The following methods are implemented:
 - Isothermal i.e. constant temperature of the fluid during depressurisation (for a very slow process with a large heat reservoir)
 - Isenthalpic/Adiabatic (no heat transfer with surroundings, no work performed by the expanding fluid)
 - Isentropic (no heat transfer with surroundings, PV work performed by the expanding fluid)
-- Constant internal energy
-- Energy balance. This is the most general case and includes both the ability to transfer heat with surroundings as well as accounting for PV work.
+- Isenergetic i.e. constant internal energy
+- Energy balance. This is the most general case and is based on the first law of thermodynamics applied to a flow process.
 
-For isothermal/isenthalpic/isentropic/isenergetic calculations the minimal input required are:
+For `isothermal`/`isenthalpic`/`isentropic`/`isenergetic` calculations the minimal input required are:
 
 - Initial conditions (pressure, temperature)
 - vessel dimensions (ID/length)
@@ -127,7 +127,7 @@ For isothermal/isenthalpic/isentropic/isenergetic calculations the minimal input
 - Calculation setup (time step, end time)
 - Type of gas
 
-If heat transfer is to be considered the calculation type "energybalance" is required. A few options are possible:
+If heat transfer is to be considered the calculation type `energybalance` is required. A few options are possible:
 
 - Fixed U (U-value required, and ambient temperature)
 - Fixed Q (Q to be applied to the fluid is requried)
@@ -166,8 +166,8 @@ To use HydDown simple import the main calculation class `HydDown`.
 from hyddown import HydDown
 ~~~
 
-## Input file 
-When using HydDown a dictionary holding all relevant input in order for HydDown to do vessel calculations shall be provide when the class is initialized. One way is to read an input file. For HydDown a Yaml format is chosen, but is JSON is a preference this should also work. 
+## Input file examples
+When using HydDown a dictionary holding all relevant input in order for HydDown to do vessel calculations shall be provide when the class is initialized. One way is to read an input file. For HydDown a Yaml format is chosen, but if JSON is a preference this should also work with the Yaml parser being substitued with a JSON parser. 
 
 An example of a minimal file for an isentropic vessel depressurisation (no heat transfer) is shown below 
 
@@ -190,6 +190,91 @@ valve:
   discharge_coef: 0.8
   back_pressure: 101300.
 ~~~
+
+A more elaborate example which includes heat transfer and with validation data (some data points dropped for simplicity) included: 
+
+~~~ {.Yaml}
+vessel:
+  length: 1.524
+  diameter: 0.273
+  thickness: 0.025
+  heat_capacity: 500
+  density: 7800. 
+  orientation: "vertical"
+initial:
+  temperature: 288.0
+  pressure: 15000000.
+  fluid: "N2" 
+calculation:
+  type: "energybalance"
+  time_step: 0.05
+  end_time: 100.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.00635
+  discharge_coef: 0.8
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 288.
+  h_outer: 5 
+  h_inner: 'calc' 
+validation:
+  temperature:
+    gas_high:
+      time: [0.050285, ... , 99.994]
+      temp: [288.93, ... ,241.29] 
+    gas_low:
+      time: [0.32393, ..., 100.11]
+      temp: [288.67, ... ,215.28]
+    wall_low:
+      time: [0.32276, ... , 100.08]
+      temp: [288.93, ... ,281.72]
+    wall_high:
+      time: [0.049115, ... ,100.06]
+      temp: [289.18, ... ,286.09]
+  pressure:
+    time: [0.28869, ... , 98.367]
+    pres: [150.02, ... ,1.7204]
+~~~
+
+
+## Input fields and hierachy
+In the following the full hierachy of input for the different calculation types is summarised. 
+
+At the top level the following fields are accepted, with the last being optional and the second last dependant on calculation type:
+
+~~~ {.Yaml}
+initial: mandatory
+vessel: mandatory
+calculation: mandatory
+valve: mandatory
+heat_transfer: depends on calculation type
+validation: optional
+~~~
+
+### Calculation
+
+The subfields under `calculation`, with value formats and options are:
+
+~~~ {.Yaml}
+type: "isothermal", "isentropic", "isenthalpic", "constantU", "energybalance"
+time_step: number
+end_time: number
+~~~
+
+The simulation end time is specified as well as the fixed time step used in the integration of the differential equations to be solved. The four main calculation types are shown as well.
+
+### Vessel
+
+### Initial
+
+### Valve
+
+### Heat transfer
+
+### Validation
 
 # Theory
 In this chapter the basic theory and governing equations for the model implementation in HydDown is presented. The following main topics are covered: 
