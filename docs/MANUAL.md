@@ -259,20 +259,49 @@ validation: optional
 The subfields under `calculation`, with value formats and options are:
 
 ~~~ {.Yaml}
-type: "isothermal", "isentropic", "isenthalpic", "constantU", "energybalance"
-time_step: number
-end_time: number
+calculation:
+  type: "isothermal", "isentropic", "isenthalpic", "constantU", "energybalance"
+  time_step: number
+  end_time: number
 ~~~
 
 The simulation end time is specified as well as the fixed time step used in the integration of the differential equations to be solved. The four main calculation types are shown as well.
 
 ### Vessel
 
+~~~ {.Yaml}
+vessel:
+  length: number, mandatory
+  diameter: number, mandatory
+  thickness: number, required when heat transfer is calculated
+  heat_capacity: number, required when heat transfer is calculated
+  density: number, required when heat transfer is calculated 
+  orientation: string, required when heat transfer is calculated
+~~~
+
 ### Initial
+
+~~~ {.Yaml}
+initial:
+  temperature: number, mandatory
+  pressure: number, mandatory
+  fluid: string, mandatory , e.g. "N2", "H2" 
+~~~
 
 ### Valve
 
 ### Heat transfer
+~~~ {.Yaml}
+heat_transfer:
+  type: string, mandatory, "specified_h", "specified_Q", "specified_U", "s-b"
+  temp_ambient: number, required for type "specified_h", "specified_U"
+  h_outer: number, required for type "specified_h"
+  h_inner: number or 'calc', required for type "specified_h"
+  U_fix: number, required for type "specified_U"
+  Q_fix: number, required for type "specified_Q"
+  fire: string, required for type "s-b", 'api_pool','api_jet','scandpower_pool','scandpower_jet'
+  D_thoat: number, required for flow type "filling", set to vessel ID as a starting point
+~~~
 
 ### Validation
 
