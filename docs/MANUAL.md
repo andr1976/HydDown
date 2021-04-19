@@ -57,7 +57,7 @@ Temperature | K | $^\circ$ C is used in plots
 Pressure | Pa    | bar is used in plots
 Mass | kg |
 Volume | m$^3$ |
-Time | s |
+Time | s | minutes used in plots
 Energy | J |
 Duty/power | W 
 Length | m
@@ -344,9 +344,9 @@ The following arrays (one or more) are supported in the sub-field `temperature`:
 - `wall_high`  i.e. highest measured values of the vessel (inner) wall
 - `wall_low`  i.e. lowest measured values of the vessel (inner) wall
 
-For each of the above fields arrays for `time`and `temperature`shall be supplied with matching length.
+For each of the above fields arrays for `time`and `temp`shall be supplied with matching length.
 
-A field for measured vessel pressure is also possible, wheer `time`and `pressure` shall be identical length arrays. See also example below. 
+A field for measured vessel pressure is also possible, wheer `time`and `pres` shall be identical length arrays. See also example below. 
 
 ~~~ {.Yaml}
 validation:

@@ -7,7 +7,7 @@ vessel:
   orientation: "horizontal"
 initial:
   temperature: 294.0
-  pressure: 13500000.
+  pressure: 13800000.
   fluid: "H2" 
 calculation:
   type: "energybalance"
@@ -25,3 +25,14 @@ heat_transfer:
   temp_ambient: 294.
   h_outer: 0. 
   h_inner: "calc"
+validation:
+  temperature:
+    wall_mean:
+      time: [0.0516,3.32,6.62,9.92,13.2]
+      temp: [296.3, 295.1, 294.1, 293, 291.8]
+    gas_mean: 
+      time: [0.0242, 1.56, 3.12, 4.67, 6.22, 7.76, 9.3, 10.8, 12.4,13.9]
+      temp: [294.6, 271, 251,234.4, 221.6, 211.2, 203.7, 200.5, 197.1, 194.9]
+  pressure:
+    time: [0.118,1.65, 3.19, 4.73, 6.27, 7.81, 9.34, 10.9, 12.4, 14]
+    pres: [140,102,77.4,59.7,46.7,36.9,29.6, 23.7, 18.9, 14.9]
