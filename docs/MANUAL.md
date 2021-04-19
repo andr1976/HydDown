@@ -239,7 +239,6 @@ validation:
     pres: [150.02, ... ,1.7204]
 ~~~
 
-
 ## Input fields and hierachy
 In the following the full hierachy of input for the different calculation types is summarised. 
 
@@ -280,7 +279,6 @@ vessel:
 ~~~
 
 ### Initial
-
 ~~~ {.Yaml}
 initial:
   temperature: number, mandatory
@@ -289,8 +287,39 @@ initial:
 ~~~
 
 ### Valve
+The `valve` field determines the mode of the process is it for depressurisation/discharge from the vessel using the value `discharge` or if mass flow is entering the vessel, filling it up/increasign pressure with the value `filling`. 
+
+Different types of mass flow devices can be specified:
+
+- Restriction `orifice`
+- Relief valve/pressure safety valve (only for `discharge` not `filling`)
+- Control valve (`controlvalve`)
+- A specified mass flow (`mdot`)
+
+For the physical devices a `back_pressure` is required for the flow calculations. The value of the `back_pressure` **is also used to specify the reservoir pressure when the vessel is filled**. See also [@Sec:flow] for details about the calculation of flow rates.
+
+~~~ {.Yaml}
+valve:
+  flow: string, mandatory "discharge" or "filling"
+  type: string, mandatory "orifice", "controlvalve", "psv", "mdot"
+  back_pressure: number, required for type "orifice", "!controlvalve" and "psv"
+  diameter: number, required for "orifice" and "psv"
+  discharge_coef: number, required for "orifice" and "psv"
+  Cv: number, required for "control_valve"!
+~~~
 
 ### Heat transfer
+For more information about the actual estimation of heat transfer see also [@Sec:heat]. For the case of `fire` heat input predetermined parameters for the Stefan-Boltzmann fire equation are used to calculate different background heat loads cf. [@Tbl:fire]
+
+| Source          |  Fire type      |       Heat load ($kW/m^2$) |
+|-----------------|-----------------|----------------------------|
+| API521          | Pool            |                   60       |
+| API521          | Jet             |                  100       |
+| Scandpower      | Pool            |                  100       |
+| Scandpower      | Jet             |                  100       |
+
+: Fire heat loads {#tbl:fire}
+
 ~~~ {.Yaml}
 heat_transfer:
   type: string, mandatory, "specified_h", "specified_Q", "specified_U", "s-b"
@@ -304,6 +333,41 @@ heat_transfer:
 ~~~
 
 ### Validation
+In order to plot measured data against simulated data the field `validation` is incldued. 
+
+The following arrays (one or more) are supported in the sub-field `temperature`:
+
+- `gas_high`: highest measured values of the bulk gas 
+- `gas_low`: lowest measured values of the bulk gas 
+- `gas_mean`: average measured values of the bulk gas  
+- `wall_mean`: average measured values of the vessel (inner) wall
+- `wall_high`  i.e. highest measured values of the vessel (inner) wall
+- `wall_low`  i.e. lowest measured values of the vessel (inner) wall
+
+For each of the above fields arrays for `time`and `temperature`shall be supplied with matching length.
+
+A field for measured vessel pressure is also possible, wheer `time`and `pressure` shall be identical length arrays. See also example below. 
+
+~~~ {.Yaml}
+validation:
+  temperature:
+    gas_high:
+      time: [0.050285, ... , 99.994]
+      temp: [288.93, ... ,241.29] 
+    gas_low:
+      time: [0.32393, ..., 100.11]
+      temp: [288.67, ... ,215.28]
+    wall_low:
+      time: [0.32276, ... , 100.08]
+      temp: [288.93, ... ,281.72]
+    wall_high:
+      time: [0.049115, ... ,100.06]
+      temp: [289.18, ... ,286.09]
+  pressure:
+    time: [0.28869, ... , 98.367]
+    pres: [150.02, ... ,1.7204]
+~~~
+
 
 # Theory
 In this chapter the basic theory and governing equations for the model implementation in HydDown is presented. The following main topics are covered: 
@@ -415,7 +479,7 @@ $$ \frac{d(mU)_{cv}}{dt} + \dot{m} H  = \dot{Q}  $$ {#eq:energybalanmce}
 
 where the sign of $\dot{m}$ determines if the control volume is either emptied of filled. The continuity equation [@eq:continuity] and the energy balance [@eq:energybalanmce] combined with the equation of state are the key equations that shall be solved/intergrated in order to calculate the change in temperature and pressure as a function of time. 
 
-## Flow devices
+## Flow devices {#sec:flow}
 ### Restriction Orifice
 When a fluid flows through a constriction or opening such as an orifice, the velocity will be affected by conditions upstream and downstream.
 If the upstream pressure is high enough, relative to the downstream pressure, the velocity will reach the speed of sound (Ma = 1) and the flow rate obtained will be the critical flow rate. The maximum downstream pressure for the flow to still be sonic (Ma = 1), is when $P_d = P_c$. The ratio of the critical and upstream pressure is defined by equation [@eq:P_critical].
@@ -567,7 +631,7 @@ pressure differential is varied.
 
 $$ Y = 1 -  \frac{x_{sizing}}{3x_{choked}}$$
 
-## Heat transfer
+## Heat transfer {#sec:heat}
 
 ### Natural convection
 Experiments have indicated that the internal heat transfer mechanism for a vessel subject to depressurisation can be well approximated by that of natural convection as found from measured Nusselt numbers being well correlated with Rayleigh number, with no apparent improvement in model performance by included the Reynold number [@woodfield].
