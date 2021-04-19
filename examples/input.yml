@@ -23,8 +23,8 @@ valve:
 heat_transfer:
   type: "specified_h"
   temp_ambient: 288.
-  h_outer: 5. 
-  h_inner: "calc"
+  h_outer: 5 
+  h_inner: 'calc' 
 validation:
   temperature:
     gas_high:

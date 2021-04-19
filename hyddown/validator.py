@@ -95,7 +95,7 @@ def validate_mandatory_ruleset(input):
                     },
                 'temperature': {'type': 'dict',
                         'required': False,
-                        'allowed': ['wall_high','wall_low','gas_high','gas_low','gas_average'],
+                        'allowed': ['wall_high','wall_low','wall_mean','gas_high','gas_low','gas_mean'],
                         'schema': {'gas_high':{'required': False, 'type': 'dict', 'contains': ['time','temp'], 
                                     'schema': {
                                         'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
@@ -108,13 +108,19 @@ def validate_mandatory_ruleset(input):
                                         'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
                                        }
                                     }, 
-                                    'gas_average':{'required': False, 'type': 'dict', 'contains': ['time','temp'],
+                                    'gas_mean':{'required': False, 'type': 'dict', 'contains': ['time','temp'],
                                      'schema': {
                                         'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
                                         'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
                                        }
                                     },
                                     'wall_high':{'required': False, 'type': 'dict', 'contains': ['time','temp'],
+                                     'schema': {
+                                        'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
+                                        'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
+                                       }
+                                    },
+                                    'wall_mean':{'required': False, 'type': 'dict', 'contains': ['time','temp'],
                                      'schema': {
                                         'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
                                         'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}

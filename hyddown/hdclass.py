@@ -509,7 +509,11 @@ class HydDown:
     def plot(self,filename=None):
         import pylab as plt
 
-        plt.figure(figsize=(8,7),dpi=300)
+        if filename != None:
+            plt.figure(figsize=(8,7),dpi=300)
+        else:
+            plt.figure()
+            
         plt.subplot(221)
         plt.plot(self.time_array / 60, self.T_fluid - 273.15, "b", label="Fluid")
         plt.plot(self.time_array / 60, self.T_vessel - 273.15, "g", label="Vessel")

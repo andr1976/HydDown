@@ -57,7 +57,7 @@ Temperature | K | $^\circ$ C is used in plots
 Pressure | Pa    | bar is used in plots
 Mass | kg |
 Volume | m$^3$ |
-Time | s |
+Time | s | minutes used in plots
 Energy | J |
 Duty/power | W 
 Length | m
@@ -116,10 +116,10 @@ The following methods are implemented:
 - Isothermal i.e. constant temperature of the fluid during depressurisation (for a very slow process with a large heat reservoir)
 - Isenthalpic/Adiabatic (no heat transfer with surroundings, no work performed by the expanding fluid)
 - Isentropic (no heat transfer with surroundings, PV work performed by the expanding fluid)
-- Constant internal energy
-- Energy balance. This is the most general case and includes both the ability to transfer heat with surroundings as well as accounting for PV work.
+- Isenergetic i.e. constant internal energy
+- Energy balance. This is the most general case and is based on the first law of thermodynamics applied to a flow process.
 
-For isothermal/isenthalpic/isentropic/isenergetic calculations the minimal input required are:
+For `isothermal`/`isenthalpic`/`isentropic`/`isenergetic` calculations the minimal input required are:
 
 - Initial conditions (pressure, temperature)
 - vessel dimensions (ID/length)
@@ -127,7 +127,7 @@ For isothermal/isenthalpic/isentropic/isenergetic calculations the minimal input
 - Calculation setup (time step, end time)
 - Type of gas
 
-If heat transfer is to be considered the calculation type "energybalance" is required. A few options are possible:
+If heat transfer is to be considered the calculation type `energybalance` is required. A few options are possible:
 
 - Fixed U (U-value required, and ambient temperature)
 - Fixed Q (Q to be applied to the fluid is requried)
@@ -135,6 +135,8 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 - Fire (Stefan-Boltzmann equation heat duty)
 
 ## Script 
+HydDown comes with a script which can be used as a command-line tool to start calculations. If an input filename (path) is given as the first argument, this input file will be used. If no arguments are passed the script will look for an input file with the name `input.yml`. The content of the main script is shown below.
+
 
 ~~~ {.Python}
 import yaml
@@ -158,8 +160,214 @@ if __name__ == "__main__":
 ~~~
 
 ## Module import 
+To use HydDown simple import the main calculation class `HydDown`.
 
-## Input file 
+~~~ {.Python}
+from hyddown import HydDown
+~~~
+
+## Input file examples
+When using HydDown a dictionary holding all relevant input in order for HydDown to do vessel calculations shall be provide when the class is initialized. One way is to read an input file. For HydDown a Yaml format is chosen, but if JSON is a preference this should also work with the Yaml parser being substitued with a JSON parser. 
+
+An example of a minimal file for an isentropic vessel depressurisation (no heat transfer) is shown below 
+
+~~~ {.Yaml}
+vessel:
+  length: 1.524
+  diameter: 0.273
+initial:
+  temperature: 388.0
+  pressure: 15000000.
+  fluid: "N2" 
+calculation:
+  type: "isentropic"
+  time_step: 0.05
+  end_time: 100.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.00635
+  discharge_coef: 0.8
+  back_pressure: 101300.
+~~~
+
+A more elaborate example which includes heat transfer and with validation data (some data points dropped for simplicity) included: 
+
+~~~ {.Yaml}
+vessel:
+  length: 1.524
+  diameter: 0.273
+  thickness: 0.025
+  heat_capacity: 500
+  density: 7800. 
+  orientation: "vertical"
+initial:
+  temperature: 288.0
+  pressure: 15000000.
+  fluid: "N2" 
+calculation:
+  type: "energybalance"
+  time_step: 0.05
+  end_time: 100.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.00635
+  discharge_coef: 0.8
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 288.
+  h_outer: 5 
+  h_inner: 'calc' 
+validation:
+  temperature:
+    gas_high:
+      time: [0.050285, ... , 99.994]
+      temp: [288.93, ... ,241.29] 
+    gas_low:
+      time: [0.32393, ..., 100.11]
+      temp: [288.67, ... ,215.28]
+    wall_low:
+      time: [0.32276, ... , 100.08]
+      temp: [288.93, ... ,281.72]
+    wall_high:
+      time: [0.049115, ... ,100.06]
+      temp: [289.18, ... ,286.09]
+  pressure:
+    time: [0.28869, ... , 98.367]
+    pres: [150.02, ... ,1.7204]
+~~~
+
+## Input fields and hierachy
+In the following the full hierachy of input for the different calculation types is summarised. 
+
+At the top level the following fields are accepted, with the last being optional and the second last dependant on calculation type:
+
+~~~ {.Yaml}
+initial: mandatory
+vessel: mandatory
+calculation: mandatory
+valve: mandatory
+heat_transfer: depends on calculation type
+validation: optional
+~~~
+
+### Calculation
+
+The subfields under `calculation`, with value formats and options are:
+
+~~~ {.Yaml}
+calculation:
+  type: "isothermal", "isentropic", "isenthalpic", "constantU", "energybalance"
+  time_step: number
+  end_time: number
+~~~
+
+The simulation end time is specified as well as the fixed time step used in the integration of the differential equations to be solved. The four main calculation types are shown as well.
+
+### Vessel
+
+~~~ {.Yaml}
+vessel:
+  length: number, mandatory
+  diameter: number, mandatory
+  thickness: number, required when heat transfer is calculated
+  heat_capacity: number, required when heat transfer is calculated
+  density: number, required when heat transfer is calculated 
+  orientation: string, required when heat transfer is calculated
+~~~
+
+### Initial
+~~~ {.Yaml}
+initial:
+  temperature: number, mandatory
+  pressure: number, mandatory
+  fluid: string, mandatory , e.g. "N2", "H2" 
+~~~
+
+### Valve
+The `valve` field determines the mode of the process is it for depressurisation/discharge from the vessel using the value `discharge` or if mass flow is entering the vessel, filling it up/increasign pressure with the value `filling`. 
+
+Different types of mass flow devices can be specified:
+
+- Restriction `orifice`
+- Relief valve/pressure safety valve (only for `discharge` not `filling`)
+- Control valve (`controlvalve`)
+- A specified mass flow (`mdot`)
+
+For the physical devices a `back_pressure` is required for the flow calculations. The value of the `back_pressure` **is also used to specify the reservoir pressure when the vessel is filled**. See also [@Sec:flow] for details about the calculation of flow rates.
+
+~~~ {.Yaml}
+valve:
+  flow: string, mandatory "discharge" or "filling"
+  type: string, mandatory "orifice", "controlvalve", "psv", "mdot"
+  back_pressure: number, required for type "orifice", "!controlvalve" and "psv"
+  diameter: number, required for "orifice" and "psv"
+  discharge_coef: number, required for "orifice" and "psv"
+  Cv: number, required for "control_valve"!
+~~~
+
+### Heat transfer
+For more information about the actual estimation of heat transfer see also [@Sec:heat]. For the case of `fire` heat input predetermined parameters for the Stefan-Boltzmann fire equation are used to calculate different background heat loads cf. [@Tbl:fire]
+
+| Source          |  Fire type      |       Heat load ($kW/m^2$) |
+|-----------------|-----------------|----------------------------|
+| API521          | Pool            |                   60       |
+| API521          | Jet             |                  100       |
+| Scandpower      | Pool            |                  100       |
+| Scandpower      | Jet             |                  100       |
+
+: Fire heat loads {#tbl:fire}
+
+~~~ {.Yaml}
+heat_transfer:
+  type: string, mandatory, "specified_h", "specified_Q", "specified_U", "s-b"
+  temp_ambient: number, required for type "specified_h", "specified_U"
+  h_outer: number, required for type "specified_h"
+  h_inner: number or 'calc', required for type "specified_h"
+  U_fix: number, required for type "specified_U"
+  Q_fix: number, required for type "specified_Q"
+  fire: string, required for type "s-b", 'api_pool','api_jet','scandpower_pool','scandpower_jet'
+  D_thoat: number, required for flow type "filling", set to vessel ID as a starting point
+~~~
+
+### Validation
+In order to plot measured data against simulated data the field `validation` is incldued. 
+
+The following arrays (one or more) are supported in the sub-field `temperature`:
+
+- `gas_high`: highest measured values of the bulk gas 
+- `gas_low`: lowest measured values of the bulk gas 
+- `gas_mean`: average measured values of the bulk gas  
+- `wall_mean`: average measured values of the vessel (inner) wall
+- `wall_high`  i.e. highest measured values of the vessel (inner) wall
+- `wall_low`  i.e. lowest measured values of the vessel (inner) wall
+
+For each of the above fields arrays for `time`and `temp`shall be supplied with matching length.
+
+A field for measured vessel pressure is also possible, wheer `time`and `pres` shall be identical length arrays. See also example below. 
+
+~~~ {.Yaml}
+validation:
+  temperature:
+    gas_high:
+      time: [0.050285, ... , 99.994]
+      temp: [288.93, ... ,241.29] 
+    gas_low:
+      time: [0.32393, ..., 100.11]
+      temp: [288.67, ... ,215.28]
+    wall_low:
+      time: [0.32276, ... , 100.08]
+      temp: [288.93, ... ,281.72]
+    wall_high:
+      time: [0.049115, ... ,100.06]
+      temp: [289.18, ... ,286.09]
+  pressure:
+    time: [0.28869, ... , 98.367]
+    pres: [150.02, ... ,1.7204]
+~~~
+
 
 # Theory
 In this chapter the basic theory and governing equations for the model implementation in HydDown is presented. The following main topics are covered: 
@@ -271,7 +479,7 @@ $$ \frac{d(mU)_{cv}}{dt} + \dot{m} H  = \dot{Q}  $$ {#eq:energybalanmce}
 
 where the sign of $\dot{m}$ determines if the control volume is either emptied of filled. The continuity equation [@eq:continuity] and the energy balance [@eq:energybalanmce] combined with the equation of state are the key equations that shall be solved/intergrated in order to calculate the change in temperature and pressure as a function of time. 
 
-## Flow devices
+## Flow devices {#sec:flow}
 ### Restriction Orifice
 When a fluid flows through a constriction or opening such as an orifice, the velocity will be affected by conditions upstream and downstream.
 If the upstream pressure is high enough, relative to the downstream pressure, the velocity will reach the speed of sound (Ma = 1) and the flow rate obtained will be the critical flow rate. The maximum downstream pressure for the flow to still be sonic (Ma = 1), is when $P_d = P_c$. The ratio of the critical and upstream pressure is defined by equation [@eq:P_critical].
@@ -423,7 +631,7 @@ pressure differential is varied.
 
 $$ Y = 1 -  \frac{x_{sizing}}{3x_{choked}}$$
 
-## Heat transfer
+## Heat transfer {#sec:heat}
 
 ### Natural convection
 Experiments have indicated that the internal heat transfer mechanism for a vessel subject to depressurisation can be well approximated by that of natural convection as found from measured Nusselt numbers being well correlated with Rayleigh number, with no apparent improvement in model performance by included the Reynold number [@woodfield].
@@ -499,8 +707,14 @@ $$ \frac{\delta T}{\delta t} = \frac{k}{C_p} \frac{\delta^2 T}{\delta x^2} $$
 - k is the thermal conductivity 
 - $C_p$ is the heat capacity 
 
-Here it is written in Cartesian coordinates, but for most applications to pressure equipment, cylindrical coordinates. To be solved the initial values and boundary values must be specified. In its present state HydDown does not include the vessel temperature unsteady heat tranfer model i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature. This is obviously a crude approaximation, but might be justified depending in the Biot number. 
+Here it is written in Cartesian coordinates, but for most applications to pressure equipment, cylindrical coordinates are applicable, at elast for the shell. To be solved the initial values and boundary values must be specified. In its present state HydDown does not include the unsteady heat tranfer model i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature. This is obviously a crude approaximation, but might be justified depending in the Biot number:
 
+$$ Bi = \frac{hL}{k} $$
+
+The Biot number is a simple measure of the ratio of the heat transfer resistances at the surface of a body to the inside of a body. The ratio gives an indication to which extent the temperature will vary in space (gradient) when the body is subject to a displacement in temeprature at the surface boundary layer.
+Striednig *et al.* [@STRIEDNIG] concluded that for a type I (steel) cylinder the Biot number was approx. 0.03 and hence the error in assuming a uniform temperature in the vessel wall was low. 
+
+With a typical thermal conductivity of 45 $W/m K$ for steel and a heat transfer coefficient up to 600 $W/m^2 K$ [@woodfield] the Biot number for a vessel with a wall thichness of 2 cm is 0.27. This is significant higher that approximated by [@STRIEDNIG]. Anyway, the Biot number is lower than 1, and the assumption of a uniform temperature is reasonable. However, for increased wall thicness, and/or for different materials with lower thermal conductivity the error may grow to an unacceptable level. 
 
 ### Fire heat loads
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower [@scandpower]. The heat transfer from the flame to the vessel shell is divided into radiation, convection and reradiation as seen in equation [@eq:flame].

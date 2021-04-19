@@ -4,16 +4,15 @@ vessel:
   thickness: 0.0072
   heat_capacity: 500
   density: 7800. 
-  orientation: "horizontal"
+  orientation: "vertical"
 initial:
-  temperature: 294.0
-  pressure: 13500000.
+  temperature: 299.0
+  pressure: 13800000.
   fluid: "H2" 
 calculation:
   type: "energybalance"
   time_step: 0.05
   end_time: 30.
-  eta: 1
 valve:
   flow: "discharge"
   type: "orifice"
@@ -22,6 +21,17 @@ valve:
   back_pressure: 100000
 heat_transfer:
   type: "specified_h"
-  temp_ambient: 294.
+  temp_ambient: 299.
   h_outer: 0. 
   h_inner: "calc"
+validation:
+  pressure:
+    time: [0.116, 3.41, 6.71, 9.96, 13.3, 16.6, 19.8, 23.2, 26.4, 29.7]
+    pres: [136,104,77.4,57.3,42.8,32.9,26.4,21.5,17.3,13.8]
+  temperature:
+    wall_mean:
+      time: [0.334, 3.56, 6.79, 10, 13.2, 16.5, 19.8, 23, 26.2, 29.4]
+      temp: [299.3,300.1,299.7,299.2,298.4,297.8,297.1,296.2,295.3,294.4]
+    gas_mean: 
+      time: [0.275, 3.6,6.86, 10.1,13.5,16.7, 20, 23.3, 26.6, 29.9]
+      temp: [300,275.7,256.3,241.3,230.6,225.7,222.5,222.7,225.9,233]
