@@ -432,7 +432,7 @@ $$ \frac{c_p}{R}=\frac{c_v}{R}+\dfrac{\left[1+\delta\left(\frac{\partial \alpha^
     
 The EOS is set up with temperature and density as the two independent properties, but often other inputs are known, most often temperature and pressure because they can be directly measured.  As a result, if the density is desired for a known temperature and pressure, it can be obtained iteratively.
 
-### First law for flow process
+### First law for flow process {#sec:firstlaw}
 The control volume sketched in [@Fig:firstlaw], seprated from the surrounding by a control surface, is used as a basis for the analysis of an open thermodynamic system with flowing streams (fs) in and out, according to [@sva]
 
 A general mass balance or continuity equation can be written: 
@@ -757,18 +757,70 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 
 
 ## Model implementation
+A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation as described in [@Sec:flow]:
 
-A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. For the calculation methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. Coolprop is very convenient for this, however for a cubic EOS and for multicomponent Helmholtz energy EOS coolprop only supports a subset of state variables to be specified directly (T,P,quality). For this reason single component HEOS is the main target of this project.  
+$$ m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t  $$ {#eq:euler_mass}
 
+$$ \dot{m}(i) = f(P,T,) $$
 
+For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. 
+
+For the calculation methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. 
+
+In the following the high level steps in the solution procedure is outlined for the different calauclation types. To illustrate calls to the equation of state in `coolprop` the following notation is used $EOS(D,T)$ corresponding to calculation of the state at known density and temperature as an example. 
 
 ### Isothermal process
+For an isothermal process the solution procedure for each calculation step is the following, with the mass in the control volume being calculated from [@Eq:euler_mass]:
+
+$$ T(i+1) = T(i) $$
+$$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
+$$ P(i+1) = EOS(D(i+1),T(i+1)) $$
+
+### Isenthalpic proces
+For an isenthalpic process 
+
+$$ H(i+1) = H(i) $$
+$$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
+$$ P(i+1) = EOS(D(i+1),H(i+1)) $$
+$$ T(i+1) = EOS(D(i+1),H(i+1)) $$
 
 ### Isentropic process
+For an isentropic process 
 
-### Isenthalpic process
+$$ S(i+1) = S(i) $$
+$$ D(i+1) = \frac{m_{cv}(i+1)}{V}$$
+$$ P(i+1) = EOS(D(i+1),S(i+1)) $$
+$$ T(i+1) = EOS(D(i+1),S(i+1)) $$
 
+### Isenergetic process
+For an isenergetic process 
 
+$$ U(i+1) = U(i) $$
+$$ D(i+1) = \frac{m_{cv}(i+1)}{V}$$
+$$ P(i+1) = EOS(D(i+1),U(i+1)) $$
+$$ T(i+1) = EOS(D(i+1),U(i+1)) $$
+
+### Energy balance
+The general first law applied to a flow process as outlined in [@Sec:firstlaw] subject to an explicit Euler scheme is: 
+
+$$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
+$$ U_{cv}(i+1) = \frac{m_{cv}(i)U_{cv}(i) - \left( \dot{m}(i) H (i) +  \dot{Q}(i) \right) \Delta t}{m_{cv}(i+1)}  $$ {#eq:firstlaw_euler}
+
+The above assumes that mass flow is positive when leaving the control volume and heat rate is positive when transferred to the control volume. $H(i)$ is the specific enthalpy of the fluid in the control volume for a discharging process and it is equal to the energy of the entering stream for a filling process. The heat rate is calculated as outlined in [#Sec:heat]. 
+
+For the vessel wall a simple heat balance is also made:
+
+$$ T_{wall}(i+1) = T_{wall}(i)  + \frac{\dot{Q}_{outer} - \dot{Q}_{inner} } {c_p m_{vessel}} \Delta t $$
+
+where $\dot{Q}_{outer}$ is the convective heat transfer to/from the ambient surroundings from the outer surface of the vessel, with the a possitive value when heat is transferred from surroundings to the vessel wall. This is either a fixed heat transfer coefficient (for now) with a specified ambient temperature, or a calculated fire heat load. $\dot{Q}_{inner}$ is the internal heat transfer, either a fixed number or calculated as natural convection (for discharge) or mixed natural and forced convection (filling).
+
+If a fixed $\dot{Q}$ is provided or a fixed overall heat transfer coefficient is provided the vessel wall temperature heat balance is not solved. 
+
+The remaining steps are update of temperature and pressure 
+
+$$ P(i+1) = EOS(D(i+1),U(i+1)) $$
+$$ T(i+1) = EOS(D(i+1),U(i+1)) $$
+ 
 # Validation
 The code is provided as-is. However, comparisons have been made to a few experiments from the literature.
 
