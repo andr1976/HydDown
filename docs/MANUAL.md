@@ -826,11 +826,9 @@ The code is provided as-is. However, comparisons have been made to a few experim
 
 The following gases and modes are considered:
 
-- High pressure hydrogen filling
 - High pressure hydrogen discharge
+- High pressure hydrogen filling
 - High pressure nitrogen discharge
-- Low pressure air discharge 
-- Low pressure air filling
 
 ## Hydrogen discharge
 Calculations with HydDown for high pressure hydrogen vessel discharge has been compared to three experiments from [@byrnes]. Byrnes *et al.* [@byrnes] have reported a number of rapid depressurisation experiments using bith nitrogen and hydrogen, with blowdown times being varied between 14 seconds to 33 minutes. The vessel used was a type "K" gas cylinder with a volume of 0.0499 m$^3$, an ID of 8.56 inched and shell length of 55 inches. The vessel is placed in a vertical position. A control valve is mounted on the neck of the cylinder with a fixed opening percentage during each experiment, set to provide the required depressurisation rate. It is mentioned that the gas cylinder is placed inside a weather proof cabinet with perlite insulation in order to emulate adiabatic conditions, however the simulation run here are with a finte heat transfer coefficient on the outside of the cylinder. In their paper detailed pressure and temperature traces are provided for thre experimental runs: 7, 8, and 9 with depressurisation from 2,000 psia in 30 seconds, 480 seconds and 14 seconds, respectively. These experiments are simulated in [@Fig:byrnes_run7], [@Fig:byrnes_run8] and [@Fig:byrnes_run9]. 
