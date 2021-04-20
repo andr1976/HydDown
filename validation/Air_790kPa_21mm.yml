@@ -1,7 +1,7 @@
 vessel:
   length: 0.515
   diameter: 0.20
-  thickness: 0.05
+  thickness: 0.025
   heat_capacity: 500
   density: 7800. 
   orientation: "horizontal"
@@ -11,13 +11,12 @@ initial:
   fluid: "air" 
 calculation:
   type: "energybalance"
-  time_step: 0.05
-  end_time: 100.
-  eta: 1
+  time_step: 0.05  
+  end_time: 60.
 valve:
   flow: "discharge"
   type: "orifice"
-  diameter: 0.0021
+  diameter: 0.00271
   discharge_coef: 0.84
   back_pressure: 100000
 heat_transfer:
@@ -25,3 +24,12 @@ heat_transfer:
   temp_ambient: 298.
   h_outer: 5. 
   h_inner: "calc"
+validation:
+  temperature:
+    gas_mean:
+      time: [3.58,7.65,11.4,15.2,19.2,23.2,26.8,30.8,34.7,38.6,42.5,46.2,50.1,54]
+      temp: [285.9,275.3,265.8,261.1,257.8,256.4,256.7,257.8,260.4,264.2,268.6,272.6, 276,278.9]
+  pressure:
+    time: [0.226,4.14,8.06,12,15.7,19.6,23.6,27.6,31.5,35.2,39.2,43.2,47.1,50.8,54.8]
+    pres: [7.6883,5.6748,4.2327,3.2582,2.6213,2.0884,1.7112,1.412,1.2037,1.0863,1.0209,1.0074,1.0069,1.0064,1.0059]
+    
