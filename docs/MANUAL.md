@@ -793,9 +793,31 @@ As seen from [@Fig:byrnes_run7], [@Fig:byrnes_run8] and [@Fig:byrnes_run9], the 
 
 ![Simulation of run 9 from [@byrnes].](img/Byrnes_run9.png){#fig:byrnes_run9}
 
-
 ## Hydrogen filling 
+In order to compare HydDown to experimental values of hydrogen filling operation the experiments reported by Striednig *et al.* [@STRIEDNIG] are used. Experimental results were obtained using a type I tank (steel) with a volume of 0.0235 m$^3$. The filling of hydrogen of gas into the vessel was carried up with an upstream reservoir kept at 350 bar and the flow was controlled with an electronically controlled dispenser. Vessel details are provided below. 
 
+| Parameter       | Value       |
+|-----------------|-------------|
+| Mass            | 69..5 kg    |
+| Length          | 0.61 m      |
+| OD              | 0.280 m     |
+| Wall thickness  | 0.0129 m    |
+| Density         | 7740 kg/m$^3$ |
+| Heat capacity   | 470 J/(kg K) |
+
+: Key hydrogen vessel data [@STRIEDNIG] {#tbl:h2filling}
+
+[@STRIEDNIG] reports many different experiments. In this comparison we will use experiments applying different pressurisation rates / durations using identical initial conditions, The experiments are reported in Fig. 6 and Fig. 7 in [@STRIEDNIG].
+
+In its current stage HydDown does not directly support specifiying a fixed pressurisation rate expressed as a constant rate of change in pressure / pressure ramp rate (PRR). In order to emulate the experiments an orifice model is used with an artificial high reservoir pressure, in order to ensure that the flow is critical during the entire pressurisation. This gives a constant mass rate, and translates to a fairly constant pressure ramp rate, although with real gas effects being clearly observable.  
+
+The results of the simulations with HydDown and the experiments from [@STRIEDNIG] are shown in [@Fig:striednig5], [@Fig:striednig10], [@Fig:striednig30]. As seen from the figures the experimenta gas temperature appears to be simulated very accurately. The simulation with the fastest pressurisation underpredicts the experimental temperature slightly. The main features of the pressurisation temperature profile is a rapid increase in temperature, at the beginning of the pressurisation, where the effects of filling is dominating.  At approx. 20-30 s the temperature increase levels off to a plateau, where the length of the plateau depends in the pressurisation rate. The slower the depressurisation, the longer the plateau. During this temperature plateau the heat transfer from the gas to the vessel/surroundings balance the temperature increase that would occur if beformed at adiabtic (isolated) conditions. When the gas flow has ceased at arrival of the final pressure the temperature starts to drop dur to cooling of the gas by the colder vessel due to convective heat transfer. The temperature stabilises at a temperature which is higher than the initial/ambient temperature due to the heating of the steel vessel. The cooling of the vessel by ambient air is slower and would require a longer run time to be clearly visible. 
+
+![Simulation of $H_2$ pressurisation using 5 MPa/min [@STRIEDNIG].](img/Striednig_fillingH2_5MPa_min.png){#fig:striednig5}
+
+![Simulation of $H_2$ pressurisation using 10 MPa/min [@STRIEDNIG].](img/Striednig_fillingH2_10MPa_min.png){#fig:striednig10}
+
+![Simulation of $H_2$ pressurisation using 30 MPa/min [@STRIEDNIG].](img/Striednig_fillingH2_30MPa_min.png){#fig:striednig30}
 
 ## Nitrogen discharge
 Calculations with HydDown is compared to  experiment I1 from ref. [@Haque1992b]. The experiment is a blowdown of a vertically oriented cylindrical vessel with flat ends. The vessel length is 1.524 m, the inside diameter is 0.273 m and the wall thickness is 25 mm. The vessel is filled with N$_2$ at 150 bar, at 15$^\circ$C. Ambient temperature is 15$^\circ$C. The blowdown orifice diameter is 6.35 mm. The results are shown in [@Fig:N2val]. The didirscharge coefficient of the orifice has been set to 0.8 in order to match the vessel pressure profile. The back pressure is set to atmospheric conditions.

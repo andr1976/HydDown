@@ -55,6 +55,7 @@ def validate_mandatory_ruleset(input):
                 'diameter': {'type': 'number', 'min': 0},
                 'discharge_coef': {'type': 'number', 'min': 0},
                 'set_pressure': {'type': 'number', 'min': 0},
+                'end_pressure': {'type': 'number', 'min': 0},
                 'blowdown': {'type': 'number', 'min': 0, 'max': 1},
                 'back_pressure': {'type': 'number', 'min': 0},
                 'Cv': {'type': 'number', 'min': 0},
