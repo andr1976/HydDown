@@ -57,7 +57,7 @@ Temperature | K | $^\circ$ C is used in plots
 Pressure | Pa    | bar is used in plots
 Mass | kg |
 Volume | m$^3$ |
-Time | s | minutes used in plots
+Time | s | 
 Energy | J |
 Duty/power | W 
 Length | m
@@ -774,19 +774,34 @@ The code is provided as-is. However, comparisons have been made to a few experim
 
 The following gases and modes are considered:
 
-- High pressure nitrogen discharge
 - High pressure hydrogen filling
 - High pressure hydrogen discharge
+- High pressure nitrogen discharge
 - Low pressure air discharge 
 - Low pressure air filling
+
+## Hydrogen discharge
+Calculations with HydDown for high pressure hydrogen vessel discharge has been compared to three experiments from [@byrnes]. Byrnes *et al.* [@byrnes] have reported a number of rapid depressurisation experiments using bith nitrogen and hydrogen, with blowdown times being varied between 14 seconds to 33 minutes. The vessel used was a type "K" gas cylinder with a volume of 0.0499 m$^3$, an ID of 8.56 inched and shell length of 55 inches. The vessel is placed in a vertical position. A control valve is mounted on the neck of the cylinder with a fixed opening percentage during each experiment, set to provide the required depressurisation rate. It is mentioned that the gas cylinder is placed inside a weather proof cabinet with perlite insulation in order to emulate adiabatic conditions, however the simulation run here are with a finte heat transfer coefficient on the outside of the cylinder. In their paper detailed pressure and temperature traces are provided for thre experimental runs: 7, 8, and 9 with depressurisation from 2,000 psia in 30 seconds, 480 seconds and 14 seconds, respectively. These experiments are simulated in [@Fig:byrnes_run7], [@Fig:byrnes_run8] and [@Fig:byrnes_run9]. 
+  
+![Calculations of hydrogen discharge experiment run 7 from [@byrnes]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](img/Byrnes_run7.png){#fig:byrnes_run7}
+
+The figure layout is general for all the validation studies conducted and will described in brief for eased readability. Each experiement figure is divided in 4 subplots; the upper left shows the simulated bulk gas temperature and vessel wall (average) temperature with measured values included with stipulated lines (if available), the upper rigth shows the simulated and measured pressure (if available, shown with points), the lower left shows the specific enthalpy, specific internal energy and the specific entropy of the bulk gas content as a function of time, the lower right shows the simulated mass rate leaving or entering the vessel. 
+
+As seen from [@Fig:byrnes_run7], [@Fig:byrnes_run8] and [@Fig:byrnes_run9], the calculations generally compare well with the experimental results. The faster depressurisation times are predicted the best it seems as seen from run 7 and 9. The much slower run 8 does not have as a good a fit, considering the bulk gas temperature. However, on an absolute scale the results are still within 5$^\circ$C of the experimentally determined gas temperature. The trend in *goodness of fit* could indicate that the heat transfer from the outside of the vessel to the gas lacks some details, which become detectable at the very slow depressurisation. For the fast depressurisation the heat transfer from the outside is of less importance and the inside heat transfer coefficient may be predicted better. 
+
+![Simulation of run 8 from [@byrnes].](img/Byrnes_run8.png){#fig:byrnes_run8}
+
+![Simulation of run 9 from [@byrnes].](img/Byrnes_run9.png){#fig:byrnes_run9}
+
+
+## Hydrogen filling 
+
 
 ## Nitrogen discharge
 Calculations with HydDown is compared to  experiment I1 from ref. [@Haque1992b]. The experiment is a blowdown of a vertically oriented cylindrical vessel with flat ends. The vessel length is 1.524 m, the inside diameter is 0.273 m and the wall thickness is 25 mm. The vessel is filled with N$_2$ at 150 bar, at 15$^\circ$C. Ambient temperature is 15$^\circ$C. The blowdown orifice diameter is 6.35 mm. The results are shown in [@Fig:N2val]. The didirscharge coefficient of the orifice has been set to 0.8 in order to match the vessel pressure profile. The back pressure is set to atmospheric conditions.
 
-![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas an wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](img/N2_filling.png){#fig:N2val}
+![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](img/N2_filling.png){#fig:N2val}
 
 As seen from [@Fig:N2val], the calculations compare well with the experimental results. The calculated temperature of the bulk vapor is within the experimental range of measured temperature at all times during the simulation. It is also noted that the minimum temperature is reached at approx. the same time as in the experiments. The calculated vessel inner wall temperature does not decline as rapidly as the experiments—but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature. The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperture. Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
-
-## Hydrogen filling 
 
 ## Air discharge/filling

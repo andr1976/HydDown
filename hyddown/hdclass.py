@@ -139,6 +139,7 @@ class HydDown:
         self.rho0 = PropsSI("D", "T", self.T0, "P", self.p0, self.species)
         self.m0 = self.rho0 * self.vol
 
+
     def run(self):
         # Inititialise
         input = self.input
@@ -510,87 +511,87 @@ class HydDown:
         import pylab as plt
 
         if filename != None:
-            plt.figure(figsize=(8,7),dpi=300)
+            plt.figure(figsize=(12,7),dpi=300)
         else:
             plt.figure()
             
         plt.subplot(221)
-        plt.plot(self.time_array / 60, self.T_fluid - 273.15, "b", label="Fluid")
-        plt.plot(self.time_array / 60, self.T_vessel - 273.15, "g", label="Vessel")
+        plt.plot(self.time_array , self.T_fluid - 273.15, "b", label="Fluid")
+        plt.plot(self.time_array , self.T_vessel - 273.15, "g", label="Vessel")
         if "validation" in self.input:
             if "temperature" in self.input["validation"]:
                 temp = self.input["validation"]["temperature"]
                 if "gas_mean" in temp:
                     plt.plot(
-                        np.asarray(temp["gas_mean"]["time"]) / 60,
+                        np.asarray(temp["gas_mean"]["time"]),
                         np.asarray(temp["gas_mean"]["temp"]) - 273.15,
                         "b:",
                         label="Gas mean",
                     )
                 if "gas_high" in temp:
                     plt.plot(
-                        np.asarray(temp["gas_high"]["time"]) / 60,
+                        np.asarray(temp["gas_high"]["time"]),
                         np.asarray(temp["gas_high"]["temp"]) - 273.15,
                         "b-.",
                         label="Gas high",
                     )
                 if "gas_low" in temp:
                     plt.plot(
-                        np.asarray(temp["gas_low"]["time"]) / 60,
+                        np.asarray(temp["gas_low"]["time"]),
                         np.asarray(temp["gas_low"]["temp"]) - 273.15,
                         "b--",
                         label="Gas low",
                     )
                 if "wall_mean" in temp:
                     plt.plot(
-                        np.asarray(temp["wall_mean"]["time"]) / 60,
+                        np.asarray(temp["wall_mean"]["time"]),
                         np.asarray(temp["wall_mean"]["temp"]) - 273.15,
                         "g:",
                         label="Wall mean",
                     )
                 if "wall_high" in temp:
                     plt.plot(
-                        np.asarray(temp["wall_high"]["time"]) / 60,
+                        np.asarray(temp["wall_high"]["time"]),
                             np.asarray(temp["wall_high"]["temp"]) - 273.15,
                         "g-.",
                         label="Wall high",
                     )
                 if "wall_low" in temp:
                     plt.plot(
-                        np.asarray(temp["wall_low"]["time"]) / 60,
+                        np.asarray(temp["wall_low"]["time"]),
                         np.asarray(temp["wall_low"]["temp"]) - 273.15,
                         "g--",
                         label="Wall low",
                     )
         plt.legend(loc="best")
-        plt.xlabel("Time (minutes)")
+        plt.xlabel("Time (seconds)")
         plt.ylabel("Temperature ($^\circ$C)")
 
         plt.subplot(222)
-        plt.plot(self.time_array / 60, self.P / 1e5, "b", label="Calculated")
+        plt.plot(self.time_array , self.P / 1e5, "b", label="Calculated")
         if "validation" in self.input:
             if "pressure" in self.input["validation"]:
                 plt.plot(
-                    np.asarray(self.input["validation"]["pressure"]["time"]) / 60,
+                    np.asarray(self.input["validation"]["pressure"]["time"]),
                     self.input["validation"]["pressure"]["pres"],
                     "ko",
                     label="Experimental",
                 )
         plt.legend(loc="best")
-        plt.xlabel("Time (minutes)")
+        plt.xlabel("Time (seconds)")
         plt.ylabel("Pressure (bar)")
 
         plt.subplot(223)
-        plt.plot(self.time_array / 60, self.H_mass, "b", label="H (J/kg)")
-        plt.plot(self.time_array / 60, self.U_mass, "g", label="U (J/kg)")
-        plt.plot(self.time_array / 60, self.S_mass * 100, "r", label="S*100 (J/kg K)")
+        plt.plot(self.time_array , self.H_mass, "b", label="H (J/kg)")
+        plt.plot(self.time_array , self.U_mass, "g", label="U (J/kg)")
+        plt.plot(self.time_array , self.S_mass * 100, "r", label="S*100 (J/kg K)")
         plt.legend(loc="best")
-        plt.xlabel("Time (minutes)")
+        plt.xlabel("Time (seconds)")
         plt.ylabel("Enthalpy/Internal Energy/Entropy")
 
         plt.subplot(224)
-        plt.plot(self.time_array / 60, self.mass_rate, "b", label="m_dot")
-        plt.xlabel("Time (minutes)")
+        plt.plot(self.time_array , self.mass_rate, "b", label="m_dot")
+        plt.xlabel("Time (seconds)")
         plt.ylabel("Vent rate (kg/s)")
 
         if filename != None:
