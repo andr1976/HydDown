@@ -4,7 +4,6 @@ vessel:
   orientation: "vertical"
   heat_capacity: 500
   density: 7700
-  orientation: "horizontal"
   thickness: 0.010 
 initial:
   temperature: 298.15
@@ -12,9 +11,8 @@ initial:
   fluid: "N2" 
 calculation:
   type: "energybalance"
-  time_step: 5.
+  time_step: 1
   end_time: 1500.
-  eta: 1
 valve:
   flow: "discharge"
   type: "psv"
