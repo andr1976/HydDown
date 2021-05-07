@@ -1,0 +1,26 @@
+vessel:
+  length: 5.5
+  diameter: 0.344
+  thickness: 0.031
+  heat_capacity: 500
+  density: 7800. 
+  orientation: "horizontal"
+initial:
+  temperature: 273.0
+  pressure: 15500000.
+  fluid: "CH4" 
+calculation:
+  type: "energybalance"
+  time_step: 0.05
+  end_time: 300.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.009739
+  discharge_coef: 0.84
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 273.
+  h_outer: 5 
+  h_inner: 'calc' 

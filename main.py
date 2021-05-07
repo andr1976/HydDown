@@ -5,6 +5,7 @@
 import yaml
 import sys
 from hyddown import HydDown
+import time
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
@@ -17,7 +18,10 @@ if __name__ == "__main__":
 
 
     hdown=HydDown(input)
+    start = time.time()
     hdown.run()
+    end = time.time()
+    print('Elapsed time: ',end-start,' sec.')
     hdown.verbose=1
     hdown.plot()
     #hdown.plot("docs/img/N2_filling.png")

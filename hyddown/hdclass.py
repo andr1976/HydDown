@@ -4,6 +4,8 @@
 
 import math
 import numpy as np
+from scipy.optimize import fmin
+from scipy.optimize import minimize
 from CoolProp.CoolProp import PropsSI
 from hyddown import transport as tp
 from hyddown import validator 
@@ -21,7 +23,7 @@ class HydDown:
 
     def validate_input(self):
         valid = validator.validation(self.input)
-        if valid == False:
+        if valid is False:
             raise ValueError("Error in input file")
 
 
@@ -138,6 +140,25 @@ class HydDown:
 
         self.rho0 = PropsSI("D", "T", self.T0, "P", self.p0, self.species)
         self.m0 = self.rho0 * self.vol
+
+
+    def UDproblem(self, U, rho, Pguess, Tguess):
+        if "&" in self.species:                     
+            res_fun = lambda x: ((U-PropsSI("U","P",x[0],"T",x[1],self.species))/U)**2 + ((rho-PropsSI("D","P",x[0],"T",x[1],self.species))/rho)**2
+            x0=[Pguess,Tguess]
+            bounds=[(Pguess*0.95,Pguess+1e5),(Tguess-1,Tguess+1)]
+            res=minimize(res_fun,x0,method='Nelder-Mead')
+            P1 = res.x[0]
+            T1 = res.x[1]
+        else:
+            P1 = PropsSI(
+                "P", "D", rho, "U", U, self.species
+                )
+            T1 = PropsSI(
+                "T", "D", rho, "U", U, self.species
+               )
+
+        return P1, T1
 
 
     def run(self):
@@ -274,11 +295,6 @@ class HydDown:
                     "P", "D", self.rho[i], "U", self.U_mass[i - 1], self.species
                 )
             elif self.method == "energybalance":
-                P1 = PropsSI(
-                    "P", "D", self.rho[i], "T", self.T_fluid[i - 1], self.species
-                )
-                T1 = PropsSI("T", "P", P1, "H", self.H_mass[i - 1], self.species)
-
                 if self.heat_method == "specified_h" or self.heat_method == "detailed":
                     if self.h_in == "calc":
                         if self.vessel_orientation == "horizontal":
@@ -376,11 +392,6 @@ class HydDown:
                 h_in = x * PropsSI("H", "T", T_used, "P", P_used, self.species) + (
                     1 - x
                 ) * PropsSI("U", "T", T_used, "P", P_used, self.species)
-                T_in = PropsSI("T", "P", self.P[i - 1], "H", h_in, self.species)
-                D_in = PropsSI("D", "P", self.P[i - 1], "T", T_in, self.species)
-                v_in = (self.mass_rate[i - 1] / D_in) / (
-                    self.diameter ** 2 / 4 * math.pi
-                )
                 P2 = self.P[i - 1]
                 if i > 1:
                     P1 = self.P[i - 2]
@@ -390,45 +401,11 @@ class HydDown:
                     U_start
                     - self.tstep * self.mass_rate[i - 1] * h_in
                     + self.tstep * self.Q_inner[i]
-                )  # + (P2-P1) * self.vol
-                # print(U_start/self.mass_fluid[i-1],U_end/self.mass_fluid[i],h_in*self.mass_rate[i],self.Q_inner[i])
+                )  
                 self.U_mass[i] = U_end / self.mass_fluid[i]
-                P1 = PropsSI(
-                    "P", "D", self.rho[i], "U", U_end / self.mass_fluid[i], self.species
-                )
-                T1 = PropsSI(
-                    "T", "D", self.rho[i], "U", U_end / self.mass_fluid[i], self.species
-                )
-                # print('P1',P1,'T1',T1)
-                # U_start = NMOL_ADD * PropsSI('HMOLAR', 'P', P_used, 'T', T_used, self.species) + NMOL * PropsSI('HMOLAR', 'P', self.P[i-1], 'T', self.T_fluid[i-1], self.species) - self.eta *  self.P[i-1] * self.vol + self.Q_inner[i] * self.tstep
-                # NMOL=NMOL+NMOL_ADD
+                #print("Iteration: ",i," of ",len(self.P))
+                P1, T1 = self.UDproblem(U_end/ self.mass_fluid[i],self.rho[i],self.P[i-1],self.T_fluid[i-1])
 
-                # U = 0
-                # nn = 0
-                # rho1 = 0
-                # itermax = 1000
-                # m = 0
-                # n = 0
-                # relax = 0.1
-
-                # while abs(self.rho[i] - rho1) > 0.01 and m < itermax:
-                #     m = m + 1
-                #     rho1 = PropsSI('D', 'T', T1,'P', P1, self.species)
-                #     dd = self.rho[i] - rho1  #NMOL-nn
-                #     P1 = P1 + dd * 1e5
-                #     if m == itermax:
-                #         raise Exception("Iter max exceeded for rho/P")
-                #     while abs(U_start - U) / U_start > 0.00001 and n < itermax:
-                #         n = n + 1
-                #         U = NMOL * PropsSI('HMOLAR', 'P', P1, 'T', T1, self.species) - self.eta * P1 * self.vol  #Q_inner[i]*tstep
-                #         d = U_start - U
-                #         T1 = T1 + 0.1 * d / U_start * T1
-                #         if n == itermax:
-                #             raise Exception("Iter max exceeded for U/T")
-
-                # self.m_iter[i] = dd
-                # self.n_iter[i] = d
-                # self.U_iter[i] = U / NMOL * self.mass_fluid[i]
                 self.P[i] = P1
                 self.T_fluid[i] = T1
 
@@ -443,7 +420,7 @@ class HydDown:
             )
             self.U_mass[i] = PropsSI(
                 "U", "T", self.T_fluid[i], "P", self.P[i], self.species
-            )  # (self.mass_fluid[i] * PropsSI('H', 'P', self.P[i], 'T', self.T_fluid[i], self.species) - self.P[i] * self.vol) / self.mass_fluid[i]
+            )  
             cpcv = PropsSI(
                 "CP0MOLAR", "T", self.T_fluid[i], "P", self.P[i], self.species
             ) / PropsSI("CVMOLAR", "T", self.T_fluid[i], "P", self.P[i], self.species)
