@@ -8,11 +8,11 @@ vessel:
 initial:
   temperature: 273.0
   pressure: 15500000.
-  fluid: "CH4" 
+  fluid: "Methane" 
 calculation:
   type: "energybalance"
-  time_step: 0.05
-  end_time: 300.
+  time_step: 0.5
+  end_time: 180.
 valve:
   flow: "discharge"
   type: "orifice"

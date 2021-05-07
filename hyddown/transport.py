@@ -14,7 +14,7 @@ def Gr(L, Tfluid, Tvessel, P, species):
     """
     T = (Tfluid + Tvessel) / 2
     beta = PropsSI("ISOBARIC_EXPANSION_COEFFICIENT", "T", T, "P", P, species)
-    nu = PropsSI("V", "T", T, "P", P, species) / PropsSI("D", "T", T, "P", P, species)
+    nu = PropsSI("V", "T", T, "P", P, 'HEOS::'+species.split('::')[1]) / PropsSI("D", "T", T, "P", P, species)
     Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
     return Gr
 
@@ -26,9 +26,9 @@ def Pr(T, P, species):
     Prentice-Hall, 1993
     """
     Pr = (
-        PropsSI("C", "T", T, "P", P, species)
-        * PropsSI("V", "T", T, "P", P, species)
-        / PropsSI("L", "T", T, "P", P, species)
+        PropsSI("C", "T", T, "P", P, 'HEOS::'+species.split('::')[1])
+        * PropsSI("V", "T", T, "P", P, 'HEOS::'+species.split('::')[1])
+        / PropsSI("L", "T", T, "P", P, 'HEOS::'+species.split('::')[1])
     )
     return Pr
 
@@ -56,7 +56,7 @@ def h_inner(L, Tfluid, Tvessel, P, species):
     NGr = Gr(L, Tfluid, Tvessel, P, species)
     NRa = NPr * NGr
     NNu = Nu(NRa, NPr)
-    return NNu * PropsSI("L", "T", (Tfluid + Tvessel) / 2, "P", P, species) / L
+    return NNu * PropsSI("L", "T", (Tfluid + Tvessel) / 2, "P", P, 'HEOS::'+species.split('::')[1]) / L
 
 
 def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
@@ -64,11 +64,11 @@ def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
     NGr = Gr(L, Tfluid, Tvessel, P, species)
     NRa = NPr * NGr
     NNu_free = Nu(NRa,NPr)  # 0.13 * NRa**0.333
-    Re = 4 * abs(mdot) / (PropsSI("V", "T", Tfluid, "P", P, species) * math.pi * D)
+    Re = 4 * abs(mdot) / (PropsSI("V", "T", Tfluid, "P", P, 'HEOS::'+species.split('::')[1]) * math.pi * D)
     NNu_forced = 0.56 * Re ** 0.67
     return (
         (NNu_free + NNu_forced)
-        * PropsSI("L", "T", (Tfluid + Tvessel) / 2, "P", P, species)
+        * PropsSI("L", "T", (Tfluid + Tvessel) / 2, "P", P, 'HEOS::'+species.split('::')[1])
         / L
     )
 

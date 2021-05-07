@@ -119,6 +119,7 @@ class HydDown:
         data_len = int(self.time_tot / self.tstep)
         self.rho = np.zeros(data_len)
         self.T_fluid = np.zeros(data_len)
+        self.T_vent = np.zeros(data_len)
         self.T_vessel = np.zeros(data_len)
         self.Q_outer = np.zeros(data_len)
         self.Q_inner = np.zeros(data_len)
@@ -167,6 +168,7 @@ class HydDown:
         self.rho[0] = self.rho0
         self.T_fluid[0] = self.T0
         self.T_vessel[0] = self.T0
+        if self.input["valve"]["flow"] == "discharge": self.T_vent[0] = self.T0
         self.H_mass[0] = PropsSI("H", "T", self.T0, "P", self.p0, self.species)
         self.S_mass[0] = PropsSI("S", "T", self.T0, "P", self.p0, self.species)
         self.U_mass[0] = PropsSI("U", "T", self.T0, "P", self.p0, self.species)
@@ -403,11 +405,12 @@ class HydDown:
                     + self.tstep * self.Q_inner[i]
                 )  
                 self.U_mass[i] = U_end / self.mass_fluid[i]
-                #print("Iteration: ",i," of ",len(self.P))
+                print("Iteration: ",i," of ",len(self.P))
                 P1, T1 = self.UDproblem(U_end/ self.mass_fluid[i],self.rho[i],self.P[i-1],self.T_fluid[i-1])
 
                 self.P[i] = P1
                 self.T_fluid[i] = T1
+
 
             else:
                 raise NameError("Unknown calculation method: " + self.method)
@@ -421,6 +424,10 @@ class HydDown:
             self.U_mass[i] = PropsSI(
                 "U", "T", self.T_fluid[i], "P", self.P[i], self.species
             )  
+
+            if self.input["valve"]["flow"] == "discharge":
+                self.T_vent[i] = PropsSI("T", "H", self.H_mass[i], "P", self.p_back, self.species)
+
             cpcv = PropsSI(
                 "CP0MOLAR", "T", self.T_fluid[i], "P", self.P[i], self.species
             ) / PropsSI("CVMOLAR", "T", self.T_fluid[i], "P", self.P[i], self.species)
@@ -495,6 +502,8 @@ class HydDown:
         plt.subplot(221)
         plt.plot(self.time_array , self.T_fluid - 273.15, "b", label="Fluid")
         plt.plot(self.time_array , self.T_vessel - 273.15, "g", label="Vessel")
+        if self.input["valve"]["flow"] == "discharge":
+            plt.plot(self.time_array , self.T_vent - 273.15, "r", label="Vent")
         if "validation" in self.input:
             if "temperature" in self.input["validation"]:
                 temp = self.input["validation"]["temperature"]
