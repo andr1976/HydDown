@@ -7,11 +7,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as  pd
-import re
+from PIL import Image
 import base64
-import json
-import pickle
-import uuid
 
 from hyddown import HydDown
 
@@ -28,6 +25,9 @@ def get_table_download_link(df,filename):
 
 def read_input():
     sideb = st.sidebar
+    icon = Image.open('./docs/img/Sketch.png')
+    st.sidebar.image(icon, use_column_width=True, caption="HydDown")
+
     length = sideb.text_input('Vessel length (m):',0.463)
     diam = sideb.text_input('Vessel diam (m):',0.254) 
     thk = sideb.text_input('Vessel thichness (m):',0.016)
