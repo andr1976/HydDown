@@ -24,4 +24,3 @@ if __name__ == "__main__":
     print('Elapsed time: ',end-start,' sec.')
     hdown.verbose=1
     hdown.plot()
-    #hdown.plot("docs/img/N2_filling.png")
