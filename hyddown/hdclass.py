@@ -405,7 +405,7 @@ class HydDown:
                     + self.tstep * self.Q_inner[i]
                 )  
                 self.U_mass[i] = U_end / self.mass_fluid[i]
-                print("Iteration: ",i," of ",len(self.P))
+                #print("Iteration: ",i," of ",len(self.P))
                 P1, T1 = self.UDproblem(U_end/ self.mass_fluid[i],self.rho[i],self.P[i-1],self.T_fluid[i-1])
 
                 self.P[i] = P1
