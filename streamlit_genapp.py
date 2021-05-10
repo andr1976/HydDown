@@ -26,8 +26,7 @@ def get_table_download_link(df,filename):
     filename=filename+'.csv'
     return f'<a href="data:application/octet-stream;base64,{b64}" download={filename}>Download csv file</a>'
 
-if __name__ == "__main__":
-
+def read_input():
     sideb = st.sidebar
     length = sideb.text_input('Vessel length (m):',0.463)
     diam = sideb.text_input('Vessel diam (m):',0.254) 
@@ -92,7 +91,11 @@ if __name__ == "__main__":
     input['heat_transfer']['h_outer']=5
     input['heat_transfer']['h_inner']='calc'
     input['heat_transfer']['D_throat']=float(diam)
+    return input
 
+
+if __name__ == "__main__":
+    input = read_input()
     hdown=HydDown(input)
     hdown.run()
 
@@ -108,8 +111,7 @@ if __name__ == "__main__":
     st.markdown(get_table_download_link(df,file_name), unsafe_allow_html=True)
 
     col1, col2= st.beta_columns(2)
-    
-        
+            
     temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15})
     pres_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Pressure (bar)': hdown.P/1e5})
 
