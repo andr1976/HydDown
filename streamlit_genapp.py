@@ -7,10 +7,26 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as  pd
+import re
+import base64
+import json
+import pickle
+import uuid
+
 from hyddown import HydDown
 
+
+def get_table_download_link(df,filename):
+    """Generates a link allowing the data in a given panda dataframe to be downloaded
+    in:  dataframe
+    out: href string
+    """
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
+    filename=filename+'.csv'
+    return f'<a href="data:application/octet-stream;base64,{b64}" download={filename}>Download csv file</a>'
+
 if __name__ == "__main__":
-    #matplotlib.use('TkAgg')
 
     sideb = st.sidebar
     length = sideb.text_input('Vessel length (m):',0.463)
@@ -77,16 +93,23 @@ if __name__ == "__main__":
     input['heat_transfer']['h_inner']='calc'
     input['heat_transfer']['D_throat']=float(diam)
 
+    hdown=HydDown(input)
+    hdown.run()
+
     col = st.beta_columns(1)
     st.title('HydDown rigorous gas vessel discharge/filling calculation')
     st.subheader(r'https://github.com/andr1976/HydDown')
     my_expander = st.beta_expander("Description")
     my_expander.write('Real gas vessel pressurisation/depressurisation with heat transfer from gas to vessel and ambient. Orifice size (Cd = 0.84) is specified for desired pressurisation/depressurisation rate.')
 
-    col1, col2= st.beta_columns(2)
-    hdown=HydDown(input)
-    hdown.run()
+    df=hdown.get_dataframe()#pd.read_csv('history_relief_Cd08.csv')
+    file_name=st.text_input('Filename for saving data:','testrun') 
     
+    st.markdown(get_table_download_link(df,file_name), unsafe_allow_html=True)
+
+    col1, col2= st.beta_columns(2)
+    
+        
     temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15})
     pres_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Pressure (bar)': hdown.P/1e5})
 

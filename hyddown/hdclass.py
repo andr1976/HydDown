@@ -4,6 +4,7 @@
 
 import math
 import numpy as np
+import pandas as pd
 from scipy.optimize import fmin
 from scipy.optimize import minimize
 from CoolProp.CoolProp import PropsSI
@@ -16,6 +17,7 @@ class HydDown:
     def __init__(self, input):
         self.input = input
         self.verbose = 0
+        self.isrun = False
         self.validate_input()
         self.read_input()
         self.initialize()
@@ -129,11 +131,6 @@ class HydDown:
         self.S_mass = np.zeros(data_len)
         self.U_mass = np.zeros(data_len)
         self.U_tot = np.zeros(data_len)
-        self.U_iter = np.zeros(data_len)
-        self.m_iter = np.zeros(data_len)
-        self.n_iter = np.zeros(data_len)
-        self.Qo = np.zeros(data_len)
-        self.Qi = np.zeros(data_len)
         self.P = np.zeros(data_len)
         self.mass_fluid = np.zeros(data_len)
         self.mass_rate = np.zeros(data_len)
@@ -489,7 +486,27 @@ class HydDown:
                 massflow_stop_switch = 1
             if massflow_stop_switch:
                 self.mass_rate[i]=0
+        self.isrun = True
 
+    def get_dataframe(self):
+        if self.isrun == True:
+            df=pd.DataFrame(self.time_array,columns=['Time (s)'])
+            
+            df.insert(1,"Pressure (bar)", self.P/1e5, True)
+            df.insert(2,"Fluid temperature (oC)", self.T_fluid - 273.15, True)
+            df.insert(3,"Wall temperature  (oC)", self.T_vessel - 273.15, True)
+            df.insert(4,"Vent temperature  (oC)", self.T_vessel - 273.15, True)
+            df.insert(5, "Fluid enthalpy (J/kg)", self.H_mass, True)
+            df.insert(6, "Fluid entropy (J/kg K)", self.S_mass, True)
+            df.insert(7, "Fluid internal energy (J/kg)", self.U_mass, True)
+            df.insert(8, "Discharge mass rate (kg/s)", self.mass_rate, True)
+            df.insert(9, "Fluid mass (kg)", self.mass_fluid, True)
+            df.insert(10, "Fluid density (kg/m3)", self.rho, True)
+            df.insert(11, "Inner heat transfer coefficient (W/m2 K)", self.h_inside, True)
+            df.insert(12, "Internal heat flux (W/m2)", self.Q_inner/self.surf_area_inner, True)
+            df.insert(13, "External heat flux (W/m2)", self.Q_outer/self.surf_area_outer, True)
+            
+        return df
 
     def plot(self,filename=None):
         import pylab as plt
