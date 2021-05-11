@@ -11,7 +11,7 @@ from hyddown import HydDown
 
 if __name__ == "__main__":
     #matplotlib.use('TkAgg')
-
+    st.set_page_config(layout='wide')
     sideb = st.sidebar
     length = sideb.text_input('Vessel length (m):',10)
     diam = sideb.text_input('Vessel diam (m):',3) 
