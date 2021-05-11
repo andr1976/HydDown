@@ -25,36 +25,45 @@ def get_table_download_link(df,filename):
 
 def read_input():
     sideb = st.sidebar
-    icon = Image.open('./docs/img/Sketch.png')
-    st.sidebar.image(icon, use_column_width=True, caption="HydDown")
-
-    length = sideb.text_input('Vessel length (m):',0.463)
-    diam = sideb.text_input('Vessel diam (m):',0.254) 
-    thk = sideb.text_input('Vessel thichness (m):',0.016)
-    orientation = sideb.selectbox('Vessel orientation', ('horizontal', 'vertical'))
-    orifice_diam = sideb.text_input('Orifice diam (mm):',0.40) 
-    orifice_diam = float(orifice_diam)/1000
-    pres = sideb.text_input('Initial pressure (bar):', 50.)
-    pres = float(pres)*1e5
-
-    back_pressure = sideb.text_input('Filling or back-pressure (bar):',240) 
-    back_pressure= float(back_pressure)*1e5
-
-    fluid = sideb.selectbox('Select fluid', ('H2', 'He', 'N2', 'air', 'CH4'))
-
-    mode = sideb.selectbox('Select mode', ('filling', 'discharge'))
     
-    temp = sideb.text_input('Initial temperature (C):',25)
-    temp = float(temp)+273.15
-    
-    tstep = sideb.text_input('Calculation time step (s):',1.0) 
-    end_time = sideb.text_input('Calculation end time (s):',240) 
-   
-    density = sideb.text_input('Vessel material density (kg/m3):',7740) 
-    density= float(density)
+    with sideb:
+        icon = Image.open('./docs/img/Sketch.png')
+        st.image(icon, use_column_width=True, caption="HydDown")
+        
+        with st.form(key='my_form'):
+            submit_button = st.form_submit_button(label='Run calculation')
+            c1,c2 = st.beta_columns(2)
+            
+            with c2:
+                length = st.text_input('Vessel length (m):',0.463)
+            
+                diam = st.text_input('Vessel diam (m):',0.254) 
+                thk = st.text_input('Vessel thichness (m):',0.016)
+                orientation = st.selectbox('Vessel orientation', ('horizontal', 'vertical'))
+                orifice_diam = st.text_input('Orifice diam (mm):',0.40) 
+                orifice_diam = float(orifice_diam)/1000
+                tstep = st.text_input('Time step (s):',1.0) 
 
-    cp = sideb.text_input('Vessel material heat capacity (J/kg K):',470) 
-    cp= float(cp)
+            with c1:
+                pres = st.text_input('Initial pressure (bar):', 50.)
+                pres = float(pres)*1e5
+
+                back_pressure = st.text_input('Fill/back pres. (bar):',240) 
+                back_pressure= float(back_pressure)*1e5
+
+                fluid = st.selectbox('Select fluid', ('H2', 'He', 'N2', 'air', 'CH4'))
+
+                mode = st.selectbox('Select mode', ('filling', 'discharge'))
+    
+                temp = st.text_input('Initial temp. (C):',25)
+                temp = float(temp)+273.15
+                end_time = st.text_input('End time (s):',240) 
+               
+            density = st.text_input('Vessel material density (kg/m3):',7740) 
+            density= float(density)
+
+            cp = st.text_input('Vessel material heat capacity (J/kg K):',470) 
+            cp= float(cp)
 
 
     input={}
@@ -95,11 +104,11 @@ def read_input():
 
 
 if __name__ == "__main__":
+    st.set_page_config(layout='wide')
     input = read_input()
     hdown=HydDown(input)
     hdown.run()
-
-    col = st.beta_columns(1)
+        
     st.title('HydDown rigorous gas vessel discharge/filling calculation')
     st.subheader(r'https://github.com/andr1976/HydDown')
     my_expander = st.beta_expander("Description")
@@ -111,7 +120,7 @@ if __name__ == "__main__":
     st.markdown(get_table_download_link(df,file_name), unsafe_allow_html=True)
 
     col1, col2= st.beta_columns(2)
-            
+
     temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15})
     pres_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Pressure (bar)': hdown.P/1e5})
 

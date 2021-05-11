@@ -277,3 +277,10 @@ def test_sim_stefan_boltzmann():
     hdown = HydDown(input)
     hdown.run()
 
+def test_dataframe():
+    from hyddown import HydDown
+
+    input = get_example_input("controlvalve.yml")
+    hdown = HydDown(input)
+    hdown.run()
+    df=hdown.get_dataframe()
