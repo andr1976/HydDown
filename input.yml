@@ -8,7 +8,7 @@ vessel:
 initial:
   temperature: 288.0
   pressure: 15000000.
-  fluid: "Methane[0.9]&Ethane[0.1]"
+  fluid: "N2"
 calculation:
   type: "energybalance"
   time_step: 0.05
