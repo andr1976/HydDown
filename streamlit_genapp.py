@@ -120,7 +120,7 @@ if __name__ == "__main__":
     my_expander.write('For more information about the calculations and validation of the code please refer to the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf)')
 
     df=hdown.get_dataframe()
-    file_name=st.text_input('Filename for saving data:','testrun') 
+    file_name=st.text_input('Filename for saving data:','saved_data') 
     
     st.markdown(get_table_download_link(df,file_name), unsafe_allow_html=True)
 
