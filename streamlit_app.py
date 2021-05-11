@@ -118,7 +118,7 @@ if __name__ == "__main__":
     hdown=HydDown(input)
     hdown.run()
     
-    st.title('HydDown adiabatic demo')
+    st.title('HydDown rigorous demo')
     st.subheader(r'https://github.com/andr1976/HydDown')
     my_expander = st.beta_expander("Description")
 
