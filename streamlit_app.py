@@ -7,62 +7,136 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as  pd
+from PIL import Image
+import base64
+
 from hyddown import HydDown
 
-if __name__ == "__main__":
-    #matplotlib.use('TkAgg')
-    st.set_page_config(layout='wide')
+
+def get_table_download_link(df,filename):
+    """
+    Generates a link allowing the data in a given panda dataframe to be downloaded
+    in:  dataframe
+    out: href string
+    """
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()  # some strings <-> bytes conversions necessary here
+    filename=filename+'.csv'
+    return f'<a href="data:application/octet-stream;base64,{b64}" download={filename}>Download csv file</a>'
+
+def read_input():
     sideb = st.sidebar
-    length = sideb.text_input('Vessel length (m):',10)
-    diam = sideb.text_input('Vessel diam (m):',3) 
-    orifice_diam = sideb.text_input('Orifice diam (mm):',100) 
-    orifice_diam = float(orifice_diam)/1000
-    pres = sideb.text_input('Initial pressure (bar):',100)
-    pres = float(pres)*1e5
-    temp = sideb.text_input('Initial temperature (C):',25)
-    temp = float(temp)+273.15
-    fluid = sideb.selectbox(
-        'Select fluid',
-        ('N2', 'He', 'H2', 'air', 'CH4'))
-    option = sideb.selectbox(
-        'Select calculation type',
-        ('isothermal', 'isenthalpic', 'isentropic'))
     
-    tstep = sideb.text_input('Calculation time step (s):',0.5) 
-    end_time = sideb.text_input('Calculation end time (s):',100) 
+    with sideb:
+        icon = Image.open('./docs/img/Sketch.png')
+        st.image(icon, use_column_width=True, caption="HydDown")
+        
+        with st.form(key='my_form'):
+            submit_button = st.form_submit_button(label='Run calculation')
+            heattran = st.checkbox("Include heat transfer",value=True)
+            c1,c2 = st.beta_columns(2)
+            
+            with c2:
+                length = st.text_input('Vessel length (m):',0.463)
+            
+                diam = st.text_input('Vessel diam (m):',0.254) 
+                thk = st.text_input('Vessel thichness (m):',0.016)
+                orientation = st.selectbox('Vessel orientation', ('horizontal', 'vertical'))
+                orifice_diam = st.text_input('Orifice diam (mm):',0.40) 
+                orifice_diam = float(orifice_diam)/1000
+                tstep = st.text_input('Time step (s):',1.0) 
+
+            with c1:
+                pres = st.text_input('Initial pressure (bar):', 50.)
+                pres = float(pres)*1e5
+
+                back_pressure = st.text_input('Fill/back pres. (bar):',240) 
+                back_pressure= float(back_pressure)*1e5
+
+                fluid = st.selectbox('Select fluid', ('H2', 'He', 'N2', 'air', 'CH4'))
+
+                mode = st.selectbox('Select mode', ('filling', 'discharge'))
     
+                temp = st.text_input('Initial temp. (C):',25)
+                temp = float(temp)+273.15
+                end_time = st.text_input('End time (s):',240) 
+               
+            density = st.text_input('Vessel material density (kg/m3):',7740) 
+            density= float(density)
+
+            cp = st.text_input('Vessel material heat capacity (J/kg K):',470) 
+            cp= float(cp)
+
+
     input={}
     input['calculation'] = {}
     input['vessel'] = {}
     input['initial'] = {}
     input['valve'] = {}
+    input['heat_transfer'] = {}
 
-    input['calculation']['type'] = option
+    input['calculation']['type'] = 'energybalance'
     input['calculation']['time_step'] = float(tstep)
     input['calculation']['end_time'] = float(end_time)
+    
     input['vessel']['length'] = float(length)
     input['vessel']['diameter'] = float(diam)
+    input['vessel']['heat_capacity']=cp
+    input['vessel']['density']=density
+    input['vessel']['orientation']=orientation
+    input['vessel']['thickness']=float(thk)
+
+    
     input['initial']['pressure'] = pres
     input['initial']['temperature'] = temp
     input['initial']['fluid'] = fluid
-    input['valve']['flow'] = 'discharge'
+    input['valve']['flow'] = mode
     input['valve']['type'] = 'orifice'
     input['valve']['diameter'] = float(orifice_diam)
     input['valve']['discharge_coef'] = 0.84
-    input['valve']['back_pressure'] = 1e5
+    input['valve']['back_pressure'] = back_pressure
+    #input['valve']['end_pressure']=end_pressure
+
+
+    input['heat_transfer']['type']='specified_h'
+    input['heat_transfer']['temp_ambient']=298
+    input['heat_transfer']['h_outer']=5
+    if heattran == True:
+        input['heat_transfer']['h_inner']='calc'
+    else:
+        input['heat_transfer']['h_inner']=0.0
+    input['heat_transfer']['D_throat']=float(diam)
+    return input
 
     
-    col = st.beta_columns(1)
-    st.title('HydDown adiabatic demo')
-    st.subheader(r'https://github.com/andr1976/HydDown')
-    my_expander = st.beta_expander("Description")
-    my_expander.write('Real gas vessel depressurisation for pure and pseudo-pure components. No heat transfer is enabled in this demo version.')
 
-    col1, col2= st.beta_columns(2)
+if __name__ == "__main__":
+    #matplotlib.use('TkAgg')
+    st.set_page_config(layout='wide')
+
+    input = read_input()
     hdown=HydDown(input)
     hdown.run()
     
-    temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Temperature (C)': hdown.T_fluid-273.15})
+    st.title('HydDown adiabatic demo')
+    st.subheader(r'https://github.com/andr1976/HydDown')
+    my_expander = st.beta_expander("Description")
+
+    my_expander.write('Real gas vessel pressurisation/depressurisation with heat transfer from gas to vessel and ambient and vice versa. Orifice size (Cd = 0.84) is specified for desired pressurisation/depressurisation rate.')
+    my_expander.write('For more information about the calculations and validation of the code please refer to the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf)')
+
+    df=hdown.get_dataframe()
+    file_name=st.text_input('Filename for saving data:','saved_data') 
+    
+    st.markdown(get_table_download_link(df,file_name), unsafe_allow_html=True)
+
+    col1, col2= st.beta_columns(2)
+
+    if input['valve']['flow']=='discharge':
+        temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15, 'Vent temperature (C)': hdown.T_vent-273.15})
+    else:
+        temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15})
+
     pres_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Pressure (bar)': hdown.P/1e5})
 
     col1.line_chart(pres_data.rename(columns={'Time (s)':'index'}).set_index('index'))
