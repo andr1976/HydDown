@@ -14,7 +14,8 @@ from hyddown import HydDown
 
 
 def get_table_download_link(df,filename):
-    """Generates a link allowing the data in a given panda dataframe to be downloaded
+    """
+    Generates a link allowing the data in a given panda dataframe to be downloaded
     in:  dataframe
     out: href string
     """
