@@ -97,6 +97,7 @@ def read_input():
     input['valve']['back_pressure'] = back_pressure
     #input['valve']['end_pressure']=end_pressure
 
+
     input['heat_transfer']['type']='specified_h'
     input['heat_transfer']['temp_ambient']=298
     input['heat_transfer']['h_outer']=5
@@ -107,16 +108,20 @@ def read_input():
     input['heat_transfer']['D_throat']=float(diam)
     return input
 
+    
 
 if __name__ == "__main__":
+    #matplotlib.use('TkAgg')
     st.set_page_config(layout='wide')
+
     input = read_input()
     hdown=HydDown(input)
     hdown.run()
-        
-    st.title('HydDown rigorous gas vessel discharge/filling calculation')
+    
+    st.title('HydDown adiabatic demo')
     st.subheader(r'https://github.com/andr1976/HydDown')
     my_expander = st.beta_expander("Description")
+
     my_expander.write('Real gas vessel pressurisation/depressurisation with heat transfer from gas to vessel and ambient and vice versa. Orifice size (Cd = 0.84) is specified for desired pressurisation/depressurisation rate.')
     my_expander.write('For more information about the calculations and validation of the code please refer to the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf)')
 
