@@ -51,6 +51,7 @@ if __name__ == "__main__":
     input['valve']['discharge_coef'] = 0.84
     input['valve']['back_pressure'] = 1e5
 
+    st.beta_set_page_config(layout="wide")
     col = st.beta_columns(1)
     st.title('HydDown adiabatic demo')
     st.subheader(r'https://github.com/andr1976/HydDown')
