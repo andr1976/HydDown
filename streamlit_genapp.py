@@ -32,6 +32,7 @@ def read_input():
         
         with st.form(key='my_form'):
             submit_button = st.form_submit_button(label='Run calculation')
+            heattran = st.checkbox("Include heat transfer",value=True)
             c1,c2 = st.beta_columns(2)
             
             with c2:
@@ -98,7 +99,10 @@ def read_input():
     input['heat_transfer']['type']='specified_h'
     input['heat_transfer']['temp_ambient']=298
     input['heat_transfer']['h_outer']=5
-    input['heat_transfer']['h_inner']='calc'
+    if heattran == True:
+        input['heat_transfer']['h_inner']='calc'
+    else:
+        input['heat_transfer']['h_inner']=0.0
     input['heat_transfer']['D_throat']=float(diam)
     return input
 
@@ -112,16 +116,21 @@ if __name__ == "__main__":
     st.title('HydDown rigorous gas vessel discharge/filling calculation')
     st.subheader(r'https://github.com/andr1976/HydDown')
     my_expander = st.beta_expander("Description")
-    my_expander.write('Real gas vessel pressurisation/depressurisation with heat transfer from gas to vessel and ambient. Orifice size (Cd = 0.84) is specified for desired pressurisation/depressurisation rate.')
+    my_expander.write('Real gas vessel pressurisation/depressurisation with heat transfer from gas to vessel and ambient and vice versa. Orifice size (Cd = 0.84) is specified for desired pressurisation/depressurisation rate.')
+    my_expander.write('For more information about the calculations and validation of the code please refer to the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf)')
 
-    df=hdown.get_dataframe()#pd.read_csv('history_relief_Cd08.csv')
+    df=hdown.get_dataframe()
     file_name=st.text_input('Filename for saving data:','testrun') 
     
     st.markdown(get_table_download_link(df,file_name), unsafe_allow_html=True)
 
     col1, col2= st.beta_columns(2)
 
-    temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15})
+    if input['valve']['flow']=='discharge':
+        temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15, 'Vent temperature (C)': hdown.T_vent-273.15})
+    else:
+        temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15})
+
     pres_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Pressure (bar)': hdown.P/1e5})
 
     col1.line_chart(pres_data.rename(columns={'Time (s)':'index'}).set_index('index'))
