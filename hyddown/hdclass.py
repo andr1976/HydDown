@@ -145,7 +145,7 @@ class HydDown:
             res_fun = lambda x: ((U-PropsSI("U","P",x[0],"T",x[1],self.species))/U)**2 + ((rho-PropsSI("D","P",x[0],"T",x[1],self.species))/rho)**2
             x0=[Pguess,Tguess]
             bounds=[(Pguess*0.95,Pguess+1e5),(Tguess-1,Tguess+1)]
-            res=minimize(res_fun,x0,method='Nelder-Mead')
+            res=minimize(res_fun,x0,method='SLSQP')#minimize(res_fun,x0,method='Nelder-Mead')
             P1 = res.x[0]
             T1 = res.x[1]
         else:
