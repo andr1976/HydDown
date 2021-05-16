@@ -540,7 +540,7 @@ class HydDown:
             df.insert(1,"Pressure (bar)", self.P/1e5, True)
             df.insert(2,"Fluid temperature (oC)", self.T_fluid - 273.15, True)
             df.insert(3,"Wall temperature  (oC)", self.T_vessel - 273.15, True)
-            df.insert(4,"Vent temperature  (oC)", self.T_vessel - 273.15, True)
+            df.insert(4,"Vent temperature  (oC)", self.T_vent - 273.15, True)
             df.insert(5, "Fluid enthalpy (J/kg)", self.H_mass, True)
             df.insert(6, "Fluid entropy (J/kg K)", self.S_mass, True)
             df.insert(7, "Fluid internal energy (J/kg)", self.U_mass, True)
