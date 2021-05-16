@@ -11,7 +11,7 @@ initial:
   fluid: "H2" 
 calculation:
   type: "energybalance"
-  time_step: 0.02
+  time_step: 0.1
   end_time: 240.
 valve:
   flow: "filling"

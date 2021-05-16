@@ -53,6 +53,7 @@ class HydDown:
         else:
             self.comp = self.input["initial"]["fluid"]
             self.molefracs = [1.0]
+            self.compSRK = self.input["initial"]["fluid"]
         
         self.tstep = self.input["calculation"]["time_step"]
         self.time_tot = self.input["calculation"]["end_time"]
@@ -144,7 +145,9 @@ class HydDown:
         self.transport_fluid.set_mole_fractions(self.molefracs)
 
         self.vent_fluid = CP.AbstractState("HEOS",self.comp)
+        self.vent_fluid.specify_phase(CP.iphase_gas)
         self.vent_fluid.set_mole_fractions(self.molefracs)
+        self.vent_fluid.update(CP.PT_INPUTS, self.p0,  self.T0)
 
         self.res_fluid = CP.AbstractState("HEOS",self.comp)
         self.res_fluid.set_mole_fractions(self.molefracs)
@@ -172,6 +175,28 @@ class HydDown:
         self.rho0 = self.fluid.rhomass() #PropsSI("D", "T", self.T0, "P", self.p0, self.species)
         self.m0 = self.rho0 * self.vol
         self.MW = self.fluid.molar_mass() #PropsSI("M", self.species)
+
+
+    def PHres(self,T, P, H):
+        self.vent_fluid.update(CP.PT_INPUTS, P, T)
+        return ((H-self.vent_fluid.hmass())/H)**2 
+
+
+    def PHproblem(self, H, P, Tguess):
+        if "&" in self.species:                     
+            import time 
+            t1 = time.time()
+            x0=Tguess
+            #bounds=[(Pguess*0.95,Pguess+1e5),(Tguess-1,Tguess+1)]
+            res=minimize(self.PHres, x0, args=(P, H), method='Nelder-Mead', options={'xatol':0.1,'fatol':0.001})
+            t2 = time.time()
+            T1 = res.x[0]
+        else:
+            T1 = PropsSI(
+                "T", "P", P, "H", H, self.species
+               )  
+        return T1
+
 
     def UDres(self,x, U, rho):
         self.fluid.update(CP.PT_INPUTS, x[0], x[1])
@@ -206,9 +231,9 @@ class HydDown:
         self.T_fluid[0] = self.T0
         self.T_vessel[0] = self.T0
         if self.input["valve"]["flow"] == "discharge": self.T_vent[0] = self.T0
-        self.H_mass[0] = self.fluid.hmass() #PropsSI("H", "T", self.T0, "P", self.p0, self.species)
-        self.S_mass[0] = self.fluid.smass() #PropsSI("S", "T", self.T0, "P", self.p0, self.species)
-        self.U_mass[0] = self.fluid.umass() #PropsSI("U", "T", self.T0, "P", self.p0, self.species)
+        self.H_mass[0] = self.fluid.hmass() 
+        self.S_mass[0] = self.fluid.smass() 
+        self.U_mass[0] = self.fluid.umass() 
         self.U_tot[0] = self.fluid.umass() * self.m0
         self.P[0] = self.p0
         self.mass_fluid[0] = self.m0
@@ -259,14 +284,14 @@ class HydDown:
 
         elif input["valve"]["type"] == "controlvalve":
             if input["valve"]["flow"] == "filling":
-                Z = self.res_fluid.compressibility_factor() #PropsSI("Z", "T", self.T0, "P", self.p_back, self.species)
+                Z = self.res_fluid.compressibility_factor() 
                 MW = self.MW
                 k = self.res_fluid.cp0molar() / self.res_fluid.cvmolar()
                 self.mass_rate[0] = -tp.control_valve(
                     self.p_back, self.p0, self.T0, Z, MW, k, self.Cv
                 )
             else:
-                Z = self.fluid.compressibility_factor() #PropsSI("Z", "T", self.T0, "P", self.p0, self.species)
+                Z = self.fluid.compressibility_factor() 
                 MW = self.MW 
                 k = cpcv
                 self.mass_rate[0] = tp.control_valve(
@@ -343,13 +368,6 @@ class HydDown:
                             T_film = (self.T_fluid[i - 1]+self.T_vessel[i - 1])/2
                             self.transport_fluid.update(CP.PT_INPUTS, self.P[i-1], T_film)
                             hi = tp.h_inside(L, self.T_vessel[i-1], self.T_fluid[i-1], self.transport_fluid)
-                            # hi = tp.h_inner(
-                            #     L,
-                            #     self.T_fluid[i - 1],
-                            #     self.T_vessel[i - 1],
-                            #     self.P[i - 1],
-                            #     self.species,
-                            # )
                     else:
                         hi = self.h_in
                     
@@ -451,22 +469,24 @@ class HydDown:
             print(i, self.P[i])
 
             if self.input["valve"]["flow"] == "discharge":
-                try:
-                    self.T_vent[i] = PropsSI("T", "H", self.H_mass[i], "P", self.p_back, self.species)
-                except:
-                    self.T_vent[i]=273.15
+                if "&" in self.species:
+                    self.T_vent[i] = self.PHproblem(self.H_mass[i], self.p_back, self.vent_fluid.T())
+                    try:
+                        self.T_vent[i] = self.PHproblem(self.H_mass[i], self.p_back, self.vent_fluid.T())
+                    except:
+                        self.T_vent[i]=273.15
+                else:
+                    self.T_vent[i]=PropsSI("T", "H", self.H_mass[i], "P", self.p_back, self.species)
 
             cpcv = self.fluid.cp0molar() / self.fluid.cvmolar()
             
             if input["valve"]["type"] == "orifice":
                 if input["valve"]["flow"] == "filling":
-                    k = PropsSI(
-                        "CP0MOLAR", "T|gas", self.T0, "P", self.p_back, self.species
-                    ) / PropsSI("CVMOLAR", "T|gas", self.T0, "P", self.p_back, self.species)
+                    k = self.res_fluid.cp0molar()/self.res_fluid.cvmolar()
                     self.mass_rate[i] = -tp.gas_release_rate(
                         self.p_back,
                         self.P[i],
-                        PropsSI("D", "T|gas", self.T0, "P", self.p_back, self.species),
+                        self.res_fluid.rhomass(),
                         k,
                         self.CD,
                         self.D_orifice ** 2 / 4 * math.pi,
@@ -482,19 +502,15 @@ class HydDown:
                     )
             elif input["valve"]["type"] == "controlvalve":
                 if input["valve"]["flow"] == "filling":
-                    Z = PropsSI("Z", "T|gas", self.T0, "P", self.p_back, self.species)
-                    MW = PropsSI("M", "T|gas", self.T0, "P", self.p_back, self.species)
-                    k = PropsSI(
-                        "CP0MOLAR", "T|gas", self.T0, "P", self.p_back, self.species
-                    ) / PropsSI("CVMOLAR", "T|gas", self.T0, "P", self.p_back, self.species)
+                    Z = self.res_fluid.compressibility_factor() 
+                    MW = self.MW 
+                    k = self.res_fluid.cp0molar()/self.res_fluid.cvmolar()
                     self.mass_rate[i] = -tp.control_valve(
                         self.p_back, self.P[i], self.T0, Z, MW, k, self.Cv
                     )
                 else:
-                    Z = PropsSI("Z", "T|gas", self.T_fluid[i], "P", self.P[i], self.species)
-                    MW = PropsSI(
-                        "M", "T|gas", self.T_fluid[i], "P", self.P[i], self.species
-                    )
+                    Z = self.fluid.compressibility_factor() 
+                    MW = self.MW 
                     self.mass_rate[i] = tp.control_valve(
                         self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, self.Cv
                     )
@@ -507,8 +523,8 @@ class HydDown:
                     cpcv,
                     self.CD,
                     self.T_fluid[i],
-                    PropsSI('Z', 'T|gas', self.T_fluid[i], 'P', self.P[i], self.species),
-                    PropsSI('M', self.species),
+                    self.fluid.compressibility_factor(), 
+                    self.MW, 
                     self.D_orifice ** 2 / 4 * math.pi,
                 )
             if 'end_pressure' in self.input['valve'] and self.P[i] > self.input['valve']['end_pressure']:
