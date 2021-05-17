@@ -129,6 +129,24 @@ def test_api_psv_relief():
     assert tp.api_psv_release_rate(121.9e5, 1e5, 1.39, 0.975, 298.15, 1.01, 2/1e3, 71e-6) == pytest.approx(1860/3600, rel=0.01)
 
 
+def test_hinside():
+    fluid = CP.AbstractState("HEOS","air")
+    Tboundary = (311 + 505.4) / 2
+    fluid.update(CP.PT_INPUTS, 1e5, Tboundary)
+    h = tp.h_inside(0.305,311,505.4,fluid)
+    assert h == pytest.approx(7, abs=0.1)
+
+
+def test_hinside_mixed():
+    mdot = 1e-10
+    D = 0.010
+    fluid = CP.AbstractState("HEOS","air")
+    Tboundary = (311 + 505.4) / 2
+    fluid.update(CP.PT_INPUTS, 1e5, Tboundary)
+    h = tp.h_inside_mixed(0.305, 311, 505.4, fluid, mdot, D)
+    assert h == pytest.approx(7, abs=0.1)
+
+
 def test_hinner():
     h = tp.h_inner(0.305, 311, 505.4, 1e5, "HEOS::air")
     assert h == pytest.approx(7, abs=0.1)
