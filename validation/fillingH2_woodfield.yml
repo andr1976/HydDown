@@ -1,7 +1,7 @@
 vessel:
   length: 0.212
   diameter: 0.076
-  thickness: 0.030
+  thickness: 0.005
   heat_capacity: 500
   density: 7800. 
   orientation: "vertical"
@@ -11,7 +11,7 @@ initial:
   fluid: "H2" 
 calculation:
   type: "energybalance"
-  time_step: 0.01
+  time_step: 0.1
   end_time: 50.
   eta: 1
 valve:
@@ -23,7 +23,7 @@ valve:
 heat_transfer:
   type: "specified_h"
   temp_ambient: 305.
-  D_throat : 0.010
+  D_throat : 0.0050
   h_outer: 5. 
   h_inner: "calc"
 validation:

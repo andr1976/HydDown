@@ -13,8 +13,8 @@ def Gr(L, Tfluid, Tvessel, P, species):
     Prentice-Hall, 1993
     """
     T = (Tfluid + Tvessel) / 2
-    beta = PropsSI("ISOBARIC_EXPANSION_COEFFICIENT", "T", T, "P", P, species)
-    nu = PropsSI("V", "T", T, "P", P, 'HEOS::'+species.split('::')[1]) / PropsSI("D", "T", T, "P", P, species)
+    beta = PropsSI("ISOBARIC_EXPANSION_COEFFICIENT", "T|gas", T, "P", P, species)
+    nu = PropsSI("V", "T|gas", T, "P", P, 'HEOS::'+species.split('::')[1]) / PropsSI("D", "T|gas", T, "P", P, species)
     Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
     return Gr
 
@@ -25,11 +25,11 @@ def Pr(T, P, species):
     C. J. Geankoplis Transport Processes and Unit Operations, International Edition,
     Prentice-Hall, 1993
     """
-    Pr = (
-        PropsSI("C", "T", T, "P", P, 'HEOS::'+species.split('::')[1])
-        * PropsSI("V", "T", T, "P", P, 'HEOS::'+species.split('::')[1])
-        / PropsSI("L", "T", T, "P", P, 'HEOS::'+species.split('::')[1])
-    )
+    C = PropsSI("C", "T|gas", T, "P", P, species)
+    V = PropsSI("V", "T|gas", T, "P", P, 'HEOS::'+species.split('::')[1])
+    L = PropsSI("L", "T|gas", T, "P", P, 'HEOS::'+species.split('::')[1])
+    Pr = C * V / L
+
     return Pr
 
 
@@ -47,6 +47,21 @@ def Nu(Ra, Pr):
         NNu = 1.36 * Ra ** 0.20
     return NNu
 
+def h_inside(L, Tvessel, Tfluid, fluid):
+    cond = fluid.conductivity()
+    visc = fluid.viscosity()
+    cp = fluid.cpmass()
+    Pr = cp * visc / cond
+
+    T = (Tfluid + Tvessel) / 2
+    beta = fluid.isobaric_expansion_coefficient()
+    nu = visc / fluid.rhomass()
+    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
+    Ra = Pr * Gr
+    NNu = Nu(Ra, Pr)
+    h_inner = NNu * cond / L
+    return h_inner
+
 
 def h_inner(L, Tfluid, Tvessel, P, species):
     """
@@ -56,7 +71,27 @@ def h_inner(L, Tfluid, Tvessel, P, species):
     NGr = Gr(L, Tfluid, Tvessel, P, species)
     NRa = NPr * NGr
     NNu = Nu(NRa, NPr)
-    return NNu * PropsSI("L", "T", (Tfluid + Tvessel) / 2, "P", P, 'HEOS::'+species.split('::')[1]) / L
+    h_inner = NNu * PropsSI("L", "T|gas", (Tfluid + Tvessel) / 2, "P", P, 'HEOS::'+species.split('::')[1]) / L
+    return h_inner
+
+
+def h_inside_mixed(L, Tvessel, Tfluid, fluid, mdot, D):
+    cond = fluid.conductivity()
+    visc = fluid.viscosity()
+    cp = fluid.cpmass()
+    Pr = cp * visc / cond
+
+    T = (Tfluid + Tvessel) / 2
+    beta = fluid.isobaric_expansion_coefficient()
+    nu = visc / fluid.rhomass()
+    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
+    Ra = Pr * Gr
+
+    NNu_free = Nu(Ra,Pr)  # 0.13 * NRa**0.333
+
+    Re = 4 * abs(mdot) / (visc * math.pi * D)
+    NNu_forced = 0.56 * Re ** 0.67
+    return (NNu_free + NNu_forced) * cond  / L
 
 
 def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
@@ -64,11 +99,11 @@ def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
     NGr = Gr(L, Tfluid, Tvessel, P, species)
     NRa = NPr * NGr
     NNu_free = Nu(NRa,NPr)  # 0.13 * NRa**0.333
-    Re = 4 * abs(mdot) / (PropsSI("V", "T", Tfluid, "P", P, 'HEOS::'+species.split('::')[1]) * math.pi * D)
+    Re = 4 * abs(mdot) / (PropsSI("V", "T|gas", Tfluid, "P", P, 'HEOS::'+species.split('::')[1]) * math.pi * D)
     NNu_forced = 0.56 * Re ** 0.67
     return (
         (NNu_free + NNu_forced)
-        * PropsSI("L", "T", (Tfluid + Tvessel) / 2, "P", P, 'HEOS::'+species.split('::')[1])
+        * PropsSI("L", "T|gas", (Tfluid + Tvessel) / 2, "P", P, 'HEOS::'+species.split('::')[1])
         / L
     )
 

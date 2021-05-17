@@ -1,23 +1,23 @@
 vessel:
-  length: 5.5
-  diameter: 0.367
-  thickness: 0.03316
+  length: 104.1
+  diameter: 0.602
+  thickness: 0.02278
   heat_capacity: 500
   density: 7800. 
   orientation: "horizontal"
 initial:
   temperature: 273.0
-  pressure: 15500000.
+  pressure: 8101000.
   fluid:  "Methane[9.01290129e-01]&Ethane[6.35063506e-02]&N2[7.80078008e-03]&CO2[2.34023402e-02]&Propane[3.50035004e-03]&Butane[5.00050005e-04]"
   #fluid:  "Methane-SRK[9.01290129e-01]&Ethane-SRK[6.35063506e-02]&N2-SRK[7.80078008e-03]&CO2-SRK[2.34023402e-02]&Propane-SRK[3.50035004e-03]&Butane-SRK[5.00050005e-04]"
 calculation:
   type: "energybalance"
-  time_step: 1
-  end_time: 240.
+  time_step: 0.5
+  end_time: 360.
 valve:
   flow: "discharge"
   type: "orifice"
-  diameter: 0.009739
+  diameter: 0.04213
   discharge_coef: 0.84
   back_pressure: 101300.
 heat_transfer:

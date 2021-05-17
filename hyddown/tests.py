@@ -6,6 +6,7 @@ from hyddown import transport as tp
 from hyddown import fire
 from hyddown import validator
 from CoolProp.CoolProp import PropsSI
+import CoolProp.CoolProp as CP
 import pytest
 
 
@@ -233,7 +234,7 @@ def test_sim_orifice_full():
     hdown.run()
     hdown.plot()
     hdown.generate_report()
-    assert hdown.report['final_mass'] == pytest.approx(0.14, rel=0.01)
+    assert hdown.report['final_mass'] == pytest.approx(0.14, rel=0.02)
     assert hdown.report['min_wall_temp'] == pytest.approx(284.9, rel=0.01)
     assert hdown.report['min_fluid_temp'] == pytest.approx(193.7, rel=0.01)
     assert hdown.report['time_min_fluid_temp'] == pytest.approx(38.2, rel=0.01)
@@ -255,11 +256,25 @@ def test_sim_psv():
     hdown = HydDown(input)
     hdown.run()
 
+def test_isenthalpic():
+    from hyddown import HydDown
+
+    input = get_example_input("isenthalpic.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
 
 def test_sim_cv_filling():
     from hyddown import HydDown
 
     input = get_example_input("cv_filling.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+def test_mdot_filling():
+    from hyddown import HydDown
+
+    input = get_example_input("mdot_filling.yml")
     hdown = HydDown(input)
     hdown.run()
 
@@ -269,6 +284,14 @@ def test_sim_filling():
     input = get_example_input("filling.yml")
     hdown = HydDown(input)
     hdown.run()
+
+def test_multicomponent():
+    from hyddown import HydDown
+
+    input = get_example_input("ng.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
 
 def test_sim_stefan_boltzmann():
     from hyddown import HydDown

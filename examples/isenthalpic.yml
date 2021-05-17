@@ -1,0 +1,17 @@
+vessel:
+  length: 1.524
+  diameter: 0.273
+initial:
+  temperature: 388.0
+  pressure: 15000000.
+  fluid: "N2" 
+calculation:
+  type: "isenthalpic"
+  time_step: 0.05
+  end_time: 100.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.00635
+  discharge_coef: 0.8
+  back_pressure: 101300.
