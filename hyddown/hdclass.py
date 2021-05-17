@@ -5,7 +5,7 @@
 import math
 import numpy as np
 import pandas as pd
-from scipy.optimize import _trustregion_constr, fmin
+from scipy.optimize import fmin
 from scipy.optimize import minimize
 from CoolProp.CoolProp import PropsSI
 import CoolProp.CoolProp as CP
@@ -355,19 +355,14 @@ class HydDown:
                         else:
                             L = self.length
                         if input["valve"]["flow"] == "filling":
-                            hi = tp.h_inner_mixed(
-                                L,
-                                self.T_fluid[i - 1],
-                                self.T_vessel[i - 1],
-                                self.P[i - 1],
-                                self.species,
-                                self.mass_rate[i - 1],
-                                (self.D_throat) / 1,
-                            )
+                            T_film = (self.T_fluid[i - 1]+self.T_vessel[i - 1])/2
+                            self.transport_fluid.update(CP.PT_INPUTS, self.P[i-1], T_film)
+                            hi = tp.h_inside_mixed(L, self.T_vessel[i-1], self.T_fluid[i-1], self.transport_fluid, self.mass_rate[i-1], self.diameter)
                         else:
                             T_film = (self.T_fluid[i - 1]+self.T_vessel[i - 1])/2
                             self.transport_fluid.update(CP.PT_INPUTS, self.P[i-1], T_film)
                             hi = tp.h_inside(L, self.T_vessel[i-1], self.T_fluid[i-1], self.transport_fluid)
+                            
                     else:
                         hi = self.h_in
                     

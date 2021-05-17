@@ -75,6 +75,25 @@ def h_inner(L, Tfluid, Tvessel, P, species):
     return h_inner
 
 
+def h_inside_mixed(L, Tvessel, Tfluid, fluid, mdot, D):
+    cond = fluid.conductivity()
+    visc = fluid.viscosity()
+    cp = fluid.cpmass()
+    Pr = cp * visc / cond
+
+    T = (Tfluid + Tvessel) / 2
+    beta = fluid.isobaric_expansion_coefficient()
+    nu = visc / fluid.rhomass()
+    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
+    Ra = Pr * Gr
+
+    NNu_free = Nu(Ra,Pr)  # 0.13 * NRa**0.333
+
+    Re = 4 * abs(mdot) / (visc * math.pi * D)
+    NNu_forced = 0.56 * Re ** 0.67
+    return (NNu_free + NNu_forced) * cond  / L
+
+
 def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
     NPr = Pr((Tfluid + Tvessel) / 2, P, species)
     NGr = Gr(L, Tfluid, Tvessel, P, species)
