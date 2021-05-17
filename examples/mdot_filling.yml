@@ -1,0 +1,28 @@
+vessel:
+  length: 0.212
+  diameter: 0.076
+  thickness: 0.005
+  heat_capacity: 500
+  density: 7800. 
+  orientation: "vertical"
+initial:
+  temperature: 304.0
+  pressure: 100000.
+  fluid: "H2" 
+calculation:
+  type: "energybalance"
+  time_step: 0.1
+  end_time: 50.
+  eta: 1
+valve:
+  flow: "filling"
+  type: "mdot"
+  time : [ 0.0, 0.72194, 1.5811, 2.4124, 3.272, 4.1041, 4.9637,  5.7951, 6.654,  7.4852, 8.3439, 9.2023, 10.033, 10.891,  11.722,  12.58, 13.437, 14.268, 15.126, 15.956, 16.815]
+  mdot : [ 0.21e-3, 0.21708e-3, 0.26841e-3, 0.3094e-3, 0.41251e-3,  0.55705e-3, 0.66015e-3, 0.7115e-3, 0.73176e-3, 0.75204e-3, 0.7516e-3, 0.70973e-3, 0.64717e-3, 0.5846e-3, 0.52204e-3, 0.4284e-3,  0.29334e-3, 0.28255e-3, 0.17856e-3, 0.095289e-3, 0.094844e-3]
+  back_pressure: 10000000
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 305.
+  D_throat : 0.0050
+  h_outer: 5. 
+  h_inner: "calc"

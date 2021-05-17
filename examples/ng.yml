@@ -12,8 +12,8 @@ initial:
   #fluid:  "Methane-SRK[9.01290129e-01]&Ethane-SRK[6.35063506e-02]&N2-SRK[7.80078008e-03]&CO2-SRK[2.34023402e-02]&Propane-SRK[3.50035004e-03]&Butane-SRK[5.00050005e-04]"
 calculation:
   type: "energybalance"
-  time_step: 0.5
-  end_time: 360.
+  time_step: 1
+  end_time: 240.
 valve:
   flow: "discharge"
   type: "orifice"

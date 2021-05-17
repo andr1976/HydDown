@@ -256,11 +256,25 @@ def test_sim_psv():
     hdown = HydDown(input)
     hdown.run()
 
+def test_isenthalpic():
+    from hyddown import HydDown
+
+    input = get_example_input("isenthalpic.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
 
 def test_sim_cv_filling():
     from hyddown import HydDown
 
     input = get_example_input("cv_filling.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+def test_mdot_filling():
+    from hyddown import HydDown
+
+    input = get_example_input("mdot_filling.yml")
     hdown = HydDown(input)
     hdown.run()
 
@@ -270,6 +284,14 @@ def test_sim_filling():
     input = get_example_input("filling.yml")
     hdown = HydDown(input)
     hdown.run()
+
+def test_multicomponent():
+    from hyddown import HydDown
+
+    input = get_example_input("ng.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
 
 def test_sim_stefan_boltzmann():
     from hyddown import HydDown
