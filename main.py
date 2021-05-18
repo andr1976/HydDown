@@ -23,7 +23,6 @@ if __name__ == "__main__":
     hdown.run()
     end = time.time()
     print('Elapsed time: ',end-start,' sec.')
-    hdown.verbose=1
     hdown.plot()
 
     hdown.fluid.build_phase_envelope("None")

@@ -167,6 +167,7 @@ class HydDown:
         self.S_mass = np.zeros(data_len)
         self.U_mass = np.zeros(data_len)
         self.U_tot = np.zeros(data_len)
+        self.U_res = np.zeros(data_len)
         self.P = np.zeros(data_len)
         self.mass_fluid = np.zeros(data_len)
         self.mass_rate = np.zeros(data_len)
@@ -213,6 +214,7 @@ class HydDown:
             t2 = time.time()
             P1 = res.x[0]
             T1 = res.x[1]
+            Ures = U-self.fluid.umass()
         else:
             P1 = PropsSI(
                 "P", "D", rho, "U", U, self.species
@@ -220,8 +222,8 @@ class HydDown:
             T1 = PropsSI(
                 "T", "D", rho, "U", U, self.species
                )
-        
-        return P1, T1
+            Ures = 0 
+        return P1, T1, Ures
 
 
     def run(self):
@@ -447,7 +449,7 @@ class HydDown:
                 )  
                 self.U_mass[i] = U_end / self.mass_fluid[i]
                 #print("Iteration: ",i," of ",len(self.P))
-                P1, T1 = self.UDproblem(U_end/ self.mass_fluid[i],self.rho[i],self.P[i-1],self.T_fluid[i-1])
+                P1, T1, self.U_res[i] = self.UDproblem(U_end/ self.mass_fluid[i],self.rho[i],self.P[i-1],self.T_fluid[i-1])
 
                 self.P[i] = P1
                 self.T_fluid[i] = T1
@@ -548,7 +550,7 @@ class HydDown:
             
         return df
 
-    def plot(self,filename=None):
+    def plot(self,filename=None, verbose=True):
         import pylab as plt
 
         if filename != None:
@@ -639,7 +641,7 @@ class HydDown:
 
         if filename != None:
             plt.savefig(filename)
-        elif self.verbose:
+        elif verbose:
             plt.show()
 
 

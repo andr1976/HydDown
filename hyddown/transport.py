@@ -52,7 +52,6 @@ def h_inside(L, Tvessel, Tfluid, fluid):
     visc = fluid.viscosity()
     cp = fluid.cpmass()
     Pr = cp * visc / cond
-
     beta = fluid.isobaric_expansion_coefficient()
     nu = visc / fluid.rhomass()
     Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
