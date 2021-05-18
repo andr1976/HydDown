@@ -12,7 +12,7 @@ initial:
 calculation:
   type: "energybalance"
   time_step: 0.05
-  end_time: 100.
+  end_time: 200.
   eta: 1
 valve:
   flow: "discharge"

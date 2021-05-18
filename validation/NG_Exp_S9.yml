@@ -1,0 +1,37 @@
+vessel:
+  length: 3.0
+  diameter: 1.130
+  thickness: 0.059
+  heat_capacity: 500
+  density: 7800. 
+  orientation: "horizontal"
+initial:
+  temperature: 303.01
+  pressure: 12000000.0
+  fluid: "Methane[0.855]&Ethane[0.045]&Propane[0.10]"
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 1200.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.010
+  discharge_coef: 0.84
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 292.15
+  h_outer: 5 
+  h_inner: 'calc'
+validation:
+  temperature:
+    gas_high:
+      time: [0, 99.605, 199.21, 298.81, 398.42, 498.02, 600, 699.6, 799.21, 901.19, 1000.8, 1100.4, 1200]
+      temp: [303.01, 273.59, 264.88, 257.47, 255.08, 255.08, 255.73, 259.87, 262.92, 266.19, 269.02, 272.07,  274.9]
+    gas_low:
+      time: [0, 99.605, 199.21, 298.81, 400.79, 498.02, 600, 699.6, 799.21, 901.19, 1000.8, 1100.4, 1200]
+      temp: [303.22, 270.76, 262.7, 254.2, 250.07, 248.54, 247.67, 248.98, 252.68, 257.25, 260.31, 262.7, 264.23]
+  pressure:
+    time: [0, 98.851, 200, 298.85, 400, 498.85, 600, 698.85, 797.7, 901.15, 1000, 1098.9, 1200]
+    pres: [120., 64.788, 47.87, 29.701, 18.797, 11.656, 7.5188, 3.3849, 2.5091, 1.1264, 0.25063, 0.12675, 0]
