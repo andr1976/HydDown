@@ -36,7 +36,7 @@ A few choices are made to keep things simple to begin with:
 These choices make the problem a lot more simple to solve. First of all, the the pure substance Helmholtz energy based equation of state (HEOS) in coolprop offers a lot of convenience in terms of the property pairs/state variables that can be set independently. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said, the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
 ## Getting the software
-The source code can be obtained from GitHub either via `git` or via the latest tar-ball release. No packaged releases have currently been planned for **pip**, **canda** or similar, since the code is still in alpha stage. This might change in the future. The main branch is located here:
+The source code can be obtained from GitHub either via `git` or via the latest tar-ball release. No packaged releases have currently been planned for **pip**, **conda** or similar, since the code is still in alpha stage. This might change in the future. The main branch is located here:
 
 [`https://github.com/andr1976/HydDown`](https://github.com/andr1976/HydDown)
 
