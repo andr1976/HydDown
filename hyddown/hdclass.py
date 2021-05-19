@@ -455,7 +455,7 @@ class HydDown:
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
 
-            print(i, self.P[i])
+            print("Progress", int(i/(self.time_tot / self.tstep)*100),"%",end="\r")
 
             if self.input["valve"]["flow"] == "discharge":
                 if "&" in self.species:
