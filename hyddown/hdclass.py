@@ -427,28 +427,28 @@ class HydDown:
                 # New
                 U_start = self.U_mass[i - 1] * self.mass_fluid[i - 1]
                 x = 1 - math.exp(-1 * self.time_array[i]) ** 0.66
+
                 if input["valve"]["flow"] == "filling":
                     h_in = x * self.res_fluid.hmass() + (
                         1 - x
                         ) * self.res_fluid.umass()
                     
                 else:
-                    h_in = x * self.fluid.hmass() + (
-                        1 - x
-                        ) * self.fluid.umass()
-                       
+                    h_in = self.fluid.hmass() 
+
                 P2 = self.P[i - 1]
                 if i > 1:
                     P1 = self.P[i - 2]
                 else:
                     P1 = self.P[i - 1]
+
                 U_end = (
                     U_start
                     - self.tstep * self.mass_rate[i - 1] * h_in
                     + self.tstep * self.Q_inner[i]
                 )  
                 self.U_mass[i] = U_end / self.mass_fluid[i]
-                #print("Iteration: ",i," of ",len(self.P))
+        
                 P1, T1, self.U_res[i] = self.UDproblem(U_end/ self.mass_fluid[i],self.rho[i],self.P[i-1],self.T_fluid[i-1])
 
                 self.P[i] = P1
@@ -468,10 +468,6 @@ class HydDown:
             if self.input["valve"]["flow"] == "discharge":
                 if "&" in self.species:
                     self.T_vent[i] = self.PHproblem(self.H_mass[i], self.p_back, self.vent_fluid.T())
-                    try:
-                        self.T_vent[i] = self.PHproblem(self.H_mass[i], self.p_back, self.vent_fluid.T())
-                    except:
-                        self.T_vent[i]=273.15
                 else:
                     self.T_vent[i]=PropsSI("T", "H", self.H_mass[i], "P", self.p_back, self.species)
 

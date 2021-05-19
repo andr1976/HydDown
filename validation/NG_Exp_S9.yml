@@ -4,14 +4,15 @@ vessel:
   thickness: 0.059
   heat_capacity: 500
   density: 7800. 
-  orientation: "horizontal"
+  orientation: "vertical"
 initial:
   temperature: 303.01
   pressure: 12000000.0
+  #fluid: "CH4"
   fluid: "Methane[0.855]&Ethane[0.045]&Propane[0.10]"
 calculation:
   type: "energybalance"
-  time_step: 1
+  time_step: 6
   end_time: 1200.
 valve:
   flow: "discharge"
