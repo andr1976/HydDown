@@ -185,12 +185,8 @@ class HydDown:
 
     def PHproblem(self, H, P, Tguess):
         if "&" in self.species:                     
-            import time 
-            t1 = time.time()
             x0=Tguess
-            #bounds=[(Pguess*0.95,Pguess+1e5),(Tguess-1,Tguess+1)]
             res=minimize(self.PHres, x0, args=(P, H), method='Nelder-Mead', options={'xatol':0.1,'fatol':0.001})
-            t2 = time.time()
             T1 = res.x[0]
         else:
             T1 = PropsSI(
@@ -201,17 +197,13 @@ class HydDown:
 
     def UDres(self,x, U, rho):
         self.fluid.update(CP.PT_INPUTS, x[0], x[1])
-        return ((U-self.fluid.umass())/U)**2 + ((rho-self.fluid.rhomass())/U)**2
+        return ((U-self.fluid.umass())/U)**2 + ((rho-self.fluid.rhomass())/rho)**2
 
 
     def UDproblem(self, U, rho, Pguess, Tguess):
-        if "&" in self.species:                     
-            import time 
-            t1 = time.time()
+        if "&" in self.species:                    
             x0=[Pguess,Tguess]
-            #bounds=[(Pguess*0.95,Pguess+1e5),(Tguess-1,Tguess+1)]
             res=minimize(self.UDres, x0, args=(U, rho), method='Nelder-Mead', options={'xatol':0.1,'fatol':0.001})
-            t2 = time.time()
             P1 = res.x[0]
             T1 = res.x[1]
             Ures = U-self.fluid.umass()
