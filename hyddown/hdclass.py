@@ -637,7 +637,8 @@ class HydDown:
 
         if filename != None:
             plt.savefig(filename)
-        elif verbose:
+
+        if verbose:
             plt.show()
 
 

@@ -31,8 +31,10 @@ if __name__ == "__main__":
     import pylab as plt
 
     plt.figure(2)
-    plt.plot(PE.T, PE.p, '-', label = 'SRK with transformations in multi-fluid', color = 'g')
-    plt.plot(hdown.T_fluid,hdown.P)
+    plt.plot(PE.T, PE.p, '-', label = 'HEOS Phase Envelope', color = 'g')
+    plt.plot(hdown.T_fluid,hdown.P,'-.',label = 'P/T fluid trajectory', color = 'b' )
+    plt.plot(hdown.T_fluid[0],hdown.P[0],'o',label = 'Start', color = 'b' )
+    plt.plot(hdown.T_fluid[-1],hdown.P[-1],'.',label = 'End', color = 'b' )
     plt.xlabel('Temperature [K]')
     plt.ylabel('Pressure [Pa]')
     plt.legend(loc='best')
