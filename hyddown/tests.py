@@ -250,12 +250,12 @@ def test_sim_orifice_full():
     input = get_example_input("input.yml")
     hdown = HydDown(input)
     hdown.run()
-    hdown.plot()
+    hdown.plot(verbose=False)
     hdown.generate_report()
     assert hdown.report['final_mass'] == pytest.approx(0.14, rel=0.02)
     assert hdown.report['min_wall_temp'] == pytest.approx(284.9, rel=0.01)
     assert hdown.report['min_fluid_temp'] == pytest.approx(193.7, rel=0.01)
-    assert hdown.report['time_min_fluid_temp'] == pytest.approx(38.2, rel=0.01)
+    assert hdown.report['time_min_fluid_temp'] == pytest.approx(37.5, rel=0.01)
     assert hdown.report['max_mass_rate'] == pytest.approx(0.869, rel=0.01)
 
 

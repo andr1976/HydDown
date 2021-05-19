@@ -185,12 +185,8 @@ class HydDown:
 
     def PHproblem(self, H, P, Tguess):
         if "&" in self.species:                     
-            import time 
-            t1 = time.time()
             x0=Tguess
-            #bounds=[(Pguess*0.95,Pguess+1e5),(Tguess-1,Tguess+1)]
             res=minimize(self.PHres, x0, args=(P, H), method='Nelder-Mead', options={'xatol':0.1,'fatol':0.001})
-            t2 = time.time()
             T1 = res.x[0]
         else:
             T1 = PropsSI(
@@ -201,17 +197,13 @@ class HydDown:
 
     def UDres(self,x, U, rho):
         self.fluid.update(CP.PT_INPUTS, x[0], x[1])
-        return ((U-self.fluid.umass())/U)**2 + ((rho-self.fluid.rhomass())/U)**2
+        return ((U-self.fluid.umass())/U)**2 + ((rho-self.fluid.rhomass())/rho)**2
 
 
     def UDproblem(self, U, rho, Pguess, Tguess):
-        if "&" in self.species:                     
-            import time 
-            t1 = time.time()
+        if "&" in self.species:                    
             x0=[Pguess,Tguess]
-            #bounds=[(Pguess*0.95,Pguess+1e5),(Tguess-1,Tguess+1)]
             res=minimize(self.UDres, x0, args=(U, rho), method='Nelder-Mead', options={'xatol':0.1,'fatol':0.001})
-            t2 = time.time()
             P1 = res.x[0]
             T1 = res.x[1]
             Ures = U-self.fluid.umass()
@@ -427,28 +419,28 @@ class HydDown:
                 # New
                 U_start = self.U_mass[i - 1] * self.mass_fluid[i - 1]
                 x = 1 - math.exp(-1 * self.time_array[i]) ** 0.66
+
                 if input["valve"]["flow"] == "filling":
                     h_in = x * self.res_fluid.hmass() + (
                         1 - x
                         ) * self.res_fluid.umass()
                     
                 else:
-                    h_in = x * self.fluid.hmass() + (
-                        1 - x
-                        ) * self.fluid.umass()
-                       
+                    h_in = self.fluid.hmass() 
+
                 P2 = self.P[i - 1]
                 if i > 1:
                     P1 = self.P[i - 2]
                 else:
                     P1 = self.P[i - 1]
+
                 U_end = (
                     U_start
                     - self.tstep * self.mass_rate[i - 1] * h_in
                     + self.tstep * self.Q_inner[i]
                 )  
                 self.U_mass[i] = U_end / self.mass_fluid[i]
-                #print("Iteration: ",i," of ",len(self.P))
+        
                 P1, T1, self.U_res[i] = self.UDproblem(U_end/ self.mass_fluid[i],self.rho[i],self.P[i-1],self.T_fluid[i-1])
 
                 self.P[i] = P1
@@ -468,10 +460,6 @@ class HydDown:
             if self.input["valve"]["flow"] == "discharge":
                 if "&" in self.species:
                     self.T_vent[i] = self.PHproblem(self.H_mass[i], self.p_back, self.vent_fluid.T())
-                    try:
-                        self.T_vent[i] = self.PHproblem(self.H_mass[i], self.p_back, self.vent_fluid.T())
-                    except:
-                        self.T_vent[i]=273.15
                 else:
                     self.T_vent[i]=PropsSI("T", "H", self.H_mass[i], "P", self.p_back, self.species)
 
@@ -641,7 +629,8 @@ class HydDown:
 
         if filename != None:
             plt.savefig(filename)
-        elif verbose:
+
+        if verbose:
             plt.show()
 
 
