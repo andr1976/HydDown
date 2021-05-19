@@ -41,7 +41,7 @@ def read_input():
                 diam = st.text_input('Vessel diam (m):',3.0) 
                 thk = st.text_input('Vessel thichness (m):',0.010)
                 orientation = st.selectbox('Vessel orientation', ('horizontal', 'vertical'))
-                orifice_diam = st.text_input('Orifice diam (mm):',20) 
+                orifice_diam = st.text_input('Orifice diam (mm):',13) 
                 orifice_diam = float(orifice_diam)/1000
                 tstep = st.text_input('Time step (s):',1.0) 
                 end_time = st.text_input('End time (s):',1500) 
@@ -66,7 +66,7 @@ def read_input():
                 temp = st.text_input('Initial temp. (C):',25)
                 temp = float(temp)+273.15
                 
-                fire_type = st.selectbox('Fire ype', ('api_pool', 'api_jet'))
+                fire_type = st.selectbox('Fire ype', ('api_jet', 'api_pool'))
 
                
             density = st.text_input('Vessel material density (kg/m3):',7740) 
