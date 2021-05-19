@@ -7,7 +7,7 @@ vessel:
   thickness: 0.010 
 initial:
   temperature: 298.15
-  pressure: 1601000.
+  pressure: 10000000
   fluid: "N2" 
 calculation:
   type: "energybalance"
@@ -18,7 +18,7 @@ valve:
   type: "psv"
   diameter: 0.03507891862878782
   discharge_coef: 0.975
-  set_pressure: 2021000
+  set_pressure: 121000000
   blowdown: 0.1
   back_pressure: 101300.
 heat_transfer:
