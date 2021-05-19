@@ -49,6 +49,7 @@ The source code can be obtained from GitHub either via `git` or via the latest t
 - [cerberus](https://docs.python-cerberus.org/en/latest/)
 - [PyYaml](https://pypi.org/project/PyYAML/)
 - [pandas](https://pandas.pydata.org/)
+- [Scipy](https://www.scipy.org/)
 
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip. Should run om linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.
 
