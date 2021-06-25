@@ -19,9 +19,9 @@ The easiest way to explore the capability of HydDown is the [streamlit app](http
 
 - filling of vessel with gas (pressurisation)
 - discharge of gas (depressurisation)
-- Various gases (H2, N2, CH4, He, Air)
-- Variable size pressure cylinder/vessel
-- Heat transfer between gas and vessel wall can be turned on/off
+- various gases (H2, N2, CH4, He, Air)
+- variable size pressure cylinder/vessel
+- heat transfer between gas and vessel wall can be turned on/off
 
 ## Background
 This is a small spare time project for calculation of vessel filling/depressurisation behaviour. This is mainly to demonstrate, that although perceived as a very tedious/difficult/complex problem to solve, actually a fairly limited amount of code is necessary if you have a good thermodynamic backend. 
@@ -29,12 +29,12 @@ This is a small spare time project for calculation of vessel filling/depressuris
 A few choices is made to keep things simple to begin with:
 
 - [Coolprop](http://www.coolprop.org/) is used as thermodynamic backend
-- Only pure substances are considered (mixtures may come later on - but calculations are very slow)
-- Gas phase only
+- Mainly pure substances are considered (mixtures can be handled - but calculations can be slow)
+- Gas phase only 
 - No temperture stratification in the gas phase
 - No temperture gradient through vessel wall
 
-The code will be as simple as possible. These choices makes the problem a lot more simple to solve, First of all the pure substance Helmholtz energy based equation of state (HEOS) in coolprop offers a lot of convenience in terms of the property pairs/state variables that can be set independently. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
+The code is as simple as possible. The above choices makes the problem a lot more simple to solve, First of all the pure substance Helmholtz energy based equation of state (HEOS) in coolprop offers a lot of convenience in terms of the property pairs/state variables that can be set independently. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
 ## Description
 The following methods are implemented:
@@ -43,7 +43,7 @@ The following methods are implemented:
 - Isenthalpic/Adiabatic (no heat transfer with surroundings, no work performed by the expanding fluid)
 - Isentropic (no heat transfer with surroundings, PV work performed by the expanding fluid)
 - Constant internal energy
-- Energy balance. This is the most general case and includes both the ability to transfer heat with surroundings as well as accounting for PV work (PV work efficiency can be specied, but 100% or close to is recommended)
+- Energy balance. This is the most general case and includes the ability to transfer heat with surroundings
 
 Various mass flow equations are enabled: 
 
@@ -69,4 +69,4 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 - Fixed Q (Q to be applied to the fluid is requried)
 - Specified h, the external heat transfer coefficient is provided and either the internal is provided or calculated from assumption of natural convection from a vertical cylinder at high Gr number. Ambient temperature is required.
 - Detailed 
-- Fire with heta load calculated from the Stefan-Boltzmann equation
+- Fire with heat load calculated from the Stefan-Boltzmann equation
