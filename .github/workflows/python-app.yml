@@ -37,10 +37,12 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest hyddown/tests.py
+        cd src/hyddown
+        pytest tests.py
     - name: Generate coverage report
       run: |
-        coverage run -m pytest hyddown/tests.py
+        cd src/hyddown
+        coverage run -m pytest tests.py
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
