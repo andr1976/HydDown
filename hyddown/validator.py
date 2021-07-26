@@ -1,3 +1,7 @@
+# HydDown hydrogen/other gas depressurisation
+# Copyright (c) 2021 Anders Andreasen
+# Published under an MIT license
+
 from cerberus import Validator
 from cerberus.errors import ValidationError 
 
