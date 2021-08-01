@@ -14,10 +14,10 @@ def get_example_input(fname):
     import os
     import yaml
 
-    if "C:\\Users\\ANRA" in os.getcwd():
-        fname = r"C:\\Users\\ANRA\\Documents\\GitHub\\HydDown\\examples\\" + fname
+    if "C:\\Users\\" in os.getcwd():
+        fname = r"C:\\Users\\ANRA\\Documents\\GitHub\\HydDown\\src\\hyddown\\examples\\" + fname
     else:
-        fname = r"//home//runner//work//HydDown//HydDown//examples//" + fname
+        fname = r"//home//runner//work//HydDown//HydDown//src//hyddown//examples//" + fname
 
     with open(fname) as infile:
         input = yaml.load(infile, Loader=yaml.FullLoader)
