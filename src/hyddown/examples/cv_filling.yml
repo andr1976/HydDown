@@ -13,7 +13,6 @@ calculation:
   type: "isentropic"
   time_step: 0.05
   end_time: 30.
-  eta: 1.0
 valve:
   flow: "filling"
   type: "controlvalve"

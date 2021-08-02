@@ -13,7 +13,6 @@ calculation:
   type: "energybalance"
   time_step: 0.1
   end_time: 50.
-  eta: 1
 valve:
   flow: "filling"
   type: "mdot"

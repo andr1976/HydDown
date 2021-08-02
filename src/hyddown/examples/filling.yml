@@ -13,7 +13,6 @@ calculation:
   type: "energybalance"
   time_step: 0.01
   end_time: 20.
-  eta: 0.5
 valve:
   flow: "filling"
   type: "orifice"
