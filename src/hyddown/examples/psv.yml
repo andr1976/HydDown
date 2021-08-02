@@ -10,7 +10,6 @@ calculation:
   type: "energybalance"
   time_step: 5.
   end_time: 6000.
-  eta: 1
 valve:
   flow: "discharge"
   type: "psv"
