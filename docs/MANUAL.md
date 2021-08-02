@@ -22,23 +22,29 @@ Run the code as simple as:
 where `main.py` is the main script and `input.yml` is the input file in Yaml syntax. 
 
 ## Background
-This is a small spare time project for calculation of vessel filling and depressurisation behaviour. This is mainly to demonstrate, that although perceived as a very tedious/difficult task to write your own code for such an apparent complex problem, actually a fairly limited amount of code is necessary if you have a good thermodynamic backend. 
+HydDown started as a small spare time project for calculation of vessel filling and depressurisation behaviour. This was mainly to demonstrate, that although perceived as a very tedious/difficult task to write your own code for such an apparent complex problem, actually a fairly limited amount of code is necessary if you have a good thermodynamic backend. The code has evolved to a point where additional features will increase the complexity to the point where it is no longer a simple tool. 
 
-A few choices are made to keep things simple to begin with:
+A few choices has been made to keep things simple:
 
 - [Coolprop](http://www.coolprop.org/) is used as thermodynamic backend
-- Only pure substances are considered
+- Only pure substances are considered (limited multi-component capabilities are included)
 - Gas phase only
-- No temperture stratification in the gas phase
-- No temperture gradient through vessel wall
+- No temperature stratification in the gas phase
+- No temperature gradient through vessel wall 
 - Heat transfer is modelled as simple as possible
 
 These choices make the problem a lot more simple to solve. First of all, the the pure substance Helmholtz energy based equation of state (HEOS) in coolprop offers a lot of convenience in terms of the property pairs/state variables that can be set independently. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said, the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
 ## Getting the software
-The source code can be obtained from GitHub either via `git` or via the latest tar-ball release. No packaged releases have currently been planned for **pip**, **conda** or similar, since the code is still in alpha stage. This might change in the future. The main branch is located here:
+The source code can be obtained either from GitHub (via `git` or via the latest tar-ball release) or via **pip** . No packaged releases have currently been planned for **conda**.  
+
+The main branch is located here:
 
 [`https://github.com/andr1976/HydDown`](https://github.com/andr1976/HydDown)
+
+Installation of latest release via **pip**:
+
+    pip hyddown
 
 ## Requirements
 
@@ -115,11 +121,30 @@ where main.py is the main script and input.yml is the input file in Yaml syntax.
 
 The Yaml input file is edited to reflect the system of interest. 
 
+A usable copy of a main script is installed in the  python installation Scripts/ folder:
+
+    /python3x/Scripts/hyddown_main.py
+
+or from GitHub:
+
+    HydDown/Scripts/hyddown_main.py
+
+Various example files are included for inspiration under site-packages:
+
+    /site-packages/hyddown/examples/
+
+or in the git/source directory tree
+
+    HydDown/src/hyddown/examples/
+
 ## Demos
 A few demonstrations of the codes capability are available as [`streamlit`](https://streamlit.io/) apps:
 
-- Vessel depressurisation using simple methods for different gases available at [`https://share.streamlit.io/andr1976/hyddown/main`](https://share.streamlit.io/andr1976/hyddown/main)
-- Hydrogen pressurisation available at [`https://share.streamlit.io/andr1976/hyddown/main/streamlit_h2app.py`](https://share.streamlit.io/andr1976/hyddown/main/streamlit_h2app.py)
+- Vessel gas pressurisation/depressurisation for various gases at [`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py)
+- Response to external fire of vessel equipped with a PSV using the Stefan-Boltzmann fire equation at[`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_sbapp.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_sbapp.py)
+- Vessel depressurisation using simple methods for different gases available at [`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_simple.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_simple.py)
+
+The various streamlit apps are also included in the scripts folder for running the scripts on a local machine. 
 
 ## Calculation methods 
 The following methods are implemented:
@@ -832,6 +857,23 @@ The remaining steps are update of temperature and pressure
 $$ P(i+1) = EOS(D(i+1),U(i+1)) $$
 $$ T(i+1) = EOS(D(i+1),U(i+1)) $$
  
+## Multicomponent mixtures
+Although not an initial requirement, the code can handle multi-component gas mixtures. However no validation has been performed. Furthermore, when calculations are done for multicomponent mixtures, the code runs significantly slower. Please note, that in case that liquid condensate is formed during discharge calculations and even if the calculations does not stop, the results cannot be relied. This is because component balances are not made, and it is always assumed that the discharge composition is the same as the global composition inside the vessel. When liquid is formed the composition of the vapour phase will differ from the global composition. 
+
+There are a few examples of multicomponent mixtures included with HydDown. In order to specify multicomponent mixtures the below example can be used as guidance: 
+
+    "Methane[9.01290129e-01]&Ethane[6.35063506e-02]&N2[7.80078008e-03]&CO2[2.34023402e-02]&Propane[3.50035004e-03]&Butane[5.00050005e-04]"
+
+For component names please refer to the [Coolprop manual](http://www.coolprop.org/fluid_properties/PurePseudoPure.html#list-of-fluids).
+
+![Gas discharge of multicomponent mixture](img/ng_all.png){#fig:ng_all}
+
+An example calculation for the above mixture is shown in [@Fig:ng_all]. 
+
+![Multicomponent mixture phase envelope and pressure and temperature trajectory of the vessel inventory during discharge](img/ng_pe.png){#fig:ng_pe}
+
+The pressure and temperature trajectory is visualised along with the fluid mixture phase envelope in [@Fig:ng_pe]. As seen from the figure this case is borderline and the pressure/temperature trajectory just coincide with the dew line on the phase envelope. This plot is included in the example main script that comes with HydDown and serves as an important quality control. 
+
 # Validation
 The code is provided as-is. However, comparisons have been made to a few experiments from the literature.
 
