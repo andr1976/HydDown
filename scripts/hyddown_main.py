@@ -4,8 +4,15 @@
 
 import yaml
 import sys
-from hyddown import HydDown
 import time
+
+try:
+    from hyddown import HydDown
+except:
+    import sys
+    import os
+    sys.path.append(os.path.abspath("../src"))
+    from hyddown import HydDown
 
 
 if __name__ == "__main__":

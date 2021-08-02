@@ -10,7 +10,13 @@ import pandas as  pd
 from PIL import Image
 import base64
 
-from hyddown import HydDown
+try:
+    from hyddown import HydDown
+except:
+    import sys
+    import os
+    sys.path.append(os.path.abspath("../src"))
+    from hyddown import HydDown
 
 
 def get_table_download_link(df,filename):
@@ -28,8 +34,12 @@ def read_input():
     sideb = st.sidebar
     
     with sideb:
-        icon = Image.open('./docs/img/Sketch.png')
-        st.image(icon, use_column_width=True, caption="HydDown")
+        try:
+            icon = Image.open('../docs/img/Sketch.png')
+            st.image(icon, use_column_width=True, caption="HydDown")
+        except:
+            pass
+        
         
         with st.form(key='my_form'):
             submit_button = st.form_submit_button(label='Run calculation')

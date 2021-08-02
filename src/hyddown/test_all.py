@@ -14,11 +14,8 @@ def get_example_input(fname):
     import os
     import yaml
 
-    if "C:\\Users\\ANRA" in os.getcwd():
-        fname = r"C:\\Users\\ANRA\\Documents\\GitHub\\HydDown\\src\\hyddown\\examples\\" + fname
-    else:
-        fname = r"//home//runner//work//HydDown//HydDown//src//hyddown//examples//" + fname
-
+    fname = os.path.join(os.path.abspath(os.path.dirname(__file__)),"examples",fname)
+    
     with open(fname) as infile:
         input = yaml.load(infile, Loader=yaml.FullLoader)
 
@@ -227,8 +224,10 @@ def test_validator():
     import os 
     import yaml
 
-    for fname in os.listdir("examples/"):
-        with open("examples//" + fname) as infile:
+    dir = os.path.join(os.path.abspath(os.path.dirname(__file__)),"examples")
+
+    for fname in os.listdir(dir):
+        with open(os.path.join(dir,fname)) as infile:
             input = yaml.load(infile, Loader=yaml.FullLoader)
         assert validator.validate_mandatory_ruleset(input) == True
 
@@ -237,8 +236,10 @@ def test_validator2():
     import os 
     import yaml
 
-    for fname in os.listdir("examples/"):
-        with open("examples//" + fname) as infile:
+    dir = os.path.join(os.path.abspath(os.path.dirname(__file__)),"examples")
+    
+    for fname in os.listdir(dir):
+        with open(os.path.join(dir,fname)) as infile:
             input = yaml.load(infile, Loader=yaml.FullLoader)
         assert validator.heat_transfer_validation(input) == True
         assert validator.valve_validation(input) == True
