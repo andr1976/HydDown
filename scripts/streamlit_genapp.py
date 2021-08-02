@@ -10,12 +10,14 @@ import pandas as  pd
 from PIL import Image
 import base64
 
+
 try:
     from hyddown import HydDown
 except:
     import sys
     import os
-    sys.path.append(os.path.abspath("../src"))
+    hyddown_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"..","src")
+    sys.path.append(os.path.abspath(hyddown_path))
     from hyddown import HydDown
 
 def get_table_download_link(df,filename):
