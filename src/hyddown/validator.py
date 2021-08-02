@@ -31,7 +31,6 @@ def validate_mandatory_ruleset(input):
                     },
                 'time_step': {'type': 'number', 'min': 0.000001},
                 'end_time': {'type': 'number', 'min': 0},
-                'eta': {'type': 'number', 'min': 0, 'max': 1}
             }
         },
         'vessel': {
