@@ -38,11 +38,11 @@ jobs:
     - name: Test with pytest
       run: |
         cd src/hyddown
-        pytest tests.py
+        pytest test_all.py
     - name: Generate coverage report
       run: |
         cd src/hyddown
-        coverage run -m pytest tests.py
+        coverage run -m pytest test_all.py
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v1
       with:

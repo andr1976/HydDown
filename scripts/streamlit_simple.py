@@ -7,7 +7,14 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as  pd
-from hyddown import HydDown
+
+try:
+    from hyddown import HydDown
+except:
+    import sys
+    import os
+    sys.path.append(os.path.abspath("../src"))
+    from hyddown import HydDown
 
 if __name__ == "__main__":
     #matplotlib.use('TkAgg')

@@ -4,8 +4,15 @@
 
 import yaml
 import sys
-from hyddown import HydDown
 
+try:
+    from hyddown import HydDown
+except:
+    import sys
+    import os
+    sys.path.append(os.path.abspath("../src"))
+    from hyddown import HydDown
+    
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         input_filename = sys.argv[1]
