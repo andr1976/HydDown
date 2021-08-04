@@ -20,7 +20,7 @@ bibliography: paper.bib
 ---
 
 # Summary
-HydDown is a Python package 
+HydDown is a Python package for calculation of pressure vessel behaviour during filling (pressurisation) or discharge (depressurisation/blow-down). 
 
 # Statement of need
 
