@@ -26,6 +26,10 @@ HydDown is a Python package for calculation of pressure vessel behaviour during 
 * Rapid emergency discharge from high pressure gas cylinders
 * Dynamic pressure safety valve behaviour for gas filled pressure vessels subject to fire heat load
 
+A typical system modelled is shown in [@Fig:sketch] and it visualizes the key parameters and transport phenomena during gas vessel filling or discharging. The thermodynamic state inside the vessel changes over time as seen from immediately observable variables temperature (T) and pressure (P). This is caused by change in fluid inventory (density) due to flow of gas either in- or out of the vessel. Further, heat is transfered from or to the surroundings via convective heat transfer on the in- and outside of the vessel - with heat being conducted thorugh the vessel wall.   
+
+![Gas filled pressure vessel subject to gas discharge and heat transfer between vessel and gas inventory.](../docs/img/Sketch.png){#fig:sketch}
+
 In its essence the code solves the mass and energy balances, with gas thermodynamics calculated using the [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999] including both real gas equation of state and gas transport properties. The energy balance is the first law of thermodynamics for an open system exchanging both heat and mass with the surroundings [@sva]. Heat transfer between gas inventory and vessel wall is accounted for using either natural convection or mixed forced convenction/natural convection [@woodfield][@geankoplis].T he mass balance is closed using an applicable flow equation e.g. orifice  [@yellowbook], relief valve [@API520],  control valve [@borden][@ISA][@IEC60534], a fixed mass rate or a predefined mass rate in or out of the pressure vessel. 
 The code also allows an external heat load to be applied using the Stefan-Boltzmann equation for fire heat load minimcking both background heat load from pool and jet fire [@scandpower][@API521].
 
