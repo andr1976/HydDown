@@ -1,33 +1,22 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: 'HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge'
 tags:
   - Python
-  - astronomy
-  - dynamics
-  - galactic dynamics
-  - milky way
+  - Gas storage
+  - Depressurisation
+  - Blow-down
+  - Pressure cylinder
+  - Energy storage
 authors:
-  - name: Adrian M. Price-Whelan^[co-first author] # note this makes a footnote saying 'co-first author'
-    orcid: 0000-0003-0872-7098
-    affiliation: "1, 2" # (Multiple affiliations must be quoted)
-  - name: Author Without ORCID^[co-first author] # note this makes a footnote saying 'co-first author'
-    affiliation: 2
-  - name: Author with no affiliation^[corresponding author]
-    affiliation: 3
+  - name: Anders Andreasen^[co-first author] # note this makes a footnote saying 'co-first author'
+    orcid: 0000-0003-0475-323X
+    affiliation: "1" # (Multiple affiliations must be quoted)
 affiliations:
- - name: Lyman Spitzer, Jr. Fellow, Princeton University
+ - name: Ramboll Energy, Field Development, Bavnehøjvej 5, DK-6700 Esbjerg, Denmark
    index: 1
- - name: Institution Name
-   index: 2
- - name: Independent Researcher
-   index: 3
-date: 13 August 2017
+date: 04 August 2021
 bibliography: paper.bib
 
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-aas-journal: Astrophysical Journal <- The name of the AAS journal.
 ---
 
 # Summary
