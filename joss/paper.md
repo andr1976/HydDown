@@ -20,7 +20,7 @@ bibliography: paper.bib
 ---
 
 # Summary
-
+HydDown is a Python package 
 
 # Statement of need
 
