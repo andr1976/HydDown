@@ -20,15 +20,18 @@ bibliography: paper.bib
 ---
 
 # Summary
-HydDown is a Python package for calculation of pressure vessel behaviour during filling (pressurisation) or discharge (depressurisation/blow-down). 
+HydDown is a Python package for calculation of pressure vessel behaviour during filling (pressurisation) or discharge (depressurisation/blow-down). More specifically the software allows calculation of vessel pressure, fluid inventory temperature as well as vessel wall temperature as a function of time during either filling or discharge operations. The applications are manifold and some examples are: 
+
+* Rapid filling of vehicle high-pressure hydrogen cylinders
+* Rapid emergency discharge from high pressure gas cylinders
+* Dynamic pressure safety valve behaviour for gas filled pressure vessels subject to fire heat load
+
+In its essence the code solves the mass and energy balances, with gas thermodynamics calculated using the [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999] including both real gas equation of state and gas transport properties. The energy balance is the first law of thermodynamics for an open system exchanging both heat and mass with the surroundings [@sva]. Heat transfer between gas inventory and vessel wall is accounted for using either natural convection or mixed forced convenction/natural convection [@woodfield][@geankoplis].T he mass balance is closed using an applicable flow equation e.g. orifice  [@yellowbook], relief valve [@API520],  control valve [@borden][@ISA][@IEC60534], a fixed mass rate or a predefined mass rate in or out of the pressure vessel. 
+The code also allows an external heat load to be applied using the Stefan-Boltzmann equation for fire heat load minimcking both background heat load from pool and jet fire [@scandpower][@API521].
+
 
 # Statement of need
 
-
-# General theory
-
-
-# Calculation example
 
 
 # Acknowledgements
