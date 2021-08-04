@@ -33,6 +33,18 @@ A typical system modelled is shown in \autoref{fig:sketch} and it visualizes the
 In its essence the code solves the mass and energy balances, with gas thermodynamics calculated using the [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999] including both real gas equation of state and gas transport properties. The energy balance is the first law of thermodynamics for an open system exchanging both heat and mass with the surroundings [@sva]. Heat transfer between gas inventory and vessel wall is accounted for using either natural convection or mixed forced convenction/natural convection [@woodfield][@geankoplis].T he mass balance is closed using an applicable flow equation e.g. orifice  [@yellowbook], relief valve [@API520],  control valve [@borden][@ISA][@IEC60534], a fixed mass rate or a predefined mass rate in or out of the pressure vessel. 
 The code also allows an external heat load to be applied using the Stefan-Boltzmann equation for fire heat load minimcking both background heat load from pool and jet fire [@scandpower][@API521].
 
+A few choices has been made to keep things simple:
+
+- [Coolprop](http://www.coolprop.org/) is used as thermodynamic backend
+- Gas phase only
+- No temperature stratification in vessel inventory
+- No temperature gradient through vessel wall (applicable for high heat conductivity / thin walled vessels)
+
+Still, the code allows a variety of mass flow devices and heat transfer both with ambient air and also considering fire heat loads, with the vessel fluid inventory being rigorously described by a Helmholtz energy formulation of a real gas equation of state. Typical calculation output is shown in \autoref{fig:N2discharge} and \autoref{fig:H2filling} with experimental data included for comparison. 
+
+![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right). \label{fig:N2discharge}](../docs/img/N2_filling.png)
+
+![Simulation of hydrogen cylinder pressurisation using a pressurisation rate of 10 MPa/min [@STRIEDNIG].\label{fig:H2filling}](../docs/img/Striednig_fillingH2_10MPa_min.png)
 
 # Statement of need
 

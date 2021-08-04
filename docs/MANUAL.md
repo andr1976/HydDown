@@ -44,7 +44,7 @@ The main branch is located here:
 
 Installation of latest release via **pip**:
 
-    pip hyddown
+    pip install hyddown
 
 ## Requirements
 
