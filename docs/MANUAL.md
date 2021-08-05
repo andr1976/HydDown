@@ -44,7 +44,7 @@ The main branch is located here:
 
 Installation of latest release via **pip**:
 
-    pip hyddown
+    pip install hyddown
 
 ## Requirements
 
@@ -495,7 +495,7 @@ and in total
 
 $$  \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs}$$
 
-Further work (not to be confused with shaft work) is also associated with each stream in order to move the stream into or out from the control volume (one can think of a hypothetical piston pushing the fluid at constant pressure), and the work is equal to $PV$ on the basis of the specific fluid volume. The work rate for each stream is 
+Furthermore,  work (not to be confused with shaft work) is also associated with each stream in order to move the stream into or out from the control volume (one can think of a hypothetical piston pushing the fluid at constant pressure), and the work is equal to $PV$ on the basis of the specific fluid volume. The work rate for each stream is 
 
 $$ \dot{m}(PV) $$
 
