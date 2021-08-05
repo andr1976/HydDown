@@ -19,7 +19,7 @@ bibliography: paper.bib
 ---
 
 # Summary
-HydDown is a Python package for calculation of pressure vessel behaviour during filling (pressurisation) or discharge (depressurisation/blow-down). More specifically the software allows calculation of vessel pressure, fluid inventory temperature as well as vessel wall temperature as a function of time during either filling or discharge operations. The applications are manifold and some examples are: 
+HydDown [@anders_andreasen_2021_5154096] is a Python package for calculation of pressure vessel behaviour during filling (pressurisation) or discharge (depressurisation/blow-down). More specifically the software allows calculation of vessel pressure, fluid inventory temperature as well as vessel wall temperature as a function of time during either filling or discharge operations. The applications are manifold and some examples are: 
 
 * Rapid filling of vehicle high-pressure hydrogen cylinders
 * Rapid emergency discharge from high pressure gas cylinders
@@ -52,11 +52,11 @@ Apparently, no free (as in speach, as in beer) tool exists today which accomplis
 
 | Software                      | Cost                  |  Filling/discharge    | Fire heat laod    |
 |-------------------------------|-----------------------|-----------------------|-------------------|
-| [Aspen HYSYS] (https://www.aspentech.com/en/products/engineering/aspen-hysys)                  |  Commercial           |  Both                 | Yes               |
-| Unisim Design                 |  Commercial           |  Both                 | Yes               |
-| VBsim [@DALESSANDRO2015719]   |  Academic             |  Discharge            | No                |
-| BLOWSIM [@blowsim]            |  Academic             |  Discharge            | Yes               |
-| H2FillS [@h2fills]            |  Academic             |  Filling              | No                |
+| [Aspen HYSYS](https://www.aspentech.com/en/products/engineering/aspen-hysys)                  |  Fee           |  Both                 | Yes               |
+| [Unisim Design](https://www.honeywellprocess.com/en-US/online_campaigns/connected_plant/Pages/process-simulation.html)                 |  Fee           |  Both                 | Yes               |
+| VBsim [@DALESSANDRO2015719]   |  N/A             |  Discharge            | No                |
+| BLOWSIM [@blowsim]            |  N/A             |  Discharge            | Yes               |
+| H2FillS [@h2fills]            |  Free            |  Filling              | No                |
 
 
 It is the intent that the present software can be of use for a number of tasks including (but not limited to):
