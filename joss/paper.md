@@ -48,7 +48,14 @@ Still, the code allows a variety of mass flow devices and heat transfer both wit
 # Statement of need
 With an increasing demand of clean(er) energy storage such as e.g. on-board hydrogen storage for hydrogen powered vehicles, compressed air energy storage (CAES), compressed biogas, compressed natural gas (CNG) etc., the need for tools which can simulate the filling and emptying of the pressure containers holding the fluid is indeed present both for operational reasons, but even more important for safety reasons. 
 
+Apparently, no free (as in speach, as in beer) tool exists today which accomplishes the same tasks as HydDown. It has been one of the main goals in producing this software to provide a free tool which can calculate the pressure vessel response during filling and discharge of gas. There are however many tools in the market which can do the same as HydDown or even more. Most of these tools are commercial/proprietary (and closed source) and comes with a significant license cost. A single tool has been identified which is free (as in beer), but still closed source [@h2fills]. Below is a list of tools which has comparable capabilities as HydDown.  
 
+It is the intent that the present software can be of use for a number of tasks including (but not limited to):
+
+* Design aid for experimental facilities for e.g. mass flow device sizing e.g. orifice, control valve etc. 
+* Benchmarking of other software codes. 
+* Safety device sizing and review (blow-down valve, pressure safety valve), for instance how fast shall blow-down be? how large should an installed pressure safety valve be?
+* Thermal response of vessel during filling/discharge. Is the design (lower/upper) temperatures exceeded? Shall the rate be lower? Is any pre-cooling/heating required? 
 
 # Acknowledgements
 The making of this project would not have possible without the great [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999]. I am also thankful for enlightning discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark) and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurisation, nozzle flow and heat transfer considerations. This work has also befitted significantly from the understanding of thermo mechanical pressure vessel behaviour obtained in previous works [@Bjerre2017],[@safety4010011],[@iskov]. Furthermore, this project relies on high quality open source Python packages: NumPy [@Walt:2011:NAS:1957373.1957466][@harris2020array], SciPy [@virtanen2020scipy], matplotlib [@Hunter:2007], pandas [@mckinney-proc-scipy-2010], [PyYaml](https://pyyaml.org/wiki/PyYAMLDocumentation), [cerberus](https://docs.python-cerberus.org/en/stable/), [Streamlit](https://streamlit.io/) and pytest [@pytest].
