@@ -7,13 +7,12 @@ tags:
   - Blow-down
   - Pressure cylinder
   - Energy storage
+  - Hydrogen
 authors:
   - name: Anders Andreasen
     orcid: 0000-0003-0475-323X
-    affiliation: "1" # (Multiple affiliations must be quoted)
 affiliations:
  - name: Ramboll Energy, Field Development, Bavnehøjvej 5, DK-6700 Esbjerg, Denmark
-   index: 1
 date: 04 August 2021
 bibliography: paper.bib
 
@@ -47,9 +46,11 @@ Still, the code allows a variety of mass flow devices and heat transfer both wit
 ![Simulation of hydrogen cylinder pressurisation using a pressurisation rate of 10 MPa/min [@STRIEDNIG].\label{fig:H2filling}](../docs/img/Striednig_fillingH2_10MPa_min.png)
 
 # Statement of need
-With an increasing demand of clean(er) energy storage such as e.g. on-board hydrogen storage for hydrogen powered vehicles, compressed air energy storage (CAES), compressed biogas, compressed natural gas (CNG) etc., the need for tools which cam simulate the filling and emptying of the pressure containers holding the fluid is indeed present. 
+With an increasing demand of clean(er) energy storage such as e.g. on-board hydrogen storage for hydrogen powered vehicles, compressed air energy storage (CAES), compressed biogas, compressed natural gas (CNG) etc., the need for tools which can simulate the filling and emptying of the pressure containers holding the fluid is indeed present both for operational reasons, but even more important for safety reasons. 
+
+
 
 # Acknowledgements
-The making of this project would not have possible without the great [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999]. I am also thankful for enlightning discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark) and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurisation, nozzle flow and heat transfer considerations. This work has also befitted significantly from the understanding of thermo mechanical pressure vessel behaviour obtained in previous works [@Bjerre2017],[@safety4010011],[@iskov]. Furthermore, this project relies on high quality open source Python packages: NumPy [@Walt:2011:NAS:1957373.1957466][@harris2020array], SciPy [@virtanen2020scipy], matplotlib [@Hunter:2007], pandas [mckinney-proc-scipy-2010], [PyYaml](https://pyyaml.org/wiki/PyYAMLDocumentation), [cerberus](https://docs.python-cerberus.org/en/stable/), [Streamlit](https://streamlit.io/) and pytest [@pytest].
+The making of this project would not have possible without the great [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999]. I am also thankful for enlightning discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark) and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurisation, nozzle flow and heat transfer considerations. This work has also befitted significantly from the understanding of thermo mechanical pressure vessel behaviour obtained in previous works [@Bjerre2017],[@safety4010011],[@iskov]. Furthermore, this project relies on high quality open source Python packages: NumPy [@Walt:2011:NAS:1957373.1957466][@harris2020array], SciPy [@virtanen2020scipy], matplotlib [@Hunter:2007], pandas [@mckinney-proc-scipy-2010], [PyYaml](https://pyyaml.org/wiki/PyYAMLDocumentation), [cerberus](https://docs.python-cerberus.org/en/stable/), [Streamlit](https://streamlit.io/) and pytest [@pytest].
 
 # References
