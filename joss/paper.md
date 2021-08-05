@@ -50,13 +50,13 @@ With an increasing demand of clean(er) energy storage such as e.g. on-board hydr
 
 Apparently, no free (as in speach, as in beer) tool exists today which accomplishes the same tasks as HydDown. It has been one of the main goals in producing this software to provide a free tool which can calculate the pressure vessel response during filling and discharge of gas. There are however many tools in the market which can do a subset of HydDown capacibilities, the same as HydDown, or even more. Most of these tools are commercial/proprietary (and closed source) and comes with a significant license cost. A single tool has been identified which is free (as in beer), but still closed source [@h2fills]. Below is a partial list of tools which has comparable capabilities as HydDown - for review of more codes please refer to [@SHAFIQ2020104].  
 
-| Software                      |  Open source  | Academic/commercial   |  Filling/discharge    | Fire heat laod    |
-|-------------------------------|---------------|-----------------------|-----------------------|-------------------|
-| Aspen HYSYS                   |   No          |  Commercial           |  Both                 | Yes               |
-| Unisim Design                 |   No          |  Commercial           |  Both                 | Yes               |
-| VBsim [@DALESSANDRO2015719]   |   No          |  Academic             |  Discharge            | No                |
-| BLOWSIM [@blowsim]            |   No          |  Academic             |  Discharge            | Yes               |
-| H2FillS [@h2fills]            |   No          |  Academic             |  Filling              | No                |
+| Software                      | Cost                  |  Filling/discharge    | Fire heat laod    |
+|-------------------------------|-----------------------|-----------------------|-------------------|
+| [Aspen HYSYS] (https://www.aspentech.com/en/products/engineering/aspen-hysys)                  |  Commercial           |  Both                 | Yes               |
+| Unisim Design                 |  Commercial           |  Both                 | Yes               |
+| VBsim [@DALESSANDRO2015719]   |  Academic             |  Discharge            | No                |
+| BLOWSIM [@blowsim]            |  Academic             |  Discharge            | Yes               |
+| H2FillS [@h2fills]            |  Academic             |  Filling              | No                |
 
 
 It is the intent that the present software can be of use for a number of tasks including (but not limited to):
