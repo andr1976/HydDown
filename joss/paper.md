@@ -52,8 +52,8 @@ Apparently, no free (as in speach, as in beer) tool exists today which accomplis
 
 | Software                      |  Open source  | Academic/commercial   |  Filling/discharge    | Fire heat laod    |
 |-------------------------------|---------------|-----------------------|-----------------------|-------------------|
-| [Aspen HYSYS](https://www.aspentech.com/en/products/engineering/aspen-hysys)                   |   No          |  Commercial           |  Both                 | Yes               |
-| [Unisim Design](https://www.honeywellprocess.com/en-US/online_campaigns/connected_plant/Pages/process-simulation.html)                 |   No          |  Commercial           |  Both                 | Yes               |
+| Aspen HYSYS                   |   No          |  Commercial           |  Both                 | Yes               |
+| Unisim Design                 |   No          |  Commercial           |  Both                 | Yes               |
 | VBsim [@DALESSANDRO2015719]   |   No          |  Academic             |  Discharge            | No                |
 | BLOWSIM [@blowsim]            |   No          |  Academic             |  Discharge            | Yes               |
 | H2FillS [@h2fills]            |   No          |  Academic             |  Filling              | No                |
