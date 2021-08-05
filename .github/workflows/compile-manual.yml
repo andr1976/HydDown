@@ -17,8 +17,6 @@ jobs:
             --bibliography=references.bib 
             --top-level-division=chapter 
             --number-sections 
+            --output-file=MANUAL.pdf
             MANUAL.md 
-      - uses: actions/upload-artifact@master
-        with:
-          name: output
-          path: output
+
