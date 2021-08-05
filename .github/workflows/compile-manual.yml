@@ -6,7 +6,6 @@ jobs:
   convert_via_pandoc:
     runs-on: ubuntu-latest
     steps:
-      - run: cd docs 
       - uses: docker://pandoc/latex
         with:
           args: >- # allows you to break string into multiple lines
