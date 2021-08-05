@@ -25,7 +25,7 @@ HydDown is a Python package for calculation of pressure vessel behaviour during 
 * Rapid emergency discharge from high pressure gas cylinders
 * Dynamic pressure safety valve behaviour for gas filled pressure vessels subject to fire heat load
 
-A typical system modelled is shown in \autoref{fig:sketch} and it visualizes the key parameters and transport phenomena during gas vessel filling or discharging. The thermodynamic state inside the vessel changes over time as seen from immediately observable variables temperature (T) and pressure (P). This is caused by change in fluid inventory (density) due to flow of gas either in- or out of the vessel. Further, heat is transfered from or to the surroundings via convective heat transfer on the in- and outside of the vessel - with heat being conducted thorugh the vessel wall.   
+A typical system modelled is shown in \autoref{fig:sketch} and it visualizes the key parameters and transport phenomena during gas vessel filling or discharging. The thermodynamic state inside the vessel changes over time as seen from immediately observable variables temperature (T) and pressure (P). This is caused by change in fluid inventory (density) due to flow of gas either in- or out of the vessel. Further, heat is transfered from or to the surroundings via convective heat transfer on the in- and outside of the vessel - with heat being conducted thorugh the vessel wall. The easiest way to explore the basic capabilities fo the code is via the [HydDown Streamlit app](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py).  
 
 ![Gas filled pressure vessel subject to gas discharge and heat transfer between vessel and gas inventory. \label{fig:sketch}](../docs/img/Sketch.png)
 
@@ -48,7 +48,16 @@ Still, the code allows a variety of mass flow devices and heat transfer both wit
 # Statement of need
 With an increasing demand of clean(er) energy storage such as e.g. on-board hydrogen storage for hydrogen powered vehicles, compressed air energy storage (CAES), compressed biogas, compressed natural gas (CNG) etc., the need for tools which can simulate the filling and emptying of the pressure containers holding the fluid is indeed present both for operational reasons, but even more important for safety reasons. 
 
-Apparently, no free (as in speach, as in beer) tool exists today which accomplishes the same tasks as HydDown. It has been one of the main goals in producing this software to provide a free tool which can calculate the pressure vessel response during filling and discharge of gas. There are however many tools in the market which can do the same as HydDown or even more. Most of these tools are commercial/proprietary (and closed source) and comes with a significant license cost. A single tool has been identified which is free (as in beer), but still closed source [@h2fills]. Below is a list of tools which has comparable capabilities as HydDown.  
+Apparently, no free (as in speach, as in beer) tool exists today which accomplishes the same tasks as HydDown. It has been one of the main goals in producing this software to provide a free tool which can calculate the pressure vessel response during filling and discharge of gas. There are however many tools in the market which can do a subset of HydDown capacibilities, the same as HydDown, or even more. Most of these tools are commercial/proprietary (and closed source) and comes with a significant license cost. A single tool has been identified which is free (as in beer), but still closed source [@h2fills]. Below is a partial list of tools which has comparable capabilities as HydDown - for review of more codes please refer to [@SHAFIQ2020104].  
+
+| Software                      |  Open source  | Academic/commercial   |  Filling/discharge    | Fire heat laod    |
+|-------------------------------|---------------|-----------------------|-----------------------|-------------------|
+| [Aspen HYSYS](https://www.aspentech.com/en/products/engineering/aspen-hysys)                   |   No          |  Commercial           |  Both                 | Yes               |
+| [Unisim Design](https://www.honeywellprocess.com/en-US/online_campaigns/connected_plant/Pages/process-simulation.html)                 |   No          |  Commercial           |  Both                 | Yes               |
+| VBsim [@DALESSANDRO2015719]   |   No          |  Academic             |  Discharge            | No                |
+| BLOWSIM [@blowsim]            |   No          |  Academic             |  Discharge            | Yes               |
+| H2FillS [@h2fills]            |   No          |  Academic             |  Filling              | No                |
+
 
 It is the intent that the present software can be of use for a number of tasks including (but not limited to):
 
