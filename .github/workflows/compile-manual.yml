@@ -8,6 +8,7 @@ jobs:
     steps:
       - uses: docker://pandoc/latex
         with:
+          run: 
           path: docs
           args: >- # allows you to break string into multiple lines
             --toc  
@@ -17,7 +18,6 @@ jobs:
             --top-level-division=chapter 
             --number-sections 
             MANUAL.md 
-            --listings
       - uses: actions/upload-artifact@master
         with:
           name: output
