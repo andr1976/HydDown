@@ -8,14 +8,15 @@ jobs:
     steps:
       - uses: docker://pandoc/latex
         with:
+          path: docs
           args: >- # allows you to break string into multiple lines
             --toc  
             --filter pandoc-crossref 
             --citeproc 
-            --bibliography=docs/references.bib 
+            --bibliography=references.bib 
             --top-level-division=chapter 
-            --template docs/eisvogel.tex 
-            --number-sections docs/MANUAL.md -o docs/MANUAL.pdf 
+            --template eisvogel.tex 
+            --number-sections MANUAL.md -o MANUAL.pdf 
             --listings
       - uses: actions/upload-artifact@master
         with:
