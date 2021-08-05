@@ -15,7 +15,8 @@ jobs:
             --citeproc 
             --bibliography=references.bib 
             --top-level-division=chapter 
-            --number-sections MANUAL.md -o MANUAL.pdf 
+            --number-sections 
+            MANUAL.md 
             --listings
       - uses: actions/upload-artifact@master
         with:
