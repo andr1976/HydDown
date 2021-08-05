@@ -6,6 +6,10 @@ Hydrogen (or other pure gas phase species) depressurization calculations
 
 This code is published under an MIT license.
 
+Install as simple as:
+
+    pip install hyddown
+
 Run the code as simple as: 
 
     python main.py input.yml
