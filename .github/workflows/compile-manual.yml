@@ -13,10 +13,10 @@ jobs:
             --toc  
             --filter pandoc-crossref 
             --citeproc 
-            --bibliography=references.bib 
+            --bibliography=docs/references.bib 
             --top-level-division=chapter 
-            --template eisvogel.tex 
-            --number-sections MANUAL.md -o MANUAL.pdf 
+            --template docs/eisvogel.tex 
+            --number-sections docs/MANUAL.md -o docs/MANUAL.pdf 
             --listings
       - uses: actions/upload-artifact@master
         with:
