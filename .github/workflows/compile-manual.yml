@@ -17,6 +17,6 @@ jobs:
             --bibliography=references.bib 
             --top-level-division=chapter 
             --number-sections 
-            --output-file=MANUAL.pdf
+            --output=MANUAL.pdf
             MANUAL.md 
 
