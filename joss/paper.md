@@ -11,8 +11,10 @@ tags:
 authors:
   - name: Anders Andreasen
     orcid: 0000-0003-0475-323X
+    affiliation: 1
 affiliations:
  - name: Ramboll Energy, Field Development, Bavnehøjvej 5, DK-6700 Esbjerg, Denmark
+   index: 1
 date: 04 August 2021
 bibliography: paper.bib
 
