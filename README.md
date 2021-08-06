@@ -1,6 +1,7 @@
 [![DOI](https://zenodo.org/badge/353152239.svg)](https://zenodo.org/badge/latestdoi/353152239) ![license](https://img.shields.io/github/license/andr1976/HydDown) ![buil](https://github.com/andr1976/HydDown/actions/workflows/python-app.yml/badge.svg) [![codecov](https://codecov.io/gh/andr1976/HydDown/branch/main/graph/badge.svg)](https://codecov.io/gh/andr1976/HydDown) [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py)
 [![CodeQL](https://github.com/andr1976/HydDown/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/andr1976/HydDown/actions/workflows/codeql-analysis.yml)
-
+[![status](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25/status.svg)](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25)
+ 
 # HydDown
 Hydrogen (or other pure gas phase species) depressurization calculations
 
