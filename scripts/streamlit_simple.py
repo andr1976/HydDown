@@ -59,13 +59,13 @@ if __name__ == "__main__":
     input['valve']['discharge_coef'] = 0.84
     input['valve']['back_pressure'] = 1e5
 
-    col = st.beta_columns(1)
+    col = st.columns(1)
     st.title('HydDown adiabatic demo')
     st.subheader(r'https://github.com/andr1976/HydDown')
-    my_expander = st.beta_expander("Description")
+    my_expander = st.expander("Description")
     my_expander.write('Real gas vessel depressurisation for pure and pseudo-pure components. No heat transfer is enabled in this demo version.')
 
-    col1, col2= st.beta_columns(2)
+    col1, col2= st.columns(2)
     hdown=HydDown(input)
     hdown.run()
     
