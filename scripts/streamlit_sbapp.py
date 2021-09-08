@@ -45,7 +45,7 @@ def read_input():
         with st.form(key='my_form'):
             submit_button = st.form_submit_button(label='Run calculation')
             heattran = True 
-            c1,c2 = st.beta_columns(2)
+            c1,c2 = st.columns(2)
             
             with c2:
                 length = st.text_input('Vessel length (m):',10.0)
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         
     st.title('HydDown rigorous gas vessel fire PSV discharge calculation')
     st.subheader(r'https://github.com/andr1976/HydDown')
-    my_expander = st.beta_expander("Description")
+    my_expander = st.expander("Description")
     my_expander.write('Real gas vessel fire PSV relief with fire modelled via Stefan-Boltzmann equation. Orifice size (Cd = 0.975) is specified.')
     my_expander.write('For more information about the calculations and validation of the code please refer to the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf)')
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     
     st.markdown(get_table_download_link(df,file_name), unsafe_allow_html=True)
 
-    col1, col2= st.beta_columns(2)
+    col1, col2= st.columns(2)
 
     if input['valve']['flow']=='discharge':
         temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15, 'Vent temperature (C)': hdown.T_vent-273.15})
