@@ -44,7 +44,7 @@ def read_input():
         with st.form(key='my_form'):
             submit_button = st.form_submit_button(label='Run calculation')
             heattran = st.checkbox("Include heat transfer",value=True)
-            c1,c2 = st.beta_columns(2)
+            c1,c2 = st.columns(2)
             
             with c2:
                 length = st.text_input('Vessel length (m):',0.463)
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     
     st.title('HydDown rigorous demo')
     st.subheader(r'https://github.com/andr1976/HydDown')
-    my_expander = st.beta_expander("Description")
+    my_expander = st.expander("Description")
 
     my_expander.write('Real gas vessel pressurisation/depressurisation with heat transfer from gas to vessel and ambient and vice versa. Orifice size (Cd = 0.84) is specified for desired pressurisation/depressurisation rate.')
     my_expander.write('For more information about the calculations and validation of the code please refer to the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf)')
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     
     st.markdown(get_table_download_link(df,file_name), unsafe_allow_html=True)
 
-    col1, col2= st.beta_columns(2)
+    col1, col2= st.columns(2)
 
     if input['valve']['flow']=='discharge':
         temp_data = pd.DataFrame({'Time (s)': hdown.time_array, 'Fluid temperature (C)': hdown.T_fluid-273.15, 'Wall temperature (C)': hdown.T_vessel-273.15, 'Vent temperature (C)': hdown.T_vent-273.15})
