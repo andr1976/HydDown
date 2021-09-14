@@ -11,7 +11,7 @@ listings: True
 ---
 
 # Introduction
-HydDown is an open source python tool for calculation of Hydrogen (or other pure gas phase species) vessel/container depressurization and filling. The HydDown logo shown in [@Fig:logo] visualizes the key parameters and transport phenomena during gas vessel filling or discharging. The thermodynamic state inside the vessel changes over time as seen from immediately observable variables temperature (T) and pressure (P). This is caused by change in fluid inventory (density) due to flow of gas either in- or out of the vessel. Further, heat is transfered from or to the surroundings via convective heat transfer on the in- and outside of the vessel - with heat being conducted thorugh the vessel wall. 
+HydDown is an open source python3 tool for calculation of Hydrogen (or other pure gas phase species) vessel/container depressurization and filling. The HydDown logo shown in [@Fig:logo] visualizes the key parameters and transport phenomena during gas vessel filling or discharging. The thermodynamic state inside the vessel changes over time as seen from immediately observable variables temperature (T) and pressure (P). This is caused by change in fluid inventory (density) due to flow of gas either in- or out of the vessel. Further, heat is transfered from or to the surroundings via convective heat transfer on the in- and outside of the vessel - with heat being conducted thorugh the vessel wall. 
 
 ![HydDown logo](img/Sketch.png){#fig:logo}
 
@@ -45,6 +45,12 @@ The main branch is located here:
 Installation of latest release via **pip**:
 
     pip install hyddown
+
+In case `pip` links to a v2.7 of python you will get an error. If so try the following:
+
+    python3 -m pip install hyddown
+
+where python3 is the symlink or full path to the python3 executable installed on your system. 
 
 ## Requirements
 
