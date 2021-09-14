@@ -3,13 +3,19 @@
 [![status](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25/status.svg)](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25)
  
 # HydDown
-Hydrogen (or other pure gas phase species) depressurization calculations
+Hydrogen (or other pure gas phase species) depressurization calculations 
 
 This code is published under an MIT license.
 
 Install as simple as:
 
     pip install hyddown
+    
+In case `pip` links to a v2.7 of python you will get an error. If so try the following:
+
+    python3 -m pip install hyddown
+
+where python3 is the symlink or full path to the python3 executable installed on your system. 
 
 Run the code as simple as: 
 
