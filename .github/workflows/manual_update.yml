@@ -14,9 +14,7 @@ jobs:
         with:
           args: -v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings --output=output/MANUAL.pdf  MANUAL.md
       - run: | 
-          ls /home/runner/work/HydDown/HydDown/docs/output/
-          echo "docs"
-          ls /home/runner/work/HydDown/HydDown/docs/
+          ls output/
       - uses: actions/upload-artifact@v2
         with:
           name: MANUAL
