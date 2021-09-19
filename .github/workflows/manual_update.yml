@@ -13,10 +13,10 @@ jobs:
           args: >-  # allows you to break string into multiple lines
             --toc
             --filter pandoc-crossref 
-            --citeproc 
+            --filter pandoc-citeproc 
             --bibliography=references.bib 
             --top-level-division=chapter 
-            --template "/home/runner/work/HydDown/HydDown/docs/eisvogel.tex 
+            --template=/home/runner/work/HydDown/HydDown/docs/eisvogel.tex 
             --number-sections 
             --output=output/MANUAL.pdf 
             --listings
