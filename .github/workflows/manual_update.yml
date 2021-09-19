@@ -21,3 +21,7 @@ jobs:
             --listings
             MANUAL.md 
             
+      - uses: actions/upload-artifact@master
+        with:
+          name: output
+          path: output
