@@ -17,5 +17,5 @@ jobs:
       - uses: actions/upload-artifact@master
         with:
           name: MANUAL
-          path: output
+          path: /home/runner/work/HydDown/HydDown/docs/output
      
