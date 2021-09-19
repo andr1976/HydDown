@@ -13,7 +13,7 @@ jobs:
           pwd
       - uses: docker://pandoc/latex
         with:
-          args: -v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings -o /home/runner/work/HydDown/HydDown/docs/MANUAL.pdf  /home/runner/work/HydDown/HydDown/docs/MANUAL.md
+          args: -v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings -o /home/runner/work/HydDown/HydDown/docs/MANUAL.pdf  MANUAL.md
       - uses: actions/upload-artifact@v2
         with:
           name: MANUAL
