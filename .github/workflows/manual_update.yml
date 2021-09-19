@@ -8,14 +8,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: | 
-          cd /home/runner/work/HydDown/HydDown/docs
-          mkdir /home/runner/work/HydDown/HydDown/docs/output
+          mkdir output
           pwd
       - uses: docker://pandoc/latex
         with:
-          args: -v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings -o MANUAL.pdf  MANUAL.md
+          args: -v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings -o output/MANUAL.pdf  MANUAL.md
       - uses: actions/upload-artifact@v2
         with:
           name: MANUAL
-          path: MANUAL.pdf
+          path: output/MANUAL.pdf
      
