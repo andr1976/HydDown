@@ -8,11 +8,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: | 
-          cd docs
+          cd /github/workspace/docs
           mkdir output
       - uses: docker://pandoc/latex
         with:
-          args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --number-sections --listings -o output/MANUAL.pdf -s MANUAL.md"
+          args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --number-sections --listings -o /github/workspace/docs/output/MANUAL.pdf -s /github/workspace/docs/MANUAL.md"
       #- uses: actions/upload-artifact@master
       #  with:
       #    name: MANUAL
