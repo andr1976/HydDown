@@ -13,7 +13,7 @@ jobs:
           args: >-  # allows you to break string into multiple lines
             --toc
             --filter pandoc-crossref 
-            --citeproc 
+            #--citeproc 
             --bibliography=references.bib 
             --top-level-division=chapter 
             --template eisvogel.tex 
