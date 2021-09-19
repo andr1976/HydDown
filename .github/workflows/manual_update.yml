@@ -10,7 +10,7 @@ jobs:
       - run: | 
           cd /home/runner/work/HydDown/HydDown/docs
           mkdir output
-          echo pwd
+          pwd
       - uses: docker://pandoc/latex
         with:
           args: --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --data-dir=templates --number-sections --listings -o output/MANUAL.pdf  MANUAL.md
