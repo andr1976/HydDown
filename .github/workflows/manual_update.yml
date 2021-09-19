@@ -12,7 +12,7 @@ jobs:
           mkdir output
       - uses: docker://pandoc/latex
         with:
-          args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --template /home/runner/work/HydDown/HydDown/docs/eisvogel.tex --number-sections --listings -o /home/runner/work/HydDown/HydDown/output/MANUAL.pdf -s /home/runner/work/HydDown/HydDown/docs/MANUAL.md"
+          args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --template '/home/runner/work/HydDown/HydDown/docs/templates/eisvogel.tex' --number-sections --listings -o /home/runner/work/HydDown/HydDown/output/MANUAL.pdf -s /home/runner/work/HydDown/HydDown/docs/MANUAL.md"
       #- uses: actions/upload-artifact@master
       #  with:
       #    name: MANUAL
