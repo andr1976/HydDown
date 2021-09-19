@@ -17,5 +17,5 @@ jobs:
       - uses: actions/upload-artifact@v2
         with:
           name: MANUAL
-          path: /home/runner/work/HydDown/HydDown/docs/output/MANUAL.pdf
+          path: /home/runner/work/HydDown/HydDown/docs/MANUAL.pdf
      
