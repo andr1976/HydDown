@@ -13,7 +13,7 @@ jobs:
       - uses: docker://pandoc/core
         with:
           args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --number-sections --output=output/MANUAL.pdf --listings MANUAL.md"
-      - uses: actions/upload-artifact@main
+      - uses: actions/upload-artifact@master
         with:
           name: output
           path: output
