@@ -14,8 +14,8 @@ jobs:
       - uses: docker://pandoc/latex
         with:
           args: -v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings -o output/MANUAL.pdf  /home/runner/work/HydDown/HydDown/docs/MANUAL.md
-      - uses: actions/upload-artifact@master
+      - uses: actions/upload-artifact@v2
         with:
           name: MANUAL
-          path: output/MANUAL.pdf
+          path: /github/workspace/docs/output/MANUAL.pdf
      
