@@ -15,6 +15,6 @@ jobs:
           args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --number-sections --listings --output=output/MANUAL.pdf MANUAL.md"
       - uses: actions/upload-artifact@master
         with:
-          name: output
+          name: MANUAL
           path: output
      
