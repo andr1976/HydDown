@@ -12,9 +12,9 @@ jobs:
           mkdir output
       - uses: docker://pandoc/latex
         with:
-          args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --number-sections --listings --output=output/MANUAL.pdf MANUAL.md"
-      - uses: actions/upload-artifact@master
-        with:
-          name: MANUAL
-          path: output
+          args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --number-sections --listings --output "output/MANUAL.pdf" MANUAL.md"
+      #- uses: actions/upload-artifact@master
+      #  with:
+      #    name: MANUAL
+      #    path: output
      
