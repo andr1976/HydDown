@@ -8,17 +8,17 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: cd docs/
-      - uses: docker://pandoc/core:2.9
+      - uses: docker://pandoc/core
         with:
           args: >-  # allows you to break string into multiple lines
             --toc
             --filter pandoc-crossref 
-            #--citeproc 
+            --citeproc 
             --bibliography=references.bib 
             --top-level-division=chapter 
             --template "/home/runner/work/HydDown/HydDown/docs/eisvogel.tex 
             --number-sections 
-            -o MANUAL.pdf 
+            --output=output/MANUAL.pdf 
             --listings
             MANUAL.md 
             
