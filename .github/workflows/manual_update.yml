@@ -13,15 +13,19 @@ jobs:
           args: >-  # allows you to break string into multiple lines
             --toc
             --filter pandoc-crossref 
-            --filter pandoc-citeproc 
+            --citeproc 
             --bibliography=references.bib 
             --top-level-division=chapter 
             --number-sections 
-            --output=output/MANUAL.pdf 
+            --output=MANUAL.pdf 
             --listings
             MANUAL.md 
-            
-      - uses: actions/upload-artifact@master
-        with:
-          name: output
-          path: output
+     - name: Upload
+       uses: actions/upload-artifact@v1
+       with:
+         name: manual
+         # This is the output path where Pandoc will write the compiled
+         # PDF. Note, this should be the same directory as the input
+         # paper.md
+         path: docs/paper.pdf
+     
