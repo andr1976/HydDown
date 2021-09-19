@@ -16,7 +16,7 @@ jobs:
             #--citeproc 
             --bibliography=references.bib 
             --top-level-division=chapter 
-            --template eisvogel.tex 
+            --template "/home/runner/work/HydDown/HydDown/docs/eisvogel.tex 
             --number-sections MANUAL.md 
             -o MANUAL.pdf 
             --listings
