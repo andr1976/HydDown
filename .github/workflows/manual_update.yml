@@ -7,21 +7,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: cd docs/ && mkdir output
+      - run: | 
+          cd docs
+          mkdir output
       - uses: docker://pandoc/core
         with:
-          args: >-  # allows you to break string into multiple lines
-            --toc
-            --filter pandoc-crossref 
-            --citeproc 
-            --bibliography=references.bib 
-            --top-level-division=chapter 
-            --number-sections 
-            --output=MANUAL.pdf 
-            --listings
-            MANUAL.md 
+          args: "--toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --number-sections --output=output/MANUAL.pdf --listings MANUAL.md"
       - uses: actions/upload-artifact@main
         with:
-          name: manual
-          path: docs/MANUAL.pdf
+          name: output
+          path: output
      
