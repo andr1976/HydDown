@@ -16,7 +16,6 @@ jobs:
             --filter pandoc-citeproc 
             --bibliography=references.bib 
             --top-level-division=chapter 
-            --template=/home/runner/work/HydDown/HydDown/docs/eisvogel.tex 
             --number-sections 
             --output=output/MANUAL.pdf 
             --listings
