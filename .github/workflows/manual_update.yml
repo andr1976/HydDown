@@ -1,0 +1,23 @@
+name: Manual
+
+on: push
+
+jobs:
+  convert_via_pandoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: cd docs/
+      - uses: docker://pandoc/core:2.9
+        with:
+          args: >-  # allows you to break string into multiple lines
+            --toc
+            --filter pandoc-crossref 
+            --citeproc 
+            --bibliography=references.bib 
+            --top-level-division=chapter 
+            --template eisvogel.tex 
+            --number-sections MANUAL.md 
+            -o MANUAL.pdf 
+            --listings
+            
