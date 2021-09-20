@@ -186,10 +186,19 @@ For `isothermal`/`isenthalpic`/`isentropic`/`isenergetic` calculations the minim
 
 If heat transfer is to be considered the calculation type `energybalance` is required. A few options are possible:
 
-- Fixed U. U-value i.e. overall heat transfer coefficient is required, and ambient temperature required. Based on the ambient (external) temperature, the fluid temperature, and the U-value, the heat flux Q is calculated for each time step. In this calculation method the temperature of the vessel wall is not calculated. 
-- Fixed Q. Q i.e. heat flux to be applied to the fluid is specified. The ambient temperature is not required. Further, the vessel wall temperature is redundant and not calculated. 
-- Specified h. The external heat transfer coefficient must be specified and either the internal heat transfer coefficient is provided or calculated from the assumption of natural convection from a vertical cylinder at high Gr number. Ambient temperature is required. Using this method the wall temperature is calculated from an energy balance over the vessel wall taking in and out flux to/from the external ambient plenum as well as heat flux to/from the fluid inventory into account. 
-- Fire. The Stefan-Boltzmann equation i sapplied for estimating the external heat duty. The fire heat flux depends on the vessel wall temperature, and the wall temperature is continously updated as in the method with specified h.
+- Fixed U: U-value, i.e. overall heat transfer coefficient, is required and ambient temperature required.
+Based on the ambient (external) temperature, the fluid temperature, and the U-value, the heat flux Q is calculated for each time step. 
+In this calculation method the temperature of the vessel wall is not calculated:
+
+$$ Q = UA(T_{ambient} - T_{fluid})  $$
+
+- Fixed Q: The external heat flux, Q, applied to the fluid is specified and constant.
+The ambient temperature is not required.
+Further, the vessel wall temperature is redundant and not calculated.
+- Specified h: The external heat transfer coefficient must be specified and either the internal heat transfer coefficient is provided or calculated from the assumption of natural convection from a vertical cylinder at high Gr number.
+Ambient temperature is required. Using this method the wall temperature is calculated from an energy balance over the vessel wall taking in and out flux to/from the external ambient plenum as well as heat flux to/from the fluid inventory into account.
+- Fire: The Stefan-Boltzmann equation is applied for estimating the external heat duty.
+The fire heat flux depends on the vessel wall temperature, and the wall temperature is continuously updated as in the method with specified h.
 
 More elaborate description of the required input for the different calculation types are provided in [@Sec:input].
 
