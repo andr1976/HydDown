@@ -22,7 +22,6 @@ jobs:
         with:
           name: output
           path: output
-      - uses: actions/checkout@v2
       - name: Commit files # commit the output folder
         run: |
           git config user.name github-actions
