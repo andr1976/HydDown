@@ -23,9 +23,10 @@ jobs:
           name: output
           path: output
       - name: Commit files # commit the output folder
+        uses: actions/checkout@v2
         run: |
-          git config --local user.email "test@github.com"
-          git config --local user.name "GitHub Action test"
+        #  git config --local user.email "test@github.com"
+        #  git config --local user.name "GitHub Action test"
           git add docs/MANUAL.pdf
           git commit -m "Updated manual"
       - name: Push changes # push the output folder to your repo
