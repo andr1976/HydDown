@@ -12,7 +12,7 @@ jobs:
         run: mkdir output  # create output dir
       - uses: docker://pandoc/latex:2.9
         with:
-          args: --toc  --top-level-division=chapter  --number-sections --listings --data-dir=docs/templates --filter pandoc-citeproc --bibliography=references.bib --data-dir=/home/runner/work/HydDown/HydDown/docs --template eisvogel.tex --output=output/Test.pdf  Test.md
+          args: --toc  --top-level-division=chapter  --number-sections --listings --filter pandoc-citeproc --bibliography=references.bib --data-dir=/home/runner/work/HydDown/HydDown/docs --template eisvogel.tex --output=output/Test.pdf  Test.md
           #-v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings
       - uses: actions/upload-artifact@master
         with:
