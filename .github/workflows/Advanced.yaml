@@ -9,7 +9,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: create file list
         id: files_list
-        run: mkdir output  # create output dir
+        run: |
+          mkdir output  # create output dir
+          sudo apt-get -y install texlive-latex-extra
       - uses: docker://pandoc/latex
         with:
           args: --toc --filter pandoc-crossref --citeproc --bibliography=docs/references.bib --top-level-division=chapter  --number-sections --listings  --template docs/eisvogel.tex --output=output/Test.pdf  Test.md 
