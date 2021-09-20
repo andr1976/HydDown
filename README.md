@@ -3,7 +3,7 @@
 [![status](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25/status.svg)](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25)
  
 # HydDown
-Hydrogen (or other pure gas phase species) depressurization calculations
+Hydrogen (or other pure gas phase species) depressurization calculations 
 
 This code is published under an MIT license.
 
@@ -21,6 +21,11 @@ ERROR: No matching distribution found for hyddown
 please instead install with
 
     python3 -m pip install hyddown
+
+or try
+    
+    pip3 install hyddown
+
 
 Run the code as simple as: 
 
