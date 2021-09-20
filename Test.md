@@ -6,7 +6,7 @@ titlepage: true
 toc-own-page: true
 book: true
 reference-section-title: References
-bibliography: references.bib
+bibliography: docs/references.bib
 listings: True
 ---
 
@@ -17,7 +17,7 @@ The thermodynamic state inside the vessel changes over time as seen from immedia
 This is caused by change in fluid inventory (density) due to flow of gas either in or out of the vessel.
 Further, heat is transferred from or to the surroundings via convective heat transfer on the in- and outside of the vessel with heat being conducted through the vessel wall.
 
-![HydDown logo](img/Sketch.png){#fig:logo}
+![HydDown logo](docs/img/Sketch.png){#fig:logo}
 
 Running the code is as simple as: 
 
