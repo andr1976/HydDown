@@ -12,7 +12,7 @@ jobs:
         run: mkdir output  # create output dir
       - uses: docker://pandoc/latex:2.9
         with:
-          args: --output=output/result.pdf README.pdf
+          args: --output=output/result.pdf README.md
       - uses: actions/upload-artifact@master
         with:
           name: output
