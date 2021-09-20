@@ -26,6 +26,7 @@ jobs:
         run: |
           git config --local user.email "test@github.com"
           git config --local user.name "GitHub Action test"
+          git add docs/MANUAL.pdf
           git commit -m "Updated manual"
       - name: Push changes # push the output folder to your repo
         uses: ad-m/github-push-action@master
