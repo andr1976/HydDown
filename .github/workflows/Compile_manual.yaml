@@ -22,8 +22,8 @@ jobs:
         with:
           name: output
           path: output
+      - uses: actions/checkout@v2
       - name: Commit files # commit the output folder
-        uses: actions/checkout@v2
         run: |
         #  git config --local user.email "test@github.com"
         #  git config --local user.name "GitHub Action test"
