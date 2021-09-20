@@ -17,7 +17,7 @@ The thermodynamic state inside the vessel changes over time as seen from immedia
 This is caused by change in fluid inventory (density) due to flow of gas either in or out of the vessel.
 Further, heat is transferred from or to the surroundings via convective heat transfer on the in- and outside of the vessel with heat being conducted through the vessel wall.
 
-![HydDown logo](img/Sketch.png){#fig:logo}
+![HydDown logo](docs/img/Sketch.png){#fig:logo}
 
 Running the code is as simple as: 
 
@@ -510,7 +510,7 @@ The control volume sketched in [@Fig:firstlaw], separated from the surrounding b
 
 A general mass balance or continuity equation can be written: 
 
-![Control volume with one entrance and one exit. The image has been sourced from [@firstlaw].](img/First_law_open_system.png){#fig:firstlaw}
+![Control volume with one entrance and one exit. The image has been sourced from [@firstlaw].](docs/img/First_law_open_system.png){#fig:firstlaw}
 
 $$ \frac{m_{cv}}{dt} + \Delta \left( \dot{m} \right)_{fs}= 0 $$ {#eq:continuity}
 
@@ -602,7 +602,7 @@ When the pressure inside the vessels reaches the opening pressure, the force exe
 The flow of gas out of the vessels will lower the pressure and thereby also the force exerted on the disc.
 When the pressure in the vessels is reduced to the reset pressure, the PSV will close and the disc will again hinder the gas flow.
 
-![Conventional/pop action PSV adapted from [@iskov] and [@API520]](img/PSV.pdf){#fig:psv}
+![Conventional/pop action PSV adapted from [@iskov] and [@API520]](docs/img/PSV.pdf){#fig:psv}
 
 The relief valve model implemented in HydDown is the API 520 equations [@API520] for gas relief for both sonic/critical as well as subcritical flow. No corrections factors are implemented in HydDown.
 
@@ -640,7 +640,7 @@ When modelling a pop action PSV/relief valve under dynamic conditions, the valve
 The pop action is illustrated in [@Fig:psv_hyst] which shows the opening and closing hysteresis of the PSV as a function of pressure.
 In order to close the pressure shall be reduced below the reseat pressure. 
 
-![Relief valve hysteresis adapted from [@iskov]](img/hysteresis.pdf){#fig:psv_hyst}
+![Relief valve hysteresis adapted from [@iskov]](docs/img/hysteresis.pdf){#fig:psv_hyst}
 
 When specifying PSVs it common to use standard API sizes as shown in [@tbl:psv_sizes]
 
@@ -936,11 +936,11 @@ In order to specify multicomponent mixtures the below example can be used as gui
 
 For component names please refer to the [Coolprop manual](http://www.coolprop.org/fluid_properties/PurePseudoPure.html#list-of-fluids).
 
-![Gas discharge of multicomponent mixture](img/ng_all.png){#fig:ng_all}
+![Gas discharge of multicomponent mixture](docs/img/ng_all.png){#fig:ng_all}
 
 An example calculation for the above mixture is shown in [@Fig:ng_all]. 
 
-![Multicomponent mixture phase envelope and pressure and temperature trajectory of the vessel inventory during discharge](img/ng_pe.png){#fig:ng_pe}
+![Multicomponent mixture phase envelope and pressure and temperature trajectory of the vessel inventory during discharge](docs/img/ng_pe.png){#fig:ng_pe}
 
 The pressure and temperature trajectory is visualised along with the fluid mixture phase envelope in [@Fig:ng_pe].
 As seen from the figure, this case is borderline and the pressure/temperature trajectory just coincides with the dew line on the phase envelope.
@@ -967,7 +967,7 @@ However the simulations run here are with a finite heat transfer coefficient on 
 In their paper, detailed pressure and temperature traces are provided for three experimental runs: 7, 8, and 9, with depressurization from 2000 psia in 30 seconds, 480 seconds and 14 seconds, respectively.
 These experiments are simulated in [@Fig:byrnes_run7], [@Fig:byrnes_run8] and [@Fig:byrnes_run9]. 
   
-![Calculations of hydrogen discharge experiment run 7 from [@byrnes]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](img/Byrnes_run7.png){#fig:byrnes_run7}
+![Calculations of hydrogen discharge experiment run 7 from [@byrnes]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](docs/img/Byrnes_run7.png){#fig:byrnes_run7}
 
 The figure layout is general for all the validation studies conducted and will be described in brief for eased readability.
 Each experiment figure is divided in 4 subplots: the upper left shows the simulated bulk gas temperature and vessel wall (average) temperature with measured values included with stipulated lines (if available), the upper right shows the simulated and measured pressure (if available, shown with points), the lower left shows the specific enthalpy, specific internal energy, and the specific entropy of the bulk gas content as a function of time, the lower right shows the simulated mass rate leaving or entering the vessel.
@@ -979,9 +979,9 @@ However, on an absolute scale the results are still within 5$^\circ$C of the exp
 The trend in *goodness of fit* could indicate that the heat transfer from the outside of the vessel to the gas lacks some details, which become detectable at the very slow depressurization.
 For the fast depressurization the heat transfer from the outside is of less importance and the inside heat transfer coefficient may be predicted better.
 
-![Simulation of run 8 from [@byrnes].](img/Byrnes_run8.png){#fig:byrnes_run8}
+![Simulation of run 8 from [@byrnes].](docs/img/Byrnes_run8.png){#fig:byrnes_run8}
 
-![Simulation of run 9 from [@byrnes].](img/Byrnes_run9.png){#fig:byrnes_run9}
+![Simulation of run 9 from [@byrnes].](docs/img/Byrnes_run9.png){#fig:byrnes_run9}
 
 ## Hydrogen filling 
 In order to compare HydDown to experimental values of hydrogen filling operation the experiments reported by Striednig *et al.* [@STRIEDNIG] are used.
@@ -1019,11 +1019,11 @@ When the gas flow has ceased upon reaching the final pressure, the temperature s
 The temperature stabilises at a temperature which is higher than the initial ambient temperature due to the heating of the steel vessel.
 The cooling of the vessel by ambient air is slower and would require a longer run time to be clearly visible. 
 
-![Simulation of $H_2$ pressurization using 5 MPa/min [@STRIEDNIG].](img/Striednig_fillingH2_5MPa_min.png){#fig:striednig5}
+![Simulation of $H_2$ pressurization using 5 MPa/min [@STRIEDNIG].](docs/img/Striednig_fillingH2_5MPa_min.png){#fig:striednig5}
 
-![Simulation of $H_2$ pressurization using 10 MPa/min [@STRIEDNIG].](img/Striednig_fillingH2_10MPa_min.png){#fig:striednig10}
+![Simulation of $H_2$ pressurization using 10 MPa/min [@STRIEDNIG].](docs/img/Striednig_fillingH2_10MPa_min.png){#fig:striednig10}
 
-![Simulation of $H_2$ pressurization using 30 MPa/min [@STRIEDNIG].](img/Striednig_fillingH2_30MPa_min.png){#fig:striednig30}
+![Simulation of $H_2$ pressurization using 30 MPa/min [@STRIEDNIG].](docs/img/Striednig_fillingH2_30MPa_min.png){#fig:striednig30}
 
 ## Nitrogen discharge
 Calculations with HydDown are compared to experiment I1 from ref. [@Haque1992b].
@@ -1036,7 +1036,7 @@ The results are shown in [@Fig:N2val].
 The discharge coefficient of the orifice has been set to 0.8 in order to match the vessel pressure profile.
 The back pressure is set to atmospheric conditions.
 
-![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](img/N2_filling.png){#fig:N2val}
+![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](docs/img/N2_filling.png){#fig:N2val}
 
 As seen from [@Fig:N2val], the calculations compare well with the experimental results.
 The calculated temperature of the bulk vapor is within the experimental range of measured temperature at all times during the simulation.
@@ -1044,3 +1044,4 @@ It is also noted that the minimum temperature is reached at approximately the sa
 The calculated vessel inner wall temperature does not decline as rapidly as the experiments, but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature.
 The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperature.
 Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
+
