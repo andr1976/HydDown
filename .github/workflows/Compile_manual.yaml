@@ -15,13 +15,13 @@ jobs:
         with:
           args: --toc --filter pandoc-crossref --citeproc --bibliography=docs/references.bib --top-level-division=chapter  --number-sections --listings  --template docs/eisvogel.tex --output=output/Test.pdf  Manual.md 
           #-v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings
+      - name: update local copy # Move the generated files into output folder
+        run: |
+          cp -f output/Test.pdf docs/MANUAL.pdf
       - uses: actions/upload-artifact@master
         with:
           name: output
           path: output
-      - name: update local copy # Move the generated files into output folder
-        run: |
-          cp output/MANUAL.pdf docs/MANUAL.pdf
       - name: Commit files # commit the output folder
         run: |
           git config --local user.email "test@github.com"
