@@ -19,3 +19,16 @@ jobs:
         with:
           name: output
           path: output
+      - name: update local copy # Move the generated files into output folder
+        run: |
+          cp output/MANUAL.pdf docs/MANUAL.pdf
+      - name: Commit files # commit the output folder
+        run: |
+          git config --local user.email "test@github.com"
+          git config --local user.name "GitHub Action test"
+          git commit -m "Updated manual"
+      - name: Push changes # push the output folder to your repo
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          force: true
