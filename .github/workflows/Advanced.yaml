@@ -13,6 +13,9 @@ jobs:
       - uses: docker://pandoc/latex:2.9
         with:
           args: --output=output/result.pdf README.md
+          args: -v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings --output=output/Test.pdf  Test.md
+     
+
       - uses: actions/upload-artifact@master
         with:
           name: output
