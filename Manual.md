@@ -186,10 +186,19 @@ For `isothermal`/`isenthalpic`/`isentropic`/`isenergetic` calculations the minim
 
 If heat transfer is to be considered the calculation type `energybalance` is required. A few options are possible:
 
-- Fixed U. U-value i.e. overall heat transfer coefficient is required, and ambient temperature required. Based on the ambient (external) temperature, the fluid temperature, and the U-value, the heat flux Q is calculated for each time step. In this calculation method the temperature of the vessel wall is not calculated. 
-- Fixed Q. Q i.e. heat flux to be applied to the fluid is specified. The ambient temperature is not required. Further, the vessel wall temperature is redundant and not calculated. 
-- Specified h. The external heat transfer coefficient must be specified and either the internal heat transfer coefficient is provided or calculated from the assumption of natural convection from a vertical cylinder at high Gr number. Ambient temperature is required. Using this method the wall temperature is calculated from an energy balance over the vessel wall taking in and out flux to/from the external ambient plenum as well as heat flux to/from the fluid inventory into account. 
-- Fire. The Stefan-Boltzmann equation i sapplied for estimating the external heat duty. The fire heat flux depends on the vessel wall temperature, and the wall temperature is continously updated as in the method with specified h.
+- Fixed U: U-value, i.e. overall heat transfer coefficient, is required and ambient temperature required.
+Based on the ambient (external) temperature, the fluid temperature, and the U-value, the heat flux Q is calculated for each time step. 
+In this calculation method the temperature of the vessel wall is not calculated:
+ 
+$$ Q = UA(T_{ambient} - T_{fluid})  $$
+
+- Fixed Q: The external heat flux, Q, applied to the fluid is specified and constant.
+The ambient temperature is not required.
+Further, the vessel wall temperature is redundant and not calculated.
+- Specified h: The external heat transfer coefficient must be specified and either the internal heat transfer coefficient is provided or calculated from the assumption of natural convection from a vertical cylinder at high Gr number.
+Ambient temperature is required. Using this method the wall temperature is calculated from an energy balance over the vessel wall taking in and out flux to/from the external ambient plenum as well as heat flux to/from the fluid inventory into account.
+- Fire: The Stefan-Boltzmann equation is applied for estimating the external heat duty.
+The fire heat flux depends on the vessel wall temperature, and the wall temperature is continuously updated as in the method with specified h.
 
 More elaborate description of the required input for the different calculation types are provided in [@Sec:input].
 
@@ -1006,7 +1015,7 @@ The experiments are reported in Fig. 6 and Fig. 7 in [@STRIEDNIG].
 
 In its current stage HydDown does not directly support specifying a fixed pressurisation rate expressed as a constant rate of change in pressure / pressure ramp rate (PRR).
 In order to emulate the experiments, an orifice model is used with an artificially high reservoir pressure in order to ensure that the flow is critical during the entire pressurisation.
-This gives a constant mass rate and translates to a fairly constant pressure ramp rate, although with real gas effects being clearly observable.  
+This gives a constant mass rate and translates to a fairly constant pressure ramp rate, although with real gas effects being clearly observable.
 
 The results of the simulations with HydDown and the experiments from [@STRIEDNIG] are shown in [@Fig:striednig5], [@Fig:striednig10], [@Fig:striednig30].
 As seen from the figures the experimental gas temperature appears to be simulated very accurately.
@@ -1044,4 +1053,3 @@ It is also noted that the minimum temperature is reached at approximately the sa
 The calculated vessel inner wall temperature does not decline as rapidly as the experiments, but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature.
 The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperature.
 Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
-
