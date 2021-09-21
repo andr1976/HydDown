@@ -1,6 +1,9 @@
 name: Compile manual
 
-on: push
+on:
+  push:
+    paths:
+      - 'Manual.md'
 
 jobs:
   convert_via_pandoc:
