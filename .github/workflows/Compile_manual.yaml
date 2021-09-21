@@ -16,7 +16,7 @@ jobs:
           mkdir output  # create output dir
       - uses: docker://rstropek/pandoc-latex
         with:
-          args: --toc --filter pandoc-crossref --citeproc --bibliography=docs/references.bib --top-level-division=chapter  --number-sections --listings  --template docs/eisvogel.tex --output=output/Test.pdf  Manual.md 
+          args: --toc --filter pandoc-crossref --citeproc --bibliography=docs/references.bib --top-level-division=chapter  --number-sections --listings  --template https://raw.githubusercontent.com/Wandmalfarbe/pandoc-latex-template/master/eisvogel.tex --output=output/Test.pdf  Manual.md 
           #-v "/home/runner/work/HydDown/HydDown":"/github/workspace" --toc --filter pandoc-crossref --citeproc --bibliography=references.bib --top-level-division=chapter --resource-path=.:/home/runner/work/HydDown/HydDown/docs --data-dir=templates --number-sections --listings
       - name: update local copy # Move the generated files into output folder
         run: |
