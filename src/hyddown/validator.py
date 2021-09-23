@@ -7,6 +7,19 @@ from cerberus.errors import ValidationError
 
 
 def validate_mandatory_ruleset(input):
+    """
+    Validate input
+
+    Parameters
+    ----------
+    input : dict 
+        Structure holding input 
+
+    Return
+    ----------
+    retval : bool 
+        True for success, False for failure
+    """
     schema = {
         'initial': {
             'type': 'dict',
@@ -149,6 +162,21 @@ def validate_mandatory_ruleset(input):
 
 
 def heat_transfer_validation(input):
+    """
+    Validate input['heat_transfer'] deeper than cerberus
+
+    Parameters
+    ----------
+    input : dict 
+        Structure holding input 
+
+    
+    Return
+    ----------
+        : bool 
+        True for success, False for failure
+    """
+    
     if input['calculation']['type'] == 'energybalance':
         if 'heat_transfer' in input:
             if 'specified_h' in input['heat_transfer']['type']:
@@ -180,6 +208,21 @@ def heat_transfer_validation(input):
         return True
 
 def valve_validation(input):
+    
+    """
+    Validate input['valve'] deeper than cerberus
+
+    Parameters
+    ----------
+    input : dict 
+        Structure holding input 
+
+    
+    Return
+    ----------
+        : bool 
+        True for success, False for failure
+    """
     if input['valve']['type'] == 'psv':
         if ('diameter' in input['valve'] 
             and 'discharge_coef' in input['valve'] 
@@ -203,4 +246,18 @@ def valve_validation(input):
             return False
 
 def validation(input):
+    """
+    Aggregate validation using cerberus and homebrew validation 
+
+    Parameters
+    ----------
+    input : dict 
+        Structure holding input 
+
+    
+    Return
+    ----------
+        : bool 
+        True for success, False for failure
+    """
     return validate_mandatory_ruleset(input) and valve_validation(input) and heat_transfer_validation(input)
