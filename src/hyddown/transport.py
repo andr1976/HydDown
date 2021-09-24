@@ -11,7 +11,24 @@ def Gr(L, Tfluid, Tvessel, P, species):
     Calculation of Grasshof number. See eq. 4.7-4 in
     C. J. Geankoplis Transport Processes and Unit Operations, International Edition,
     Prentice-Hall, 1993
+
+    Parameters
+    ----------
+    L : float
+        Vessel length
+    Tfluid : float
+        Temperature of the bulk fluid inventory
+    Tvessel : float 
+        Temperature of the vessel wall (bulk) 
+    P : float 
+        Pressure of fluid inventory
+
+    Returns
+    ----------
+    Gr : float
+        Grasshof number
     """
+    # Estimating the temperature at the fluid film interface
     T = (Tfluid + Tvessel) / 2
     beta = PropsSI("ISOBARIC_EXPANSION_COEFFICIENT", "T|gas", T, "P", P, species)
     nu = PropsSI("V", "T|gas", T, "P", P, 'HEOS::'+species.split('::')[1]) / PropsSI("D", "T|gas", T, "P", P, species)
@@ -24,6 +41,18 @@ def Pr(T, P, species):
     Calculation of Prandtl number, eq. 4.5-6 in
     C. J. Geankoplis Transport Processes and Unit Operations, International Edition,
     Prentice-Hall, 1993
+
+    Parameters
+    ----------
+    T : float
+        Temperature of the fluid film interface 
+    P : float 
+        Pressure of fluid inventory
+
+    Returns
+    ----------
+    Pr : float
+        Prantdl number
     """
     C = PropsSI("C", "T|gas", T, "P", P, species)
     V = PropsSI("V", "T|gas", T, "P", P, 'HEOS::'+species.split('::')[1])
@@ -38,6 +67,18 @@ def Nu(Ra, Pr):
     Calculation of Nusselt number for natural convection. See eq. 4.7-4  and Table 4.7-1 in
     C. J. Geankoplis Transport Processes and Unit Operations, International Edition,
     Prentice-Hall, 1993
+
+    Parameters
+    ----------
+    Ra : float
+        Raleigh number
+    Pr : float 
+        Prandtl number
+
+    Returns
+    ----------
+    Nu : float
+        Nusselt numebr
     """
     if Ra >= 1e9:
         NNu = 0.13 * Ra ** 0.333
@@ -48,6 +89,26 @@ def Nu(Ra, Pr):
     return NNu
 
 def h_inside(L, Tvessel, Tfluid, fluid):
+    """
+    Calculation of internal natural convective heat transfer coefficient from Nusselt number
+    and using the coolprop low level interface.
+
+    Parameters
+    ----------
+    L : float
+        Vessel length
+    Tfluid : float
+        Temperature of the bulk fluid inventory
+    Tvessel : float 
+        Temperature of the vessel wall (bulk) 
+    fluid : obj
+        Coolprop fluid object 
+    
+    Returns
+    ----------
+    h_inner : float
+        Heat transfer coefficient
+    """
     cond = fluid.conductivity()
     visc = fluid.viscosity()
     cp = fluid.cpmass()
@@ -63,7 +124,24 @@ def h_inside(L, Tvessel, Tfluid, fluid):
 
 def h_inner(L, Tfluid, Tvessel, P, species):
     """
-    Calculation of heat transfer coefficient from Nusselt number
+    Calculation of internal natural convective heat transfer coefficient from Nusselt number
+    and using the coolprop high level interface. Not currently in use.
+
+    Parameters
+    ----------
+    L : float
+        Vessel length
+    Tfluid : float
+        Temperature of the bulk fluid inventory
+    Tvessel : float 
+        Temperature of the vessel wall (bulk) 
+    species : str
+        Fluid definition string
+    
+    Returns
+    ----------
+    h_inner : float
+        Heat transfer coefficient
     """
     NPr = Pr((Tfluid + Tvessel) / 2, P, species)
     NGr = Gr(L, Tfluid, Tvessel, P, species)
@@ -74,6 +152,30 @@ def h_inner(L, Tfluid, Tvessel, P, species):
 
 
 def h_inside_mixed(L, Tvessel, Tfluid, fluid, mdot, D):
+    """
+    Calculation of internal mixed natural/forced convective heat transfer coefficient from Nusselt number
+    and using the coolprop low level interface.
+
+    Parameters
+    ----------
+    L : float
+        Vessel length
+    Tfluid : float
+        Temperature of the bulk fluid inventory
+    Tvessel : float 
+        Temperature of the vessel wall (bulk) 
+    fluid : obj
+        Coolprop fluid object 
+    mdot : float 
+        Mass flow
+    D : float 
+        Characteristic diameter for Reynolds number estimation
+
+    Returns
+    ----------
+    h_inner : float
+        Heat transfer coefficient
+    """
     cond = fluid.conductivity()
     visc = fluid.viscosity()
     cp = fluid.cpmass()
@@ -93,6 +195,33 @@ def h_inside_mixed(L, Tvessel, Tfluid, fluid, mdot, D):
 
 
 def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
+    """
+    Calculation of internal mixed (nutural/forced convective) heat transfer coefficient from Nusselt number
+    and using the coolprop high level interface. Not currently in use.
+
+    Parameters
+    ----------
+    L : float
+        Vessel length
+    Tfluid : float
+        Temperature of the bulk fluid inventory
+    Tvessel : float 
+        Temperature of the vessel wall (bulk) 
+    P : float
+        Fluid pressure
+    species : str
+        Fluid definition string 
+    mdot : float 
+        Mass flow
+    D : float 
+        Characteristic diameter for Reynolds number estimation
+        
+    
+    Returns
+    ----------
+    h_inner : float
+        Heat transfer coefficient
+    """
     NPr = Pr((Tfluid + Tvessel) / 2, P, species)
     NGr = Gr(L, Tfluid, Tvessel, P, species)
     NRa = NPr * NGr
@@ -112,6 +241,26 @@ def gas_release_rate(P1, P2, rho, k, CD, area):
     flow conditions. The formula is based on Yellow Book equation 2.22.
 
     Methods for the calculation of physical effects, CPR 14E, van den Bosch and Weterings (Eds.), 1996
+
+    Parameters
+    ----------
+    P1 : float 
+        Upstream pressure
+    P2 : float 
+        Downstream pressure
+    rho : float 
+        Fluid density
+    k : float 
+        Ideal gas k (Cp/Cv) 
+    CD : float
+        Coefficient of discharge
+    are : float
+        Orifice area
+
+    Returns
+    ----------
+        : float
+        Gas release rate / mass flow of discharge
     """
     if P1 > P2:
         if P1 / P2 > ((k + 1) / 2) ** ((k) / (k - 1)):
@@ -140,6 +289,34 @@ def relief_valve(P1, Pback, Pset, blowdown, k, CD, T1, Z, MW, area):
     Pop action relief valve model including hysteresis.
     The pressure shall rise above P_set to open and
     decrease below P_reseat (P_set*(1-blowdown)) to close
+
+    Parameters
+    ----------
+    P1 : float
+        Upstream pressure
+    Pback : float 
+        Downstream / backpressure
+    Pset : float
+        Set pressure of the PSV / relief valve
+    blowdown : float 
+        The percentage of the set pressure at which the valve reseats
+    k : float 
+        Ideal gas k (Cp/Cv) 
+    CD : float
+        Coefficient of discharge
+    T1 : float
+        Upstream temperature
+    Z : float 
+        Compressibility
+    MW : float 
+        Molecular weight of the gas relieved
+    area : float 
+        PSV orifice area
+    
+    Returns
+    ----------
+        : float 
+        Relief rate / mass flow
     """
 
     global psv_state
@@ -167,7 +344,33 @@ def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
     """
     PSV vapour relief rate calculated according to API 520 Part I 2014
     Eq. 5, 9, 15, 18
+
+    Parameters
+    ----------
+    P1 : float
+        Upstream pressure
+    Pback : float 
+        Downstream / backpressure
+    k : float 
+        Ideal gas k (Cp/Cv) 
+    CD : float
+        Coefficient of discharge
+    T1 : float
+        Upstream temperature
+    Z : float 
+        Compressibility
+    MW : float 
+        Molecular weight of the gas relieved
+    area : float 
+        PSV orifice area
+
+    Returns
+    ----------
+        : float 
+        Relief rate / mass flow
     """
+
+
     P1 = P1 / 1000
     Pback = Pback / 1000
     area = area * 1e6 
@@ -188,6 +391,32 @@ def control_valve(P1, P2, T, Z, MW, gamma, Cv, xT=0.75, FP=1):
     Flow calculated from ANSI/ISA control valve equations for single phase gas flow.
     Equation 19 pp. 132 in
     Control Valves / Guy Borden, editor; Paul Friedmann, style editor
+
+    Parameters
+    ----------
+    P1 : float
+        Upstream pressure
+    P2 : float 
+        Downstream / backpressure
+    T : float
+        Upstream temperature
+    Z : float 
+        Upstream compressibility
+    MW : float 
+        Molecular weight of the gas relieved
+    gamma : float 
+        Upstream Ideal gas k (Cp/Cv) 
+    Cv : float
+        Valve coefficient 
+    xT : float
+        Value of xT for valve fitting assembly, default value
+    FP : float
+        Piping geometry factor
+
+    Returns
+    ----------
+        : float
+        Mass flow
     """
 
     P1 = P1 / 1e5

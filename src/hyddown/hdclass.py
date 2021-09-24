@@ -15,7 +15,16 @@ from hyddown import fire
 
 
 class HydDown:
+    """
+    Main class to to hold problem definition, running problem, storing results etc.
+    """
     def __init__(self, input):
+        """
+        Parameters
+        ----------
+        input : dict
+            Dict holding problem definition
+        """
         self.input = input
         self.verbose = 0
         self.isrun = False
@@ -24,14 +33,25 @@ class HydDown:
         self.initialize()
         
 
-
     def validate_input(self):
+        """
+        Validating the provided problem definition dict
+
+        Raises
+        ------
+        ValueError
+            If missing input is detected.
+        """
         valid = validator.validation(self.input)
         if valid is False:
             raise ValueError("Error in input file")
 
 
     def read_input(self):
+        """
+        Reading in input/ problem definition dict and assigning to classs
+        attributes.
+        """
         self.length = self.input["vessel"]["length"]
         self.diameter = self.input["vessel"]["diameter"]
 
@@ -40,6 +60,7 @@ class HydDown:
 
         self.species = "HEOS::" + self.input["initial"]["fluid"]
 
+        # Detects if a multi component fluid is specified using & for sepration of components
         if "&" in self.input["initial"]["fluid"]:
             comp_frac_pair = [str.replace("["," ").replace("]","").split(" ") for str in  self.input["initial"]["fluid"].split("&")] 
             comp = [pair[0] for pair in comp_frac_pair]
@@ -50,6 +71,7 @@ class HydDown:
             sep = "&"
             self.comp = sep.join(comp)
             self.compSRK = sep.join(compSRK)
+        # Normally single component fluid is specified
         else:
             self.comp = self.input["initial"]["fluid"]
             self.molefracs = [1.0]
@@ -88,6 +110,7 @@ class HydDown:
         # - constant_mass
         # - functional mass flow
         self.thickness = 0
+
         # Reading heat transfer related data/information
         if "heat_transfer" in self.input:
             self.heat_method = self.input["heat_transfer"]["type"]
@@ -118,6 +141,11 @@ class HydDown:
                 
 
     def initialize(self):
+        """
+        Preparing for running problem by creating the fluid objects required
+        instantiating arrays for storing time-dependent results, setting addtional 
+        required class attributes.
+        """
         self.vol = self.diameter ** 2 / 4 * math.pi * self.length  # m3
         self.vol_tot = (
             (self.diameter + 2 * self.thickness) ** 2
@@ -179,15 +207,46 @@ class HydDown:
 
 
     def PHres(self,T, P, H):
+        """
+        Residual enthalpy function to be minimised during a PH-problem
+        
+        Parameters
+        ----------
+        H : float 
+            Enthalpy at initial/final conditions
+        P : float
+            Pressure at final conditions. 
+        T : float 
+            Updated estimate for the final temperature at P,H
+        """
         self.vent_fluid.update(CP.PT_INPUTS, P, T)
         return ((H-self.vent_fluid.hmass())/H)**2 
 
 
     def PHproblem(self, H, P, Tguess):
+        """
+        Defining a constant pressure, constant enthalpy problem i.e. typical adiabatic 
+        problem like e.g. valve flow for the vented flow (during discharge). 
+        For multicomponent mixture the final temperature is changed/optimised until the residual 
+        enthalpy is near zero in an optimisation step. For single component fluid the coolprop 
+        built in methods are used for speed. 
+        
+        Parameters
+        ----------
+        H : float 
+            Enthalpy at initial/final conditions
+        P : float
+            Pressure at final conditions. 
+        Tguess : float 
+            Initial guess for the final temperature at P,H
+        """
+
+        # Multicomponent case
         if "&" in self.species:                     
             x0=Tguess
             res=minimize(self.PHres, x0, args=(P, H), method='Nelder-Mead', options={'xatol':0.1,'fatol':0.001})
             T1 = res.x[0]
+        # single component fluid case
         else:
             T1 = PropsSI(
                 "T", "P", P, "H", H, self.species
@@ -196,11 +255,39 @@ class HydDown:
 
 
     def UDres(self,x, U, rho):
+        """
+        Residual U-rho to be minimised during a U-rho/UV-problem
+        
+        Parameters
+        ----------
+        U : float 
+            Internal energy at final conditions
+        rho : float
+            Density at final conditions
+        """
         self.fluid.update(CP.PT_INPUTS, x[0], x[1])
         return ((U-self.fluid.umass())/U)**2 + ((rho-self.fluid.rhomass())/rho)**2
 
 
     def UDproblem(self, U, rho, Pguess, Tguess):
+        """
+        Defining a constant UV problem i.e. constant internal energy and density/volume 
+        problem relevant for the 1. law of thermodynamics. 
+        For multicomponent mixture the final temperature/pressure is changed/optimised until the 
+        residual U/rho is near zero. For single component fluid the coolprop 
+        built in methods are used for speed. 
+        
+        Parameters
+        ----------
+        U : float 
+            Internal energy at final conditions
+        rho : float
+            Density at final conditions. 
+        Pguess : float 
+            Initial guess for the final pressure at U, rho
+        Tguess : float 
+            Initial guess for the final temperature at U, rho
+        """
         if "&" in self.species:                    
             x0=[Pguess,Tguess]
             res=minimize(self.UDres, x0, args=(U, rho), method='Nelder-Mead', options={'xatol':0.1,'fatol':0.001})
@@ -219,7 +306,10 @@ class HydDown:
 
 
     def run(self):
-        # Inititialise
+        """
+        Routine for running the actual problem defined i.e. integrating the mass and energy balances
+        """
+        # Inititialise / setting initial values for t=0
         input = self.input
         self.rho[0] = self.rho0
         self.T_fluid[0] = self.T0
@@ -235,6 +325,8 @@ class HydDown:
             
         massflow_stop_switch = 0 
 
+        # Calculating initial mass rate for t=0 depending on mass flow device
+        # and filling/discharge mode
         if input["valve"]["type"] == "orifice":
             if input["valve"]["flow"] == "filling":
                 k = self.res_fluid.cp0molar() / self.res_fluid.cvmolar()
@@ -312,7 +404,10 @@ class HydDown:
             )
 
         self.time_array[0] = 0
-        # Run actual integration
+        
+        # Run actual integration by updating values by numerical integration/time stepping
+        # Mass of fluid is calculated from previous time step mass and mass flow rate
+
         for i in range(1, len(self.time_array)):
             self.time_array[i] = self.time_array[i - 1] + self.tstep
             self.mass_fluid[i] = (
@@ -321,6 +416,8 @@ class HydDown:
              
             self.rho[i] = self.mass_fluid[i] / self.vol
 
+            # For the simple methods key variable is rho, with either H,S,U or T constant 
+            # updating T and p is convenient using coolprop. 
             if self.method == "isenthalpic":
                 self.fluid.update(CP.DmassHmass_INPUTS, self.rho[i],self.H_mass[i-1])
                 self.T_fluid[i]=self.fluid.T()
@@ -340,8 +437,10 @@ class HydDown:
                 self.fluid.update(CP.DmassUmass_INPUTS, self.rho[i],self.U_mass[i-1])
                 self.T_fluid[i]=self.fluid.T()
                 self.P[i]=self.fluid.p()
-                
+            
+            # This is the **only** complicated part where we have the energy balance included 
             elif self.method == "energybalance":
+                # Finding the heat supplied/removed by heat transfer from/to outside
                 if self.heat_method == "specified_h" or self.heat_method == "detailed":
                     if self.h_in == "calc":
                         if self.vessel_orientation == "horizontal":
@@ -418,8 +517,12 @@ class HydDown:
                 NMOL_ADD = (self.mass_fluid[i] - self.mass_fluid[i - 1]) / self.MW
                 # New
                 U_start = self.U_mass[i - 1] * self.mass_fluid[i - 1]
+
+                # Smooting finction for very early times /numerical trick
+                # Might not be necessary.
                 x = 1 - math.exp(-1 * self.time_array[i]) ** 0.66
 
+                # Finding the inlet/outlet enthalpy rate for the energy balance
                 if input["valve"]["flow"] == "filling":
                     h_in = x * self.res_fluid.hmass() + (
                         1 - x
@@ -450,13 +553,14 @@ class HydDown:
             else:
                 raise NameError("Unknown calculation method: " + self.method)
 
-            
+            # Updating H,S,U states 
             self.H_mass[i] = self.fluid.hmass()
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
 
             print("Progress", int(i/(self.time_tot / self.tstep)*100),"%",end="\r")
 
+            # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":
                 if "&" in self.species:
                     self.T_vent[i] = self.PHproblem(self.H_mass[i], self.p_back, self.vent_fluid.T())
@@ -465,6 +569,7 @@ class HydDown:
 
             cpcv = self.fluid.cp0molar() / self.fluid.cvmolar()
             
+            # Finally updating the mass rate for the mass balance in the next time step
             if input["valve"]["type"] == "orifice":
                 if input["valve"]["flow"] == "filling":
                     k = self.res_fluid.cp0molar()/self.res_fluid.cvmolar()
@@ -519,6 +624,10 @@ class HydDown:
         self.isrun = True
 
     def get_dataframe(self):
+        """
+        Storing relevant results in pandas dataframe for e.g. export 
+        to csv, excel for archiving or post analysis
+        """
         if self.isrun == True:
             df=pd.DataFrame(self.time_array,columns=['Time (s)'])
             
@@ -539,6 +648,16 @@ class HydDown:
         return df
 
     def plot(self,filename=None, verbose=True):
+        """
+        Creating standard plots for the solved problem 
+
+        Parameters
+        ----------
+        filename : str
+            Saving plots to filename if provideed (optional)
+        verbose : bool
+            Plotting on screen if True (optional)
+        """
         import pylab as plt
 
         if filename != None:
@@ -638,6 +757,10 @@ class HydDown:
         return "HydDown vessel filling/depressurization class"
         
     def generate_report(self):
+        """
+        Generating a report summarising key features for the problem solved.
+        Can be used for e.g. case studies, problem optimisation (external) etc.
+        """
         report = {}
 
         report["start_time"] = self.time_array[0]
