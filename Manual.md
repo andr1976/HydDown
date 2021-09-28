@@ -153,19 +153,19 @@ SOFTWARE.
 
 # Usage 
 ## Basic usage
-Running the code is as simple as: 
+From the source repository, running the code is as simple as: 
 
-    python main.py input.yml
+    python src/main.py input.yml
 
 where main.py is the main script and input.yml is the input file in Yaml syntax. 
 
 The Yaml input file is edited to reflect the system of interest. 
 
-A usable copy of a main script is installed in the  python installation Scripts/ folder:
+Further, a usable copy of a main script is installed in the python installation Scripts/ folder:
 
     /python3x/Scripts/hyddown_main.py
 
-or from GitHub:
+or from GitHub/in the source folder:
 
     HydDown/Scripts/hyddown_main.py
 
