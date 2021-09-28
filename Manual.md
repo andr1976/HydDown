@@ -52,7 +52,15 @@ The main branch is located here:
 
 [`https://github.com/andr1976/HydDown`](https://github.com/andr1976/HydDown)
 
-Installation of latest release via **pip**:
+Clone the repo by: 
+
+    git clone https://github.com/andr1976/HydDown.git
+
+Running from source via `git` the dependencies must be installed manually from the repo root dir:
+
+    pip install -r requirements.txt
+
+Installation of latest release via **pip** also installe dependecies automatically:
 
     pip install hyddown
 
