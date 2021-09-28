@@ -84,6 +84,17 @@ where python3 is the symlink or full path to the python3 executable installed on
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip.
 It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.
 
+## Testing 
+Although testing is mainly intended for automated testing (CI) during development using github actions, testing of the installed package can be done for source install by:
+
+    python -m pytest 
+
+run from the root folder. In writing 33 test should pass.
+
+For the package installed with pip navigate to the install directory `../site-packages/hyddown` and run:
+
+    python -m pytest 
+
 ## Units of measure
 The SI unit system is adapted for this project.
 The following common units are used in the present project and this also applies to the units used in the input files:
