@@ -52,7 +52,15 @@ The main branch is located here:
 
 [`https://github.com/andr1976/HydDown`](https://github.com/andr1976/HydDown)
 
-Installation of latest release via **pip**:
+Clone the repo by: 
+
+    git clone https://github.com/andr1976/HydDown.git
+
+Running from source via `git` the dependencies must be installed manually from the repo root dir:
+
+    pip install -r requirements.txt
+
+Installation of latest release via **pip** also installe dependecies automatically:
 
     pip install hyddown
 
@@ -75,6 +83,17 @@ where python3 is the symlink or full path to the python3 executable installed on
 
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip.
 It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.
+
+## Testing 
+Although testing is mainly intended for automated testing (CI) during development using github actions, testing of the installed package can be done for source install by:
+
+    python -m pytest 
+
+run from the root folder. In writing 33 test should pass.
+
+For the package installed with pip navigate to the install directory `../site-packages/hyddown` and run:
+
+    python -m pytest 
 
 ## Units of measure
 The SI unit system is adapted for this project.
@@ -134,19 +153,19 @@ SOFTWARE.
 
 # Usage 
 ## Basic usage
-Running the code is as simple as: 
+From the source repository, running the code is as simple as: 
 
-    python main.py input.yml
+    python src/main.py input.yml
 
 where main.py is the main script and input.yml is the input file in Yaml syntax. 
 
 The Yaml input file is edited to reflect the system of interest. 
 
-A usable copy of a main script is installed in the  python installation Scripts/ folder:
+Further, a usable copy of a main script is installed in the python installation Scripts/ folder:
 
     /python3x/Scripts/hyddown_main.py
 
-or from GitHub:
+or from GitHub/in the source folder:
 
     HydDown/Scripts/hyddown_main.py
 
