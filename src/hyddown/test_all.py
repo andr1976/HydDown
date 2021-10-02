@@ -241,8 +241,8 @@ def test_validator2():
     for fname in os.listdir(dir):
         with open(os.path.join(dir,fname)) as infile:
             input = yaml.load(infile, Loader=yaml.FullLoader)
-        assert validator.heat_transfer_validation(input) == True
-        assert validator.valve_validation(input) == True
+        assert validator.heat_transfer_validation(input) != False
+        assert validator.valve_validation(input) != False
 
 
 def test_sim_orifice_full():

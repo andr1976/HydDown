@@ -368,7 +368,7 @@ def valve_validation(input):
         else: 
             return False
     if input['valve']['type'] == 'mdot':
-        return True
+        pass
     if input['valve']['type'] == 'controlvalve':
         if ('Cv' in input['valve'] and 'back_pressure' in input['valve']):
             pass

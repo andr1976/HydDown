@@ -43,7 +43,7 @@ class HydDown:
             If missing input is detected.
         """
         valid = validator.validation(self.input)
-        if valid is False:
+        if valid == False:
             raise ValueError("Error in input file")
 
 
@@ -128,7 +128,10 @@ class HydDown:
                 self.h_out = self.input["heat_transfer"]["h_outer"]
                 self.h_in = self.input["heat_transfer"]["h_inner"]
                 if self.input["valve"]["flow"] == "filling":
-                    self.D_throat = self.input["heat_transfer"]["D_throat"]
+                    if "D_throat" in self.input["heat_transfer"]: 
+                        self.D_throat = self.input["heat_transfer"]["D_throat"]
+                    else:
+                        self.D_throat = self.input["vessel"]["diameter"]
             if self.heat_method == "s-b":
                 self.fire_type = self.input["heat_transfer"]["fire"]
                 self.h_in = "calc"
