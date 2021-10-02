@@ -20,7 +20,7 @@ def validate_mandatory_ruleset(input):
     retval : bool 
         True for success, False for failure
     """
-    schema = {
+    schema_general = {
         'initial': {
             'required' : True,
             'type': 'dict',
@@ -45,8 +45,8 @@ def validate_mandatory_ruleset(input):
                                 'isothermal',
                                 'constant_U'],
                     },
-                'time_step': {'type': 'number', 'min': 0.000001},
-                'end_time': {'type': 'number', 'min': 0},
+                'time_step': {'required' : True,'type': 'number', 'min': 0.000001},
+                'end_time': {'required' : True,'type': 'number', 'min': 0},
             }
         },
         'vessel': {
@@ -78,7 +78,7 @@ def validate_mandatory_ruleset(input):
                 'set_pressure': {'type': 'number', 'min': 0},
                 'end_pressure': {'type': 'number', 'min': 0},
                 'blowdown': {'type': 'number', 'min': 0, 'max': 1},
-                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
+                'back_pressure': {'type': 'number', 'min': 0},
                 'Cv': {'type': 'number', 'min': 0},
                 'mdot': {'type': ['number','list']},
                 'time' : {'type': 'list'},
@@ -160,10 +160,58 @@ def validate_mandatory_ruleset(input):
         }
     }
 
-    v = Validator(schema)
+    v = Validator(schema_general)
     retval = v.validate(input)
     if v.errors:
         print(v.errors)
+    
+    if input['calculation']['type'] == 'energybalance':
+        if input['heat_transfer']['type'] == 'specified_h':
+            schema_heattransfer = {
+                'initial' : {'required' : True},
+                'calculation' : {'required' : True},
+                'validation' : {'required' : False},
+                'valve' : {'required' : True},
+                'vessel': {
+                    'required' : True,
+                    'type': 'dict',
+                    'allow_unknown': False,  
+                    'schema': {             
+                        'length': {'required' : True,'type': 'number'},
+                        'diameter': {'required' : True,'type': 'number'},
+                        'thickness': {'required': True,'type': 'number', 'min': 0.0},
+                        'heat_capacity': {'required': True, 'type': 'number', 'min': 1},
+                        'density': {'required': True, 'type': 'number', 'min': 1},
+                        'orientation': {
+                            'required': True, 
+                            'type': 'string', 
+                            'allowed': ['vertical', 'horizontal']
+                        }
+                    }
+                },
+                'heat_transfer':{
+                    'required': True,
+                    'type': 'dict',
+                    'allow_unknown': False,
+                    'allowed': ['h_inner','h_outer','temp_ambient','type','D_throat'],
+                    'schema':{
+                        'type': {'type': 'string','allowed': ['specified_h']}, 
+                        'temp_ambient': {'required': True, 'type': 'number', 'min': 0},
+                        'h_outer': {'required': True, 'type': 'number', 'min': 0},
+                        'h_inner': {'required': True, 'type': ['number','string']},
+                        'D_throat' : {'required': False, 'type': 'number', 'min': 0},
+                    }
+                },
+            }  
+            v = Validator(schema_heattransfer)
+            retval = v.validate(input)
+            if v.errors:
+                print(v.errors)
+
+        elif input['heat_transfer']['type']=='specified_Q':
+            pass
+    
+    
     return retval
 
 
