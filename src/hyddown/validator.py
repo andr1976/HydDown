@@ -22,19 +22,22 @@ def validate_mandatory_ruleset(input):
     """
     schema = {
         'initial': {
+            'required' : True,
             'type': 'dict',
             'allow_unknown': False,
             'schema': {
-                'temperature':{'type':'number'},
-                'pressure':{'type': 'number'},
-                'fluid': {'type': 'string'},
+                'temperature':{'required' : True,'type':'number'},
+                'pressure':{'required' : True,'type': 'number'},
+                'fluid': {'required' : True,'type': 'string'},
                 },
             },
         'calculation': {
+            'required' : True,
             'type': 'dict',
             'allow_unknown': False,
             'schema': {
                 'type': {
+                    'required' : True,
                     'type': 'string', 
                     'allowed': ['energybalance',
                                 'isenthalpic',
@@ -47,11 +50,12 @@ def validate_mandatory_ruleset(input):
             }
         },
         'vessel': {
+            'required' : True,
             'type': 'dict',
             'allow_unknown': False,  
             'schema': {             
-                'length': {'type': 'number'},
-                'diameter': {'type': 'number'},
+                'length': {'required' : True,'type': 'number'},
+                'diameter': {'required' : True,'type': 'number'},
                 'thickness': {'required': False,'type': 'number', 'min': 0.0},
                 'heat_capacity': {'required': False, 'type': 'number', 'min': 1},
                 'density': {'required': False, 'type': 'number', 'min': 1},
@@ -63,17 +67,18 @@ def validate_mandatory_ruleset(input):
             }
         },
         'valve':{
+            'required' : True,
             'type': 'dict',
             'allow_unknown': False,
             'schema':{
-                'type': {'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
-                'flow': {'type': 'string', 'allowed': ['discharge', 'filling']},
+                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
+                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
                 'diameter': {'type': 'number', 'min': 0},
                 'discharge_coef': {'type': 'number', 'min': 0},
                 'set_pressure': {'type': 'number', 'min': 0},
                 'end_pressure': {'type': 'number', 'min': 0},
                 'blowdown': {'type': 'number', 'min': 0, 'max': 1},
-                'back_pressure': {'type': 'number', 'min': 0},
+                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
                 'Cv': {'type': 'number', 'min': 0},
                 'mdot': {'type': ['number','list']},
                 'time' : {'type': 'list'},
@@ -183,24 +188,24 @@ def heat_transfer_validation(input):
             if 'specified_h' in input['heat_transfer']['type']:
                 if 'h_inner' in input['heat_transfer'] and 'h_outer' in input['heat_transfer'] and 'temp_ambient' in input['heat_transfer']:
                     if 'orientation' in input['vessel'] and 'thickness' in input['vessel'] and 'heat_capacity' in input['vessel'] and 'density' in input['vessel']:
-                        return True
+                        pass
                     else:
                         return False
                 else:
                     return False
             if 'specified_Q' in input['heat_transfer']['type']:
                 if 'Q_fix' in input['heat_transfer']:
-                    return True
+                    pass
                 else:
                     return False
             if 'specified_U' in input['heat_transfer'] and 'temp_ambient' in input['heat_transfer']:
                 if 'Q_fix' in input['heat_transfer']['type']:
-                    return True
+                    pass
                 else:
                     return False
             if 's-b' in input['heat_transfer']['type']:
                 if 'fire' in input['heat_transfer'] and 'orientation' in input['vessel'] and 'thickness' in input['vessel'] and 'heat_capacity' in input['vessel'] and 'density' in input['vessel']:
-                    return True
+                    pass
                 else:
                     return False
         else:
@@ -230,21 +235,23 @@ def valve_validation(input):
             and 'set_pressure' in input['valve'] 
             and 'blowdown' in input['valve'] 
             and 'back_pressure' in input['valve']):
-            return True 
+            pass 
         else:
             return False
     if input['valve']['type'] == 'orifice':
         if ('diameter' in input['valve'] and 'back_pressure' in input['valve'] and 'discharge_coef' in input['valve']):
-            return True
+            pass
         else: 
             return False
     if input['valve']['type'] == 'mdot':
         return True
     if input['valve']['type'] == 'controlvalve':
         if ('Cv' in input['valve'] and 'back_pressure' in input['valve']):
-            return True
+            pass
         else: 
             return False
+    
+    return True
 
 def validation(input):
     """
