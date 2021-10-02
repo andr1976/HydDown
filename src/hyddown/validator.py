@@ -157,7 +157,8 @@ def validate_mandatory_ruleset(input):
 
     v = Validator(schema)
     retval = v.validate(input)
-    print(v.errors)
+    if v.errors:
+        print(v.errors)
     return retval
 
 

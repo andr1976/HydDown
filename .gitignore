@@ -31,3 +31,5 @@ hyddown/__pycache__/transport.cpython-38.pyc
 hyddown/__pycache__/hdclass.cpython-38.pyc
 hyddown/__pycache__/hdclass.cpython-38.pyc
 src/hyddown/__pycache__/test_all.cpython-38-pytest-6.2.3.pyc
+src/hyddown/__pycache__/hdclass.cpython-38.pyc
+src/hyddown/__pycache__/validator.cpython-38.pyc
