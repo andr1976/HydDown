@@ -35,3 +35,4 @@ src/hyddown/__pycache__/hdclass.cpython-38.pyc
 src/hyddown/__pycache__/validator.cpython-38.pyc
 src/hyddown/__pycache__/hdclass.cpython-38.pyc
 .gitignore
+src/hyddown/__pycache__/validator.cpython-38.pyc

@@ -165,6 +165,26 @@ def validate_mandatory_ruleset(input):
     if v.errors:
         print(v.errors)
     
+    return retval
+
+
+def heat_transfer_validation(input):
+    """
+    Validate input['heat_transfer'] deeper than cerberus
+
+    Parameters
+    ----------
+    input : dict 
+        Structure holding input 
+
+    
+    Return
+    ----------
+        : bool 
+        True for success, False for failure
+    """
+    retval = True
+
     if input['calculation']['type'] == 'energybalance':
         if input['heat_transfer']['type'] == 'specified_h':
             schema_heattransfer = {
@@ -203,10 +223,7 @@ def validate_mandatory_ruleset(input):
                     }
                 },
             }  
-            v = Validator(schema_heattransfer)
-            retval = v.validate(input)
-            if v.errors:
-                print(v.errors)
+            
 
         elif input['heat_transfer']['type']=='specified_Q':
             schema_heattransfer = {
@@ -242,11 +259,7 @@ def validate_mandatory_ruleset(input):
                     }
                 },
             }
-            v = Validator(schema_heattransfer)
-            retval = v.validate(input)
-            if v.errors:
-                print(v.errors)
-
+            
         elif input['heat_transfer']['type']=='specified_U':
             schema_heattransfer = {
                 'initial' : {'required' : True},
@@ -282,60 +295,48 @@ def validate_mandatory_ruleset(input):
                     }
                 },
             }
-            v = Validator(schema_heattransfer)
-            retval = v.validate(input)
-            if v.errors:
-                print(v.errors)
-    
-    
+            
+        elif input['heat_transfer']['type']=='s-b' :
+            schema_heattransfer = {
+                'initial' : {'required' : True},
+                'calculation' : {'required' : True},
+                'validation' : {'required' : False},
+                'valve' : {'required' : True},
+                'vessel': {
+                    'required' : True,
+                    'type': 'dict',
+                    'allow_unknown': False,  
+                    'schema': {             
+                        'length': {'required' : True,'type': 'number'},
+                        'diameter': {'required' : True,'type': 'number'},
+                        'thickness': {'required': True,'type': 'number', 'min': 0.0},
+                        'heat_capacity': {'required': True, 'type': 'number', 'min': 1},
+                        'density': {'required': True, 'type': 'number', 'min': 1},
+                        'orientation': {
+                            'required': True, 
+                            'type': 'string', 
+                            'allowed': ['vertical', 'horizontal']
+                        }
+                    }
+                },
+                'heat_transfer':{
+                    'required': True,
+                    'type': 'dict',
+                    'allow_unknown': False,
+                    'allowed': ['fire','type'],
+                    'schema':{
+                        'type': {'required': True, 'type': 'string','allowed': ['s-b']}, 
+                        'fire': {'required': True, 'type': 'string','allowed': ['api_pool','api_jet','scandpower_pool','scandpower_jet']}, 
+                    }
+                },
+            }  
+        v = Validator(schema_heattransfer)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
+
     return retval
-
-
-def heat_transfer_validation(input):
-    """
-    Validate input['heat_transfer'] deeper than cerberus
-
-    Parameters
-    ----------
-    input : dict 
-        Structure holding input 
-
-    
-    Return
-    ----------
-        : bool 
-        True for success, False for failure
-    """
-    
-    if input['calculation']['type'] == 'energybalance':
-        if 'heat_transfer' in input:
-            if 'specified_h' in input['heat_transfer']['type']:
-                if 'h_inner' in input['heat_transfer'] and 'h_outer' in input['heat_transfer'] and 'temp_ambient' in input['heat_transfer']:
-                    if 'orientation' in input['vessel'] and 'thickness' in input['vessel'] and 'heat_capacity' in input['vessel'] and 'density' in input['vessel']:
-                        pass
-                    else:
-                        return False
-                else:
-                    return False
-            if 'specified_Q' in input['heat_transfer']['type']:
-                if 'Q_fix' in input['heat_transfer']:
-                    pass
-                else:
-                    return False
-            if 'specified_U' in input['heat_transfer'] and 'temp_ambient' in input['heat_transfer']:
-                if 'Q_fix' in input['heat_transfer']['type']:
-                    pass
-                else:
-                    return False
-            if 's-b' in input['heat_transfer']['type']:
-                if 'fire' in input['heat_transfer'] and 'orientation' in input['vessel'] and 'thickness' in input['vessel'] and 'heat_capacity' in input['vessel'] and 'density' in input['vessel']:
-                    pass
-                else:
-                    return False
-        else:
-            return False
-    else:
-        return True
+   
 
 def valve_validation(input):
     
