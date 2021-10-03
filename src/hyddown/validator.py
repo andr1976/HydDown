@@ -354,33 +354,124 @@ def valve_validation(input):
         : bool 
         True for success, False for failure
     """
+
+    schema_psv = {
+        'initial' : {'required' : True},
+        'calculation' : {'required' : True},
+        'validation' : {'required' : False},
+        'vessel' : {'required' : True},
+        'heat_transfer' : {'required' : False},
+        'valve':{
+            'required' : True,
+            'type': 'dict',
+            'allow_unknown': False,
+            'schema':{
+                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
+                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
+                'diameter': {'required' : True,'type': 'number', 'min': 0},
+                'discharge_coef': {'required' : True,'type': 'number', 'min': 0},
+                'set_pressure': {'required' : True,'type': 'number', 'min': 0},
+                'end_pressure': {'type': 'number', 'min': 0},
+                'blowdown': {'required' : True,'type': 'number', 'min': 0, 'max': 1},
+                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
+                'Cv': {'type': 'number', 'min': 0},
+                'mdot': {'type': ['number','list']},
+                'time' : {'type': 'list'},
+            }
+        },
+    }
+
+    schema_orifice = {
+        'initial' : {'required' : True},
+        'calculation' : {'required' : True},
+        'validation' : {'required' : False},
+        'vessel' : {'required' : True},
+        'heat_transfer' : {'required' : False},
+        'valve':{
+            'required' : True,
+            'type': 'dict',
+            'allow_unknown': False,
+            'schema':{
+                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
+                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
+                'diameter': {'required' : True,'type': 'number', 'min': 0},
+                'discharge_coef': {'required' : True,'type': 'number', 'min': 0},
+                'set_pressure': {'type': 'number', 'min': 0},
+                'end_pressure': {'type': 'number', 'min': 0},
+                'blowdown': {'type': 'number', 'min': 0, 'max': 1},
+                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
+                'Cv': {'type': 'number', 'min': 0},
+                'mdot': {'type': ['number','list']},
+                'time' : {'type': 'list'},
+            }
+        },
+    }
+
+    schema_control_valve = {
+        'initial' : {'required' : True},
+        'calculation' : {'required' : True},
+        'validation' : {'required' : False},
+        'vessel' : {'required' : True},
+        'heat_transfer' : {'required' : False},
+        'valve':{
+            'required' : True,
+            'type': 'dict',
+            'allow_unknown': False,
+            'schema':{
+                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
+                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
+                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
+                'Cv': {'required' : True,'type': 'number', 'min': 0},
+            }
+        },
+    }
+
+    schema_mdot = {
+        'initial' : {'required' : True},
+        'calculation' : {'required' : True},
+        'validation' : {'required' : False},
+        'vessel' : {'required' : True},
+        'heat_transfer' : {'required' : False},
+        'valve':{
+            'required' : True,
+            'type': 'dict',
+            'allow_unknown': False,
+            'schema':{
+                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
+                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
+                'mdot': {'required' : True,'type': ['number','list']},
+                'time' : {'required' : True,'type': ['number','list']},
+                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
+            }   
+        },
+    }
+
     if input['valve']['type'] == 'psv':
-        if ('diameter' in input['valve'] 
-            and 'discharge_coef' in input['valve'] 
-            and 'set_pressure' in input['valve'] 
-            and 'blowdown' in input['valve'] 
-            and 'back_pressure' in input['valve']):
-            pass 
-        else:
-            return False
-    if input['valve']['type'] == 'orifice':
-        if ('diameter' in input['valve'] and 'back_pressure' in input['valve'] and 'discharge_coef' in input['valve']):
-            pass
-        else: 
-            return False
-    if input['valve']['type'] == 'mdot':
-        pass
-    if input['valve']['type'] == 'controlvalve':
-        if ('Cv' in input['valve'] and 'back_pressure' in input['valve']):
-            pass
-        else: 
-            return False
-    
-    return True
+        v = Validator(schema_psv)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
+    elif input['valve']['type'] == 'orifice':
+        v = Validator(schema_orifice)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
+    elif input['valve']['type'] == 'controlvalve':
+        v = Validator(schema_control_valve)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
+    elif input['valve']['type'] == 'mdot':
+        v = Validator(schema_mdot)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
+
+    return retval
 
 def validation(input):
     """
-    Aggregate validation using cerberus and homebrew validation 
+    Aggregate validation using cerberus 
 
     Parameters
     ----------
