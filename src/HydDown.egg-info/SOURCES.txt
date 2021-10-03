@@ -8,6 +8,7 @@ scripts/streamlit_app.py
 src/HydDown.egg-info/PKG-INFO
 src/HydDown.egg-info/SOURCES.txt
 src/HydDown.egg-info/dependency_links.txt
+src/HydDown.egg-info/requires.txt
 src/HydDown.egg-info/top_level.txt
 src/hyddown/__init__.py
 src/hyddown/fire.py
