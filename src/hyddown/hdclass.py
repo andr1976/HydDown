@@ -43,7 +43,7 @@ class HydDown:
             If missing input is detected.
         """
         valid = validator.validation(self.input)
-        if valid is False:
+        if valid == False:
             raise ValueError("Error in input file")
 
 
@@ -128,7 +128,10 @@ class HydDown:
                 self.h_out = self.input["heat_transfer"]["h_outer"]
                 self.h_in = self.input["heat_transfer"]["h_inner"]
                 if self.input["valve"]["flow"] == "filling":
-                    self.D_throat = self.input["heat_transfer"]["D_throat"]
+                    if "D_throat" in self.input["heat_transfer"]: 
+                        self.D_throat = self.input["heat_transfer"]["D_throat"]
+                    else:
+                        self.D_throat = self.input["vessel"]["diameter"]
             if self.heat_method == "s-b":
                 self.fire_type = self.input["heat_transfer"]["fire"]
                 self.h_in = "calc"
@@ -661,9 +664,9 @@ class HydDown:
         import pylab as plt
 
         if filename != None:
-            plt.figure(figsize=(12,7),dpi=300)
+            plt.figure(1,figsize=(12,7),dpi=300)
         else:
-            plt.figure()
+            plt.figure(1,figsize=(8,6))
             
         plt.subplot(221)
         plt.plot(self.time_array , self.T_fluid - 273.15, "b", label="Fluid")
@@ -747,7 +750,27 @@ class HydDown:
         plt.ylabel("Vent rate (kg/s)")
 
         if filename != None:
-            plt.savefig(filename)
+            plt.savefig(filename+"_main.png")
+
+        if filename != None:
+            plt.figure(2,figsize=(12,7),dpi=300)
+        else:
+            plt.figure(2)
+        
+        self.fluid.build_phase_envelope("None")
+        PE=self.fluid.get_phase_envelope_data()
+        
+        plt.plot(PE.T, PE.p, '-', label = 'HEOS Phase Envelope', color = 'g')
+        plt.plot(self.T_fluid,self.P,'-.',label = 'P/T fluid trajectory', color = 'b' )
+        plt.plot(self.T_fluid[0],self.P[0],'o',label = 'Start', color = 'b' )
+        plt.plot(self.T_fluid[-1],self.P[-1],'.',label = 'End', color = 'b' )
+        plt.xlabel('Temperature [K]')
+        plt.ylabel('Pressure [Pa]')
+        plt.legend(loc='best')
+        plt.tight_layout()
+
+        if filename != None:
+            plt.savefig(filename+"_envelope.png")
 
         if verbose:
             plt.show()
