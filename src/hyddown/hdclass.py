@@ -308,7 +308,7 @@ class HydDown:
         return P1, T1, Ures
 
 
-    def run(self):
+    def run(self,generator=False):
         """
         Routine for running the actual problem defined i.e. integrating the mass and energy balances
         """
@@ -410,7 +410,6 @@ class HydDown:
         
         # Run actual integration by updating values by numerical integration/time stepping
         # Mass of fluid is calculated from previous time step mass and mass flow rate
-
         for i in range(1, len(self.time_array)):
             self.time_array[i] = self.time_array[i - 1] + self.tstep
             self.mass_fluid[i] = (
@@ -561,7 +560,7 @@ class HydDown:
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
 
-            print("Progress", int(i/(self.time_tot / self.tstep)*100),"%",end="\r")
+            #print("Progress", int(i/(self.time_tot / self.tstep)*100),"%",end="\r")
 
             # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":
@@ -624,7 +623,11 @@ class HydDown:
                 massflow_stop_switch = 1
             if massflow_stop_switch:
                 self.mass_rate[i]=0
+            if generator == True:
+                yield i
+        
         self.isrun = True
+
 
     def get_dataframe(self):
         """

@@ -6,6 +6,7 @@ import yaml
 import sys
 from hyddown import HydDown
 import time
+from tqdm import tqdm
 
 
 if __name__ == "__main__":
@@ -19,11 +20,8 @@ if __name__ == "__main__":
 
 
     hdown=HydDown(input)
-    start = time.time()
-    hdown.run()
-    end = time.time()
-    print('Elapsed time: ',end-start,' sec.')
+    
+    for i in tqdm(hdown.run(generator=True),desc='hyddown',total=len(hdown.time_array)):
+        pass
+        
     hdown.plot()
-
-    hdown.fluid.build_phase_envelope("None")
-    PE=hdown.fluid.get_phase_envelope_data()
