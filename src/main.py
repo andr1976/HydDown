@@ -5,7 +5,6 @@
 import yaml
 import sys
 from hyddown import HydDown
-import time
 
 
 if __name__ == "__main__":

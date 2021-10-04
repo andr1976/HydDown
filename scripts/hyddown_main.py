@@ -4,7 +4,6 @@
 
 import yaml
 import sys
-import time
 
 try:
     from hyddown import HydDown
@@ -28,8 +27,6 @@ if __name__ == "__main__":
 
 
     hdown=HydDown(input)
-    start = time.time()
-    hdown.run()
-    end = time.time()
-    print('Elapsed time: ',end-start,' sec.')
+    
+    hdown.run(disable_pbar=False)
     hdown.plot()

@@ -309,7 +309,7 @@ class HydDown:
         return P1, T1, Ures
 
 
-    def run(self,disable_pbar=False):
+    def run(self,disable_pbar=True):
         """
         Routine for running the actual problem defined i.e. integrating the mass and energy balances
         """
