@@ -80,6 +80,7 @@ where python3 is the symlink or full path to the python3 executable installed on
 - [PyYaml](https://pypi.org/project/PyYAML/)
 - [pandas](https://pandas.pydata.org/)
 - [Scipy](https://www.scipy.org/)
+- [tqdm](https://tqdm.github.io/)
 
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip.
 It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.

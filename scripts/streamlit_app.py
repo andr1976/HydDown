@@ -126,7 +126,9 @@ if __name__ == "__main__":
 
     input = read_input()
     hdown=HydDown(input)
-    hdown.run()
+
+    with st.spinner('Calculating, please wait....'):
+        hdown.run(disable_pbar=True) 
     
     st.title('HydDown rigorous demo')
     st.subheader(r'https://github.com/andr1976/HydDown')

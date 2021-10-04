@@ -1,4 +1,5 @@
-streamlit>=0.81.1
+tqdm
+streamlit>=0.89
 pandas>=1.1.4
 matplotlib>=3.3.3
 numpy>=1.19.5

@@ -5,7 +5,6 @@
 import yaml
 import sys
 from hyddown import HydDown
-import time
 
 
 if __name__ == "__main__":
@@ -19,11 +18,6 @@ if __name__ == "__main__":
 
 
     hdown=HydDown(input)
-    start = time.time()
-    hdown.run()
-    end = time.time()
-    print('Elapsed time: ',end-start,' sec.')
+    hdown.run(disable_pbar=False)
+        
     hdown.plot()
-
-    hdown.fluid.build_phase_envelope("None")
-    PE=hdown.fluid.get_phase_envelope_data()
