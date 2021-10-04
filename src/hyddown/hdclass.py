@@ -5,6 +5,7 @@
 import math
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from scipy.optimize import fmin
 from scipy.optimize import minimize
 from CoolProp.CoolProp import PropsSI
@@ -308,11 +309,12 @@ class HydDown:
         return P1, T1, Ures
 
 
-    def run(self,generator=False):
+    def run(self,disable_pbar=False):
         """
         Routine for running the actual problem defined i.e. integrating the mass and energy balances
         """
         # Inititialise / setting initial values for t=0
+        if self.isrun == True: self.initialize()
         input = self.input
         self.rho[0] = self.rho0
         self.T_fluid[0] = self.T0
@@ -325,7 +327,6 @@ class HydDown:
         self.P[0] = self.p0
         self.mass_fluid[0] = self.m0
         cpcv = self.fluid.cp0molar()  / self.fluid.cvmolar() 
-            
         massflow_stop_switch = 0 
 
         # Calculating initial mass rate for t=0 depending on mass flow device
@@ -410,7 +411,8 @@ class HydDown:
         
         # Run actual integration by updating values by numerical integration/time stepping
         # Mass of fluid is calculated from previous time step mass and mass flow rate
-        for i in range(1, len(self.time_array)):
+
+        for i in tqdm(range(1, len(self.time_array)),desc='hyddown',disable=disable_pbar,total=len(self.time_array)):
             self.time_array[i] = self.time_array[i - 1] + self.tstep
             self.mass_fluid[i] = (
                 self.mass_fluid[i - 1] - self.mass_rate[i - 1] * self.tstep
@@ -623,9 +625,6 @@ class HydDown:
                 massflow_stop_switch = 1
             if massflow_stop_switch:
                 self.mass_rate[i]=0
-            if generator == True:
-                yield i
-        
         self.isrun = True
 
 

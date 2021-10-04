@@ -6,7 +6,6 @@ import yaml
 import sys
 from hyddown import HydDown
 import time
-from tqdm import tqdm
 
 
 if __name__ == "__main__":
@@ -20,8 +19,6 @@ if __name__ == "__main__":
 
 
     hdown=HydDown(input)
-    
-    for i in tqdm(hdown.run(generator=True),desc='hyddown',total=len(hdown.time_array)):
-        pass
+    hdown.run(disable_pbar=False)
         
     hdown.plot()
