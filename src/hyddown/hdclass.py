@@ -333,7 +333,7 @@ class HydDown:
         # and filling/discharge mode
         if input["valve"]["type"] == "orifice":
             if input["valve"]["flow"] == "filling":
-                k = self.res_fluid.cp0molar() / self.res_fluid.cvmolar()
+                k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar()-8.314)
                 self.mass_rate[0] = -tp.gas_release_rate(
                     self.p_back,
                     self.p0,
@@ -376,7 +376,7 @@ class HydDown:
             if input["valve"]["flow"] == "filling":
                 Z = self.res_fluid.compressibility_factor() 
                 MW = self.MW
-                k = self.res_fluid.cp0molar() / self.res_fluid.cvmolar()
+                k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar()-8.314)
                 self.mass_rate[0] = -tp.control_valve(
                     self.p_back, self.p0, self.T0, Z, MW, k, self.Cv
                 )
@@ -600,13 +600,13 @@ class HydDown:
                     MW = self.MW 
                     k = self.res_fluid.cp0molar()/self.res_fluid.cvmolar()
                     self.mass_rate[i] = -tp.control_valve(
-                        self.p_back, self.P[i], self.T0, Z, MW, k, self.Cv
+                        self.p_back, self.P[i], self.T0, Z, MW, k, selv.Cv
                     )
                 else:
                     Z = self.fluid.compressibility_factor() 
                     MW = self.MW 
                     self.mass_rate[i] = tp.control_valve(
-                        self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, self.Cv
+                        self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, self.Cv #min(self.time_array[i]/300*self.Cv,self.Cv)
                     )
             elif input["valve"]["type"] == "psv":
                 self.mass_rate[i] = tp.relief_valve(
