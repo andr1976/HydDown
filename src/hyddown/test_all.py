@@ -59,6 +59,12 @@ def test_controlvalve():
         21.92, rel=0.05
     )
 
+def test_cv_vs_time():
+    assert tp.cv_vs_time(1,0.5,time_constant=1,characteristic="linear") == 0.5
+    assert tp.cv_vs_time(1,0.5,time_constant=1,characteristic="eq") == pytest.approx(0.14, abs=0.002)
+    assert tp.cv_vs_time(1,0.5,time_constant=1,characteristic="fast") == pytest.approx(0.707, abs=0.002)
+    assert tp.cv_vs_time(1,0.5,time_constant=0) == 1.0
+
 def test_psv3():
     Pback = 1e5
     Pset = 18.2e5
