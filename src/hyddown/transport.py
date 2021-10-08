@@ -404,8 +404,8 @@ def cv_vs_time(Cv_max,t,time_constant=0,characteristic="linear"):
         Valve characteristic
         Default to linear.
     """
-    
-    if time_constant = 0:
+
+    if time_constant == 0:
         return Cv_max
     else:
         if characteristic=="linear":
