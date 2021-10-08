@@ -386,6 +386,25 @@ def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
     return w/3600
 
 def cv_vs_time(Cv_max,t,time_constant=0,characteristic="linear"):
+    """
+    Control valve flow coefficient vs time / actuator postion
+    assuming a linear rate of actuator for the three archetypes of 
+    characteristics: linear, equal percentage and fast/quick opening. 
+    
+    Parameters
+    ----------
+    Cv_max : float 
+        Valve flow coefficient at full open position
+    t : float
+        Time 
+    time_constant : float (optional)
+        The time required for the actuator to fully open. 
+        Default to instant open
+    characteristic : string (optional)
+        Valve characteristic
+        Default to linear.
+    """
+    
     if time_constant = 0:
         return Cv_max
     else:
