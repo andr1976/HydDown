@@ -385,6 +385,22 @@ def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
         w = CD * area * f2 / (T1 * Z / (MW * P1 * (P1 - Pback)))**0.5 / 17.9
     return w/3600
 
+def cv_vs_time(Cv_max,t,time_constant=0,characteristic="linear"):
+    if time_constant = 0:
+        return Cv_max
+    else:
+        if characteristic=="linear":
+            return Cv_max * min(t/time_constant,1)
+        elif characteristic=="eq":
+            # https://www.spiraxsarco.com/learn-about-steam/control-hardware-electric-pneumatic-actuation/control-valve-characteristics
+            tau=50
+            travel=min(t/time_constant,1)
+            return Cv_max * math.exp( travel * math.log(tau)) / tau
+        elif characteristic=="fast":
+            # square root function used
+            return Cv_max * min(t/time_constant,1)**(0.5)
+        else:
+            return Cv_max
 
 def control_valve(P1, P2, T, Z, MW, gamma, Cv, xT=0.75, FP=1):
     """
