@@ -72,7 +72,7 @@ where python3 is the symlink or full path to the python3 executable installed on
 
 ## Requirements
 
-- [Python](http://www.python.org) (3.8 - at least python3)
+- [Python](http://www.python.org) (3.8 - at least python3, not 3.9, see below)
 - [Numpy](https://numpy.org/)
 - [matplotlib](https://matplotlib.org/)
 - [Coolprop (6.4.1)](http://www.coolprop.org/)
@@ -81,6 +81,8 @@ where python3 is the symlink or full path to the python3 executable installed on
 - [pandas](https://pandas.pydata.org/)
 - [Scipy](https://www.scipy.org/)
 - [tqdm](https://tqdm.github.io/)
+
+It has been reported that the CoolProp `pip` package does not run out of the box with python 3.9. Hence, python 3.8 is recommended. 
 
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip.
 It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.
