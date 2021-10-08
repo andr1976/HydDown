@@ -101,6 +101,13 @@ class HydDown:
                 self.xT = self.input["valve"]["xT"]
             if "Fp" in self.input["valve"]:
                 self.Fp = self.input["valve"]["Fp"]
+            if "characteristic" in self.input["valve"] and "time_constant" in self.input["valve"]:
+                self.valve_characteristic = self.input["valve"]["characteristic"]
+                self.valve_time_constant = self.input["valve"]["time_constant"]
+            else:
+                self.valve_characteristic="linear"
+                self.valve_time_constant=0
+
         elif (
             self.input["valve"]["type"] == "mdot"
             and self.input["valve"]["flow"] == "filling"
@@ -373,19 +380,20 @@ class HydDown:
                     self.mass_rate[:] = input["valve"]["mass_flow"]
 
         elif input["valve"]["type"] == "controlvalve":
+            Cv = tp.cv_vs_time(self.Cv,0,self.valve_time_constant,self.valve_characteristic)
             if input["valve"]["flow"] == "filling":
                 Z = self.res_fluid.compressibility_factor() 
                 MW = self.MW
                 k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar()-8.314)
                 self.mass_rate[0] = -tp.control_valve(
-                    self.p_back, self.p0, self.T0, Z, MW, k, self.Cv
+                    self.p_back, self.p0, self.T0, Z, MW, k, Cv
                 )
             else:
                 Z = self.fluid.compressibility_factor() 
                 MW = self.MW 
                 k = cpcv
                 self.mass_rate[0] = tp.control_valve(
-                    self.p0, self.p_back, self.T0, Z, MW, k, self.Cv
+                    self.p0, self.p_back, self.T0, Z, MW, k, Cv
                 )
         elif input["valve"]["type"] == "psv":
             if input["valve"]["flow"] == "filling":
@@ -595,18 +603,19 @@ class HydDown:
                         self.D_orifice ** 2 / 4 * math.pi,
                     )
             elif input["valve"]["type"] == "controlvalve":
+                Cv = tp.cv_vs_time(self.Cv,self.time_array[i],self.valve_time_constant,self.valve_characteristic)
                 if input["valve"]["flow"] == "filling":
                     Z = self.res_fluid.compressibility_factor() 
                     MW = self.MW 
                     k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar() - 8.314)
                     self.mass_rate[i] = -tp.control_valve(
-                        self.p_back, self.P[i], self.T0, Z, MW, k, self.Cv
+                        self.p_back, self.P[i], self.T0, Z, MW, k, Cv
                     )
                 else:
                     Z = self.fluid.compressibility_factor() 
                     MW = self.MW 
                     self.mass_rate[i] = tp.control_valve(
-                        self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, self.Cv 
+                        self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, Cv 
                     )
             elif input["valve"]["type"] == "psv":
                 self.mass_rate[i] = tp.relief_valve(

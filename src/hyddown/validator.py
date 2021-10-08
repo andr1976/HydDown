@@ -82,6 +82,8 @@ def validate_mandatory_ruleset(input):
                 'Cv': {'type': 'number', 'min': 0},
                 'mdot': {'type': ['number','list']},
                 'time' : {'type': 'list'},
+                'time_constant': {'type': 'number', 'min': 0},
+                'characteristic': {'type': 'string', 'allowed': ['linear', 'eq', 'fast']},
             }
         },
         'heat_transfer':{
@@ -422,6 +424,8 @@ def valve_validation(input):
                 'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
                 'back_pressure': {'required' : True,'type': 'number', 'min': 0},
                 'Cv': {'required' : True,'type': 'number', 'min': 0},
+                'time_constant': {'type': 'number', 'min': 0},
+                'characteristic': {'type': 'string', 'allowed': ['linear', 'eq', 'fast']},
             }
         },
     }
