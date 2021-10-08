@@ -326,7 +326,7 @@ class HydDown:
         self.U_tot[0] = self.fluid.umass() * self.m0
         self.P[0] = self.p0
         self.mass_fluid[0] = self.m0
-        cpcv = self.fluid.cp0molar()  / self.fluid.cvmolar() 
+        cpcv = self.fluid.cp0molar()  / (self.fluid.cp0molar() - 8.314)
         massflow_stop_switch = 0 
 
         # Calculating initial mass rate for t=0 depending on mass flow device
@@ -571,12 +571,12 @@ class HydDown:
                 else:
                     self.T_vent[i]=PropsSI("T", "H", self.H_mass[i], "P", self.p_back, self.species)
 
-            cpcv = self.fluid.cp0molar() / self.fluid.cvmolar()
+            cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
             
             # Finally updating the mass rate for the mass balance in the next time step
             if input["valve"]["type"] == "orifice":
                 if input["valve"]["flow"] == "filling":
-                    k = self.res_fluid.cp0molar()/self.res_fluid.cvmolar()
+                    k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar() - 8.314)
                     self.mass_rate[i] = -tp.gas_release_rate(
                         self.p_back,
                         self.P[i],
@@ -598,7 +598,7 @@ class HydDown:
                 if input["valve"]["flow"] == "filling":
                     Z = self.res_fluid.compressibility_factor() 
                     MW = self.MW 
-                    k = self.res_fluid.cp0molar()/self.res_fluid.cvmolar()
+                    k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar() - 8.314)
                     self.mass_rate[i] = -tp.control_valve(
                         self.p_back, self.P[i], self.T0, Z, MW, k, self.Cv
                     )
