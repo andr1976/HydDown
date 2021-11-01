@@ -44,3 +44,4 @@ src/hyddown/__pycache__/hdclass.cpython-38.pyc
 .gitignore
 .gitignore
 src/hyddown/__pycache__/test_all.cpython-38-pytest-6.2.3.pyc
+src/hyddown/__pycache__/hdclass.cpython-38.pyc

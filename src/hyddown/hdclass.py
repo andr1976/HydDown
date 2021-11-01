@@ -154,7 +154,7 @@ class HydDown:
     def initialize(self):
         """
         Preparing for running problem by creating the fluid objects required
-        instantiating arrays for storing time-dependent results, setting addtional 
+        instantiating arrays for storing time-dependent results, setting additional 
         required class attributes.
         """
         self.vol = self.diameter ** 2 / 4 * math.pi * self.length  # m3
