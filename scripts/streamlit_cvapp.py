@@ -105,8 +105,8 @@ def read_input():
     input['initial']['fluid'] = fluid
     input['valve']['flow'] = mode
     input['valve']['type'] = 'controlvalve'
-    #input['valve']['characteristic'] = 'linear'
-    #input['valve']['time_constant'] = valve_tconst
+    input['valve']['characteristic'] = 'linear'
+    input['valve']['time_constant'] = valve_tconst
     input['valve']['Cv'] = cv
     input['valve']['back_pressure'] = back_pressure
     #input['valve']['end_pressure']=end_pressure
