@@ -34,7 +34,7 @@ def read_input():
 
     with sideb:
         try:
-            image_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"..","docs","img","Sketch.png")
+            image_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "docs", "img", "Sketch.png")
             icon = Image.open(image_path)
             st.image(icon, use_column_width=True, caption="HydDown")
         except:
