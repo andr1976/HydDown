@@ -185,7 +185,7 @@ A few demonstrations of the codes capability are available as [`streamlit`](http
 
 - Vessel gas pressurisation/depressurization for various gases at [`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py)
 - Response to external fire of vessel equipped with a PSV using the Stefan-Boltzmann fire equation at[`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_sbapp.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_sbapp.py)
-- Vessel depressurization using simple methods for different gases available at [`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_simple.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_simple.py)
+- Vessel depressurization including slow opening of valve at [`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_cvapp.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_cvapp.py)
 
 The various streamlit apps are also included in the scripts folder for running the scripts on a local machine. 
 
@@ -392,17 +392,25 @@ Different types of mass flow devices can be specified:
 
 For the physical devices a `back_pressure` is required for the flow calculations.
 The value of the `back_pressure` **is also used to specify the reservoir pressure when the vessel is filled**.
-See also [@Sec:flow] for details about the calculation of flow rates.
+See also [@Sec:flow] for details about the calculation of flow rates. 
 
 ~~~ {.Yaml}
 valve:
   flow: string, mandatory "discharge" or "filling"
   type: string, mandatory "orifice", "controlvalve", "psv", "mdot"
-  back_pressure: number, required for type "orifice", "!controlvalve" and "psv"
+  back_pressure: number, required for type "orifice", "controlvalve" and "psv"
   diameter: number, required for "orifice" and "psv"
   discharge_coef: number, required for "orifice" and "psv"
-  Cv: number, required for "control_valve"!
+  Cv: number, required for "control_valve"
+  characteristic:  string, optional for "control_valve"
+  time_constant: number, optional for "control_valve"
 ~~~
+
+For the calculations using a control valve as mass transfer device a linear rate for the actuator can be specified using the `time_constant` field. An associated valve characteristic is associated in order to translate the linear actuator rate to an opening Cv (of max. Cv). Three caracteristics can be specified:
+
+- Linear
+- Equal percentage (exponential)
+- Quick opening/fast (square root)
 
 ### Heat transfer
 For more information about the actual estimation of heat transfer see also [@Sec:heat]. For the case of `fire` heat input predetermined parameters for the Stefan-Boltzmann fire equation are used to calculate different background heat loads cf. [@Tbl:fire]
@@ -740,6 +748,7 @@ The expansion factor Y accounts for the change in density as the fluid passes fr
 It also accounts for the change in the vena contracta area as the pressure differential is varied.
 
 $$ Y = 1 -  \frac{x_{sizing}}{3x_{choked}}$$
+
 
 ## Heat transfer {#sec:heat}
 
