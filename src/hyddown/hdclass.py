@@ -5,7 +5,7 @@
 import math
 import numpy as np
 import pandas as pd
-from tqdm import tqd
+from tqdm import tqdm
 from scipy.optimize import minimize
 from CoolProp.CoolProp import PropsSI
 import CoolProp.CoolProp as CP
