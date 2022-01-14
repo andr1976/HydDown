@@ -52,7 +52,7 @@ def read_input():
                 diam = st.text_input('Vessel diam (m):',0.45563) 
                 
                 orientation = st.selectbox('Vessel orientation', ('horizontal', 'vertical'))
-                temp_amb = float(st.text_input('Ambient T(C):',25) + 273.15 )
+                temp_amb = float(st.text_input('Ambient T(C):',25) ) + 273.15
                 cv = float(st.text_input('Valve Cv:',110.4) )
                 
                 tstep = st.text_input('Time step (s):',1.0) 
