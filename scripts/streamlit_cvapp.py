@@ -50,8 +50,9 @@ def read_input():
                 length = st.text_input('Vessel length (m):',1015.4)
             
                 diam = st.text_input('Vessel diam (m):',0.45563) 
-                thk = st.text_input('Vessel thichness (m):',0.02619)
+                
                 orientation = st.selectbox('Vessel orientation', ('horizontal', 'vertical'))
+                temp_amb = float(st.text_input('Ambient T(C):',25) + 273.15 )
                 cv = float(st.text_input('Valve Cv:',110.4) )
                 
                 tstep = st.text_input('Time step (s):',1.0) 
@@ -76,9 +77,10 @@ def read_input():
                
             density = st.text_input('Vessel material density (kg/m3):',7740) 
             density= float(density)
-
+            thk = st.text_input('Vessel thichness (m):',0.02619)
+            thk = float (thk)
             cp = st.text_input('Vessel material heat capacity (J/kg K):',470) 
-            cp= float(cp)
+            cp = float(cp)
 
 
     input={}
@@ -113,7 +115,7 @@ def read_input():
 
 
     input['heat_transfer']['type']='specified_h'
-    input['heat_transfer']['temp_ambient']=298
+    input['heat_transfer']['temp_ambient']=temp_amb
     input['heat_transfer']['h_outer']=5
     if heattran == True:
         input['heat_transfer']['h_inner']='calc'
