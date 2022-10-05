@@ -68,7 +68,7 @@ def read_input():
                 if fluid == 'NG':
                     fluid = "Methane[0.89571]&Ethane[5.6739e-02]&Propane[2.30395e-02]&Butane[1.03E-02]&Pentane[2.67E-03]&CO2[0.84e-02]&N2[0.3080e-2]"
                 if fluid == 'NG2':
-                    fluid = "Methane[0.885]&Ethane[6.62e-2]&Propane[2.06e-02]&Butane[0.68E-02]&Pentane[1.5-03]&CO2[1.48e-02]&N2[0.48e-2]"
+                    fluid = "Methane[0.88526558]&Ethane[0.06621987]&Propane[0.02060618]&Butane[0.00680204]&Pentane[0.00150045]&CO2[0.01480444]&N2[0.00480144]"
                 mode = 'discharge' #st.selectbox('Select mode', ('filling', 'discharge'))
     
                 temp = st.text_input('Initial temp. (C):',1)
