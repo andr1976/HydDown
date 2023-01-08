@@ -35,9 +35,6 @@ where main.py is the main script and input.yml is the input file in Yaml syntax.
 
 Consult the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf) for a more rigorous explanation of the software, the implemented methods, and its usage. Further, the manual also contains a few validation studies. 
 
-## IMPORTANT NOTICE:
-This package, or CoolProp to be more precise, runs on python 3.8 and apparently the CoolProp `pip` package has issues with python 3.9. Maybe compiling from source works, but this has not been tested. Hence, it is highly recommended that python 3.8 is used. 
-
 ## Demonstration 
 The easiest way to explore the capability of HydDown is the [streamlit app](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py). This version allows calculation of:
 
