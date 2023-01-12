@@ -711,7 +711,7 @@ $$ W = C N_6 F_P Y \sqrt{x_{sizing} p_1 \rho_1} $$
 
 or equivalently:
 
-$$ W = C N_8 F_P Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$ 
+$$ W = C N_8 F_P p_1 Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$ 
 
 - C is the flow coefficient ($C_v$ or $K_v$)
 - $N_8$ is a unit specific constant, 94.8 for $C_v$ and bar as pressure unit
