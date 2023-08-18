@@ -3,7 +3,7 @@
 [![status](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25/status.svg)](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25)
  
 # HydDown
-Hydrogen (or other pure gas phase species) depressurization calculations 
+Hydrogen (or other pure gas phase species as well as mixtures) depressurization/pressurisation calculations incorporating heat transfer effetcs. It also models vessel response (pressure/temperature) to external heat loads e.g. external fire (pool/jet) incorporating the Stefan-Boltzmann approach.
 
 This code is published under an MIT license.
 
