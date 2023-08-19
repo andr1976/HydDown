@@ -36,7 +36,7 @@ where main.py is the main script and input.yml is the input file in Yaml syntax.
 Consult the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf) for a more rigorous explanation of the software, the implemented methods, and its usage. Further, the manual also contains a few validation studies. 
 
 ## Demonstration 
-The easiest way to explore the capability of HydDown is the [streamlit app](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py). This version allows calculation of:
+The easiest way to explore the capability of HydDown is the [streamlit app](https://hyddown-jltaqjxtrsflh2famtkgsj.streamlit.app/). This version allows calculation of:
 
 - filling of vessel with gas (pressurisation)
 - discharge of gas (depressurisation)
