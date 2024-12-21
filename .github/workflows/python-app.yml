@@ -45,5 +45,7 @@ jobs:
         coverage run -m pytest test_all.py
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v1
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODE_COV_SECRET }}
       with:
         fail_ci_if_error: true
