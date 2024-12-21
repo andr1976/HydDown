@@ -43,9 +43,10 @@ jobs:
       run: |
         cd src/hyddown
         coverage run -m pytest test_all.py
-    - name: Upload Coverage to Codecov
-      uses: codecov/codecov-action@v1
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODE_COV_SECRET }}
+    - name: Upload Coverage to Codecov 
+      uses: codecov/codecov-action@v5
       with:
-        fail_ci_if_error: true
+        fail_ci_if_error: true # optional (default = false)
+        token: ${{ secrets.CODE_COV_TOKEN }}
+        verbose: true # optional (default = false)
+
