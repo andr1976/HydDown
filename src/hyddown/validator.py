@@ -3,7 +3,7 @@
 # Published under an MIT license
 
 from cerberus import Validator
-from cerberus.errors import ValidationError 
+from cerberus.errors import ValidationError
 
 
 def validate_mandatory_ruleset(input):
@@ -12,161 +12,278 @@ def validate_mandatory_ruleset(input):
 
     Parameters
     ----------
-    input : dict 
-        Structure holding input 
+    input : dict
+        Structure holding input
 
     Return
     ----------
-    retval : bool 
+    retval : bool
         True for success, False for failure
     """
     schema_general = {
-        'initial': {
-            'required' : True,
-            'type': 'dict',
-            'allow_unknown': False,
-            'schema': {
-                'temperature':{'required' : True,'type':'number'},
-                'pressure':{'required' : True,'type': 'number'},
-                'fluid': {'required' : True,'type': 'string'},
+        "initial": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "temperature": {"required": True, "type": "number"},
+                "pressure": {"required": True, "type": "number"},
+                "fluid": {"required": True, "type": "string"},
+            },
+        },
+        "calculation": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": [
+                        "energybalance",
+                        "isenthalpic",
+                        "isentropic",
+                        "isothermal",
+                        "constant_U",
+                    ],
+                },
+                "time_step": {"required": True, "type": "number", "min": 0.000001},
+                "end_time": {"required": True, "type": "number", "min": 0},
+            },
+        },
+        "vessel": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "length": {"required": True, "type": "number"},
+                "diameter": {"required": True, "type": "number"},
+                "thickness": {"required": False, "type": "number", "min": 0.0},
+                "heat_capacity": {"required": False, "type": "number", "min": 1},
+                "density": {"required": False, "type": "number", "min": 1},
+                "orientation": {
+                    "required": False,
+                    "type": "string",
+                    "allowed": ["vertical", "horizontal"],
                 },
             },
-        'calculation': {
-            'required' : True,
-            'type': 'dict',
-            'allow_unknown': False,
-            'schema': {
-                'type': {
-                    'required' : True,
-                    'type': 'string', 
-                    'allowed': ['energybalance',
-                                'isenthalpic',
-                                'isentropic',
-                                'isothermal',
-                                'constant_U'],
+        },
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["orifice", "psv", "controlvalve", "mdot"],
+                },
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge", "filling"],
+                },
+                "diameter": {"type": "number", "min": 0},
+                "discharge_coef": {"type": "number", "min": 0},
+                "set_pressure": {"type": "number", "min": 0},
+                "end_pressure": {"type": "number", "min": 0},
+                "blowdown": {"type": "number", "min": 0, "max": 1},
+                "back_pressure": {"type": "number", "min": 0},
+                "Cv": {"type": "number", "min": 0},
+                "mdot": {"type": ["number", "list"]},
+                "time": {"type": "list"},
+                "time_constant": {"type": "number", "min": 0},
+                "characteristic": {
+                    "type": "string",
+                    "allowed": ["linear", "eq", "fast"],
+                },
+            },
+        },
+        "heat_transfer": {
+            "required": False,
+            "type": "dict",
+            "allow_unknown": False,
+            "allowed": [
+                "Q_fix",
+                "h_inner",
+                "h_outer",
+                "temp_ambient",
+                "type",
+                "fire",
+                "s-b",
+                "D_throat",
+            ],
+            "schema": {
+                "type": {
+                    "type": "string",
+                    "allowed": ["specified_Q", "specified_h", "specified_U", "s-b"],
+                },
+                "Q_fix": {"required": False, "type": "number"},
+                "U_fix": {"required": False, "type": "number", "min": 0},
+                "temp_ambient": {"required": False, "type": "number", "min": 0},
+                "h_outer": {"required": False, "type": "number", "min": 0},
+                "h_inner": {"required": False, "type": ["number", "string"]},
+                "fire": {
+                    "required": False,
+                    "type": "string",
+                    "allowed": [
+                        "api_pool",
+                        "api_jet",
+                        "scandpower_pool",
+                        "scandpower_jet",
+                    ],
+                },
+                "D_throat": {"required": False, "type": "number", "min": 0},
+            },
+        },
+        "validation": {
+            "required": False,
+            "type": "dict",
+            "allow_unknown": False,
+            "allowed": ["pressure", "temperature"],
+            "schema": {
+                "pressure": {
+                    "type": "dict",
+                    "required": False,
+                    "contains": ["time", "pres"],
+                    "schema": {
+                        "pres": {
+                            "required": False,
+                            "type": "list",
+                            "schema": {"type": "number"},
+                        },
+                        "time": {
+                            "required": False,
+                            "type": "list",
+                            "schema": {"type": "number"},
+                        },
                     },
-                'time_step': {'required' : True,'type': 'number', 'min': 0.000001},
-                'end_time': {'required' : True,'type': 'number', 'min': 0},
-            }
-        },
-        'vessel': {
-            'required' : True,
-            'type': 'dict',
-            'allow_unknown': False,  
-            'schema': {             
-                'length': {'required' : True,'type': 'number'},
-                'diameter': {'required' : True,'type': 'number'},
-                'thickness': {'required': False,'type': 'number', 'min': 0.0},
-                'heat_capacity': {'required': False, 'type': 'number', 'min': 1},
-                'density': {'required': False, 'type': 'number', 'min': 1},
-                'orientation': {
-                    'required': False, 
-                    'type': 'string', 
-                    'allowed': ['vertical', 'horizontal']
-                }
-            }
-        },
-        'valve':{
-            'required' : True,
-            'type': 'dict',
-            'allow_unknown': False,
-            'schema':{
-                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
-                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
-                'diameter': {'type': 'number', 'min': 0},
-                'discharge_coef': {'type': 'number', 'min': 0},
-                'set_pressure': {'type': 'number', 'min': 0},
-                'end_pressure': {'type': 'number', 'min': 0},
-                'blowdown': {'type': 'number', 'min': 0, 'max': 1},
-                'back_pressure': {'type': 'number', 'min': 0},
-                'Cv': {'type': 'number', 'min': 0},
-                'mdot': {'type': ['number','list']},
-                'time' : {'type': 'list'},
-                'time_constant': {'type': 'number', 'min': 0},
-                'characteristic': {'type': 'string', 'allowed': ['linear', 'eq', 'fast']},
-            }
-        },
-        'heat_transfer':{
-            'required': False,
-            'type': 'dict',
-            'allow_unknown': False,
-            'allowed': ['Q_fix','h_inner','h_outer','temp_ambient','type','fire','s-b','D_throat'],
-            'schema':{
-                'type': {'type': 'string','allowed': ['specified_Q','specified_h','specified_U','s-b']}, 
-                'Q_fix': {'required': False, 'type': 'number'},
-                'U_fix': {'required': False, 'type': 'number', 'min': 0},
-                'temp_ambient': {'required': False, 'type': 'number', 'min': 0},
-                'h_outer': {'required': False, 'type': 'number', 'min': 0},
-                'h_inner': {'required': False, 'type': ['number','string']},
-                'fire': {'required': False, 'type': 'string','allowed': ['api_pool','api_jet','scandpower_pool','scandpower_jet']},
-                'D_throat' : {'required': False, 'type': 'number', 'min': 0},
-            }
-        },
-        'validation':{
-            'required': False,
-            'type': 'dict',
-            'allow_unknown': False,
-            'allowed': ['pressure','temperature'],
-            'schema':{
-                'pressure': {'type': 'dict',
-                            'required': False, 
-                            'contains': ['time','pres'], 
-                            'schema': {
-                                'pres': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
-                                'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
-                                }
-                
+                },
+                "temperature": {
+                    "type": "dict",
+                    "required": False,
+                    "allowed": [
+                        "wall_high",
+                        "wall_low",
+                        "wall_mean",
+                        "gas_high",
+                        "gas_low",
+                        "gas_mean",
+                    ],
+                    "schema": {
+                        "gas_high": {
+                            "required": False,
+                            "type": "dict",
+                            "contains": ["time", "temp"],
+                            "schema": {
+                                "temp": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                                "time": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                            },
+                        },
+                        "gas_low": {
+                            "required": False,
+                            "type": "dict",
+                            "contains": ["time", "temp"],
+                            "schema": {
+                                "temp": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                                "time": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                            },
+                        },
+                        "gas_mean": {
+                            "required": False,
+                            "type": "dict",
+                            "contains": ["time", "temp"],
+                            "schema": {
+                                "temp": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                                "time": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                            },
+                        },
+                        "wall_high": {
+                            "required": False,
+                            "type": "dict",
+                            "contains": ["time", "temp"],
+                            "schema": {
+                                "temp": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                                "time": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                            },
+                        },
+                        "wall_mean": {
+                            "required": False,
+                            "type": "dict",
+                            "contains": ["time", "temp"],
+                            "schema": {
+                                "temp": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                                "time": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                            },
+                        },
+                        "wall_low": {
+                            "required": False,
+                            "type": "dict",
+                            "contains": ["time", "temp"],
+                            "schema": {
+                                "temp": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                                "time": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                            },
+                        },
                     },
-                'temperature': {'type': 'dict',
-                        'required': False,
-                        'allowed': ['wall_high','wall_low','wall_mean','gas_high','gas_low','gas_mean'],
-                        'schema': {'gas_high':{'required': False, 'type': 'dict', 'contains': ['time','temp'], 
-                                    'schema': {
-                                        'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
-                                        'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
-                                       }
-                                    }, 
-                                    'gas_low': {'required': False, 'type':'dict', 'contains': ['time','temp'],
-                                    'schema': {
-                                        'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
-                                        'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
-                                       }
-                                    }, 
-                                    'gas_mean':{'required': False, 'type': 'dict', 'contains': ['time','temp'],
-                                     'schema': {
-                                        'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
-                                        'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
-                                       }
-                                    },
-                                    'wall_high':{'required': False, 'type': 'dict', 'contains': ['time','temp'],
-                                     'schema': {
-                                        'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
-                                        'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
-                                       }
-                                    },
-                                    'wall_mean':{'required': False, 'type': 'dict', 'contains': ['time','temp'],
-                                     'schema': {
-                                        'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
-                                        'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
-                                       }
-                                    },
-                                    'wall_low':{'required': False, 'type': 'dict', 'contains': ['time','temp'],
-                                     'schema': {
-                                        'temp': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}, 
-                                        'time': {'required': False, 'type': 'list', 'schema': {'type': 'number'}}
-                                       }
-                                    }
-                                }
-                } 
-            }
-        }
+                },
+            },
+        },
     }
 
     v = Validator(schema_general)
     retval = v.validate(input)
     if v.errors:
         print(v.errors)
-    
+
     return retval
 
 
@@ -176,296 +293,356 @@ def heat_transfer_validation(input):
 
     Parameters
     ----------
-    input : dict 
-        Structure holding input 
+    input : dict
+        Structure holding input
 
-    
+
     Return
     ----------
-        : bool 
+        : bool
         True for success, False for failure
     """
     retval = True
 
-    if input['calculation']['type'] == 'energybalance':
-        if input['heat_transfer']['type'] == 'specified_h':
+    if input["calculation"]["type"] == "energybalance":
+        if input["heat_transfer"]["type"] == "specified_h":
             schema_heattransfer = {
-                'initial' : {'required' : True},
-                'calculation' : {'required' : True},
-                'validation' : {'required' : False},
-                'valve' : {'required' : True},
-                'vessel': {
-                    'required' : True,
-                    'type': 'dict',
-                    'allow_unknown': False,  
-                    'schema': {             
-                        'length': {'required' : True,'type': 'number'},
-                        'diameter': {'required' : True,'type': 'number'},
-                        'thickness': {'required': True,'type': 'number', 'min': 0.0},
-                        'heat_capacity': {'required': True, 'type': 'number', 'min': 1},
-                        'density': {'required': True, 'type': 'number', 'min': 1},
-                        'orientation': {
-                            'required': True, 
-                            'type': 'string', 
-                            'allowed': ['vertical', 'horizontal']
-                        }
-                    }
+                "initial": {"required": True},
+                "calculation": {"required": True},
+                "validation": {"required": False},
+                "valve": {"required": True},
+                "vessel": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "schema": {
+                        "length": {"required": True, "type": "number"},
+                        "diameter": {"required": True, "type": "number"},
+                        "thickness": {"required": True, "type": "number", "min": 0.0},
+                        "heat_capacity": {"required": True, "type": "number", "min": 1},
+                        "density": {"required": True, "type": "number", "min": 1},
+                        "orientation": {
+                            "required": True,
+                            "type": "string",
+                            "allowed": ["vertical", "horizontal"],
+                        },
+                    },
                 },
-                'heat_transfer':{
-                    'required': True,
-                    'type': 'dict',
-                    'allow_unknown': False,
-                    'allowed': ['h_inner','h_outer','temp_ambient','type','D_throat'],
-                    'schema':{
-                        'type': {'type': 'string','allowed': ['specified_h']}, 
-                        'temp_ambient': {'required': True, 'type': 'number', 'min': 0},
-                        'h_outer': {'required': True, 'type': 'number', 'min': 0},
-                        'h_inner': {'required': True, 'type': ['number','string']},
-                        'D_throat' : {'required': False, 'type': 'number', 'min': 0},
-                    }
+                "heat_transfer": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "allowed": [
+                        "h_inner",
+                        "h_outer",
+                        "temp_ambient",
+                        "type",
+                        "D_throat",
+                    ],
+                    "schema": {
+                        "type": {"type": "string", "allowed": ["specified_h"]},
+                        "temp_ambient": {"required": True, "type": "number", "min": 0},
+                        "h_outer": {"required": True, "type": "number", "min": 0},
+                        "h_inner": {"required": True, "type": ["number", "string"]},
+                        "D_throat": {"required": False, "type": "number", "min": 0},
+                    },
                 },
-            }  
-            
+            }
 
-        elif input['heat_transfer']['type']=='specified_Q':
+        elif input["heat_transfer"]["type"] == "specified_Q":
             schema_heattransfer = {
-                'initial' : {'required' : True},
-                'calculation' : {'required' : True},
-                'validation' : {'required' : False},
-                'valve' : {'required' : True},
-                'vessel': {
-                    'required' : True,
-                    'type': 'dict',
-                    'allow_unknown': False,  
-                    'schema': {             
-                        'length': {'required' : True,'type': 'number'},
-                        'diameter': {'required' : True,'type': 'number'},
-                        'thickness': {'required': False,'type': 'number', 'min': 0.0},
-                        'heat_capacity': {'required': False, 'type': 'number', 'min': 1},
-                        'density': {'required': False, 'type': 'number', 'min': 1},
-                        'orientation': {
-                            'required': False, 
-                            'type': 'string', 
-                            'allowed': ['vertical', 'horizontal']
-                        }
-                    }
+                "initial": {"required": True},
+                "calculation": {"required": True},
+                "validation": {"required": False},
+                "valve": {"required": True},
+                "vessel": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "schema": {
+                        "length": {"required": True, "type": "number"},
+                        "diameter": {"required": True, "type": "number"},
+                        "thickness": {"required": False, "type": "number", "min": 0.0},
+                        "heat_capacity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 1,
+                        },
+                        "density": {"required": False, "type": "number", "min": 1},
+                        "orientation": {
+                            "required": False,
+                            "type": "string",
+                            "allowed": ["vertical", "horizontal"],
+                        },
+                    },
                 },
-                'heat_transfer':{
-                    'required': True,
-                    'type': 'dict',
-                    'allow_unknown': False,
-                    'allowed': ['Q_fix','type'],
-                    'schema':{
-                        'type': {'type': 'string','allowed': ['specified_Q']}, 
-                        'Q_fix' : {'required': False, 'type': 'number'}, 
-                    }
+                "heat_transfer": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "allowed": ["Q_fix", "type"],
+                    "schema": {
+                        "type": {"type": "string", "allowed": ["specified_Q"]},
+                        "Q_fix": {"required": False, "type": "number"},
+                    },
                 },
             }
-            
-        elif input['heat_transfer']['type']=='specified_U':
+
+        elif input["heat_transfer"]["type"] == "specified_U":
             schema_heattransfer = {
-                'initial' : {'required' : True},
-                'calculation' : {'required' : True},
-                'validation' : {'required' : False},
-                'valve' : {'required' : True},
-                'vessel': {
-                    'required' : True,
-                    'type': 'dict',
-                    'allow_unknown': False,  
-                    'schema': {             
-                        'length': {'required' : True,'type': 'number'},
-                        'diameter': {'required' : True,'type': 'number'},
-                        'thickness': {'required': False,'type': 'number', 'min': 0.0},
-                        'heat_capacity': {'required': False, 'type': 'number', 'min': 1},
-                        'density': {'required': False, 'type': 'number', 'min': 1},
-                        'orientation': {
-                            'required': False, 
-                            'type': 'string', 
-                            'allowed': ['vertical', 'horizontal']
-                        }
-                    }
+                "initial": {"required": True},
+                "calculation": {"required": True},
+                "validation": {"required": False},
+                "valve": {"required": True},
+                "vessel": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "schema": {
+                        "length": {"required": True, "type": "number"},
+                        "diameter": {"required": True, "type": "number"},
+                        "thickness": {"required": False, "type": "number", "min": 0.0},
+                        "heat_capacity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 1,
+                        },
+                        "density": {"required": False, "type": "number", "min": 1},
+                        "orientation": {
+                            "required": False,
+                            "type": "string",
+                            "allowed": ["vertical", "horizontal"],
+                        },
+                    },
                 },
-                'heat_transfer':{
-                    'required': True,
-                    'type': 'dict',
-                    'allow_unknown': False,
-                    'allowed': ['U_fix','type','temp_ambient'],
-                    'schema':{
-                        'type': {'type': 'string','allowed': ['U_fix']}, 
-                        'U_fix': {'required': False, 'type': 'number', 'min' : 0.0},
-                        'temp_ambient': {'required': True, 'type': 'number', 'min': 0},
-                    }
+                "heat_transfer": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "allowed": ["U_fix", "type", "temp_ambient"],
+                    "schema": {
+                        "type": {"type": "string", "allowed": ["U_fix"]},
+                        "U_fix": {"required": False, "type": "number", "min": 0.0},
+                        "temp_ambient": {"required": True, "type": "number", "min": 0},
+                    },
                 },
             }
-            
-        elif input['heat_transfer']['type']=='s-b' :
+
+        elif input["heat_transfer"]["type"] == "s-b":
             schema_heattransfer = {
-                'initial' : {'required' : True},
-                'calculation' : {'required' : True},
-                'validation' : {'required' : False},
-                'valve' : {'required' : True},
-                'vessel': {
-                    'required' : True,
-                    'type': 'dict',
-                    'allow_unknown': False,  
-                    'schema': {             
-                        'length': {'required' : True,'type': 'number'},
-                        'diameter': {'required' : True,'type': 'number'},
-                        'thickness': {'required': True,'type': 'number', 'min': 0.0},
-                        'heat_capacity': {'required': True, 'type': 'number', 'min': 1},
-                        'density': {'required': True, 'type': 'number', 'min': 1},
-                        'orientation': {
-                            'required': True, 
-                            'type': 'string', 
-                            'allowed': ['vertical', 'horizontal']
-                        }
-                    }
+                "initial": {"required": True},
+                "calculation": {"required": True},
+                "validation": {"required": False},
+                "valve": {"required": True},
+                "vessel": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "schema": {
+                        "length": {"required": True, "type": "number"},
+                        "diameter": {"required": True, "type": "number"},
+                        "thickness": {"required": True, "type": "number", "min": 0.0},
+                        "heat_capacity": {"required": True, "type": "number", "min": 1},
+                        "density": {"required": True, "type": "number", "min": 1},
+                        "orientation": {
+                            "required": True,
+                            "type": "string",
+                            "allowed": ["vertical", "horizontal"],
+                        },
+                    },
                 },
-                'heat_transfer':{
-                    'required': True,
-                    'type': 'dict',
-                    'allow_unknown': False,
-                    'allowed': ['fire','type'],
-                    'schema':{
-                        'type': {'required': True, 'type': 'string','allowed': ['s-b']}, 
-                        'fire': {'required': True, 'type': 'string','allowed': ['api_pool','api_jet','scandpower_pool','scandpower_jet']}, 
-                    }
+                "heat_transfer": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "allowed": ["fire", "type"],
+                    "schema": {
+                        "type": {
+                            "required": True,
+                            "type": "string",
+                            "allowed": ["s-b"],
+                        },
+                        "fire": {
+                            "required": True,
+                            "type": "string",
+                            "allowed": [
+                                "api_pool",
+                                "api_jet",
+                                "scandpower_pool",
+                                "scandpower_jet",
+                            ],
+                        },
+                    },
                 },
-            }  
+            }
         v = Validator(schema_heattransfer)
         retval = v.validate(input)
         if v.errors:
             print(v.errors)
 
     return retval
-   
+
 
 def valve_validation(input):
-    
     """
     Validate input['valve'] deeper than cerberus
 
     Parameters
     ----------
-    input : dict 
-        Structure holding input 
+    input : dict
+        Structure holding input
 
-    
+
     Return
     ----------
-        : bool 
+        : bool
         True for success, False for failure
     """
 
     schema_psv = {
-        'initial' : {'required' : True},
-        'calculation' : {'required' : True},
-        'validation' : {'required' : False},
-        'vessel' : {'required' : True},
-        'heat_transfer' : {'required' : False},
-        'valve':{
-            'required' : True,
-            'type': 'dict',
-            'allow_unknown': False,
-            'schema':{
-                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
-                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
-                'diameter': {'required' : True,'type': 'number', 'min': 0},
-                'discharge_coef': {'required' : True,'type': 'number', 'min': 0},
-                'set_pressure': {'required' : True,'type': 'number', 'min': 0},
-                'end_pressure': {'type': 'number', 'min': 0},
-                'blowdown': {'required' : True,'type': 'number', 'min': 0, 'max': 1},
-                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
-                'Cv': {'type': 'number', 'min': 0},
-                'mdot': {'type': ['number','list']},
-                'time' : {'type': 'list'},
-            }
+        "initial": {"required": True},
+        "calculation": {"required": True},
+        "validation": {"required": False},
+        "vessel": {"required": True},
+        "heat_transfer": {"required": False},
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["orifice", "psv", "controlvalve", "mdot"],
+                },
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge", "filling"],
+                },
+                "diameter": {"required": True, "type": "number", "min": 0},
+                "discharge_coef": {"required": True, "type": "number", "min": 0},
+                "set_pressure": {"required": True, "type": "number", "min": 0},
+                "end_pressure": {"type": "number", "min": 0},
+                "blowdown": {"required": True, "type": "number", "min": 0, "max": 1},
+                "back_pressure": {"required": True, "type": "number", "min": 0},
+                "Cv": {"type": "number", "min": 0},
+                "mdot": {"type": ["number", "list"]},
+                "time": {"type": "list"},
+            },
         },
     }
 
     schema_orifice = {
-        'initial' : {'required' : True},
-        'calculation' : {'required' : True},
-        'validation' : {'required' : False},
-        'vessel' : {'required' : True},
-        'heat_transfer' : {'required' : False},
-        'valve':{
-            'required' : True,
-            'type': 'dict',
-            'allow_unknown': False,
-            'schema':{
-                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
-                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
-                'diameter': {'required' : True,'type': 'number', 'min': 0},
-                'discharge_coef': {'required' : True,'type': 'number', 'min': 0},
-                'set_pressure': {'type': 'number', 'min': 0},
-                'end_pressure': {'type': 'number', 'min': 0},
-                'blowdown': {'type': 'number', 'min': 0, 'max': 1},
-                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
-                'Cv': {'type': 'number', 'min': 0},
-                'mdot': {'type': ['number','list']},
-                'time' : {'type': 'list'},
-            }
+        "initial": {"required": True},
+        "calculation": {"required": True},
+        "validation": {"required": False},
+        "vessel": {"required": True},
+        "heat_transfer": {"required": False},
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["orifice", "psv", "controlvalve", "mdot"],
+                },
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge", "filling"],
+                },
+                "diameter": {"required": True, "type": "number", "min": 0},
+                "discharge_coef": {"required": True, "type": "number", "min": 0},
+                "set_pressure": {"type": "number", "min": 0},
+                "end_pressure": {"type": "number", "min": 0},
+                "blowdown": {"type": "number", "min": 0, "max": 1},
+                "back_pressure": {"required": True, "type": "number", "min": 0},
+                "Cv": {"type": "number", "min": 0},
+                "mdot": {"type": ["number", "list"]},
+                "time": {"type": "list"},
+            },
         },
     }
 
     schema_control_valve = {
-        'initial' : {'required' : True},
-        'calculation' : {'required' : True},
-        'validation' : {'required' : False},
-        'vessel' : {'required' : True},
-        'heat_transfer' : {'required' : False},
-        'valve':{
-            'required' : True,
-            'type': 'dict',
-            'allow_unknown': False,
-            'schema':{
-                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
-                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
-                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
-                'Cv': {'required' : True,'type': 'number', 'min': 0},
-                'time_constant': {'type': 'number', 'min': 0},
-                'characteristic': {'type': 'string', 'allowed': ['linear', 'eq', 'fast']},
-            }
+        "initial": {"required": True},
+        "calculation": {"required": True},
+        "validation": {"required": False},
+        "vessel": {"required": True},
+        "heat_transfer": {"required": False},
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["orifice", "psv", "controlvalve", "mdot"],
+                },
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge", "filling"],
+                },
+                "back_pressure": {"required": True, "type": "number", "min": 0},
+                "Cv": {"required": True, "type": "number", "min": 0},
+                "time_constant": {"type": "number", "min": 0},
+                "characteristic": {
+                    "type": "string",
+                    "allowed": ["linear", "eq", "fast"],
+                },
+            },
         },
     }
 
     schema_mdot = {
-        'initial' : {'required' : True},
-        'calculation' : {'required' : True},
-        'validation' : {'required' : False},
-        'vessel' : {'required' : True},
-        'heat_transfer' : {'required' : False},
-        'valve':{
-            'required' : True,
-            'type': 'dict',
-            'allow_unknown': False,
-            'schema':{
-                'type': {'required' : True,'type': 'string', 'allowed': ['orifice', 'psv', 'controlvalve', 'mdot']},
-                'flow': {'required' : True,'type': 'string', 'allowed': ['discharge', 'filling']},
-                'mdot': {'required' : True,'type': ['number','list']},
-                'time' : {'required' : True,'type': ['number','list']},
-                'back_pressure': {'required' : True,'type': 'number', 'min': 0},
-            }   
+        "initial": {"required": True},
+        "calculation": {"required": True},
+        "validation": {"required": False},
+        "vessel": {"required": True},
+        "heat_transfer": {"required": False},
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["orifice", "psv", "controlvalve", "mdot"],
+                },
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge", "filling"],
+                },
+                "mdot": {"required": True, "type": ["number", "list"]},
+                "time": {"type": ["number", "list"]},
+                "back_pressure": {"required": True, "type": "number", "min": 0},
+            },
         },
     }
 
-    if input['valve']['type'] == 'psv':
+    if input["valve"]["type"] == "psv":
         v = Validator(schema_psv)
         retval = v.validate(input)
         if v.errors:
             print(v.errors)
-    elif input['valve']['type'] == 'orifice':
+    elif input["valve"]["type"] == "orifice":
         v = Validator(schema_orifice)
         retval = v.validate(input)
         if v.errors:
             print(v.errors)
-    elif input['valve']['type'] == 'controlvalve':
+    elif input["valve"]["type"] == "controlvalve":
         v = Validator(schema_control_valve)
         retval = v.validate(input)
         if v.errors:
             print(v.errors)
-    elif input['valve']['type'] == 'mdot':
+    elif input["valve"]["type"] == "mdot":
         v = Validator(schema_mdot)
         retval = v.validate(input)
         if v.errors:
@@ -473,19 +650,24 @@ def valve_validation(input):
 
     return retval
 
+
 def validation(input):
     """
-    Aggregate validation using cerberus 
+    Aggregate validation using cerberus
 
     Parameters
     ----------
-    input : dict 
-        Structure holding input 
+    input : dict
+        Structure holding input
 
-    
+
     Return
     ----------
-        : bool 
+        : bool
         True for success, False for failure
     """
-    return validate_mandatory_ruleset(input) and valve_validation(input) and heat_transfer_validation(input)
+    return (
+        validate_mandatory_ruleset(input)
+        and valve_validation(input)
+        and heat_transfer_validation(input)
+    )

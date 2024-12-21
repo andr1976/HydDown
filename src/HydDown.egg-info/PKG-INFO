@@ -5,15 +5,23 @@ Summary: Hydrogen (or other pure gas phase species) pressure vessel filling and 
 Home-page: https://github.com/andr1976/HydDown/
 Author: Anders Andreasen
 Author-email: andr1976@gmail.com
-License: UNKNOWN
 Project-URL: Bug Tracker, https://github.com/andr1976/HydDown/new/main/issues
-Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.6
 Description-Content-Type: text/markdown
 License-File: LICENSE
+Requires-Dist: tqdm
+Requires-Dist: streamlit>=0.89
+Requires-Dist: pandas>=1.1.4
+Requires-Dist: matplotlib>=3.3.3
+Requires-Dist: numpy>=1.19.5
+Requires-Dist: pytest>=6.2.3
+Requires-Dist: Cerberus>=1.3.3
+Requires-Dist: CoolProp>=6.4.1
+Requires-Dist: PyYAML>=5.4.1
+Requires-Dist: scipy>=1.6.0
 
 [![DOI](https://zenodo.org/badge/353152239.svg)](https://zenodo.org/badge/latestdoi/353152239) ![license](https://img.shields.io/github/license/andr1976/HydDown) ![buil](https://github.com/andr1976/HydDown/actions/workflows/python-app.yml/badge.svg) [![codecov](https://codecov.io/gh/andr1976/HydDown/branch/main/graph/badge.svg)](https://codecov.io/gh/andr1976/HydDown) [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py)
 [![CodeQL](https://github.com/andr1976/HydDown/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/andr1976/HydDown/actions/workflows/codeql-analysis.yml)
@@ -108,5 +116,3 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 - Specified h, the external heat transfer coefficient is provided and either the internal is provided or calculated from assumption of natural convection from a vertical cylinder at high Gr number. Ambient temperature is required.
 - Detailed 
 - Fire with heat load calculated from the Stefan-Boltzmann equation
-
-
