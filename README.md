@@ -3,7 +3,7 @@
 [![status](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25/status.svg)](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25)
  
 # HydDown
-Hydrogen (or other pure gas phase species) depressurization calculations 
+Hydrogen (or other pure gas phase species as well as mixtures) depressurization/pressurisation calculations incorporating heat transfer effetcs. It also models vessel response (pressure/temperature) to external heat loads e.g. external fire (pool/jet) incorporating the Stefan-Boltzmann approach.
 
 This code is published under an MIT license.
 
@@ -36,7 +36,7 @@ where main.py is the main script and input.yml is the input file in Yaml syntax.
 Consult the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf) for a more rigorous explanation of the software, the implemented methods, and its usage. Further, the manual also contains a few validation studies. 
 
 ## Demonstration 
-The easiest way to explore the capability of HydDown is the [streamlit app](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_app.py). This version allows calculation of:
+The easiest way to explore the capability of HydDown is the [streamlit app](https://hyddown-jltaqjxtrsflh2famtkgsj.streamlit.app/). This version allows calculation of:
 
 - filling of vessel with gas (pressurisation)
 - discharge of gas (depressurisation)
