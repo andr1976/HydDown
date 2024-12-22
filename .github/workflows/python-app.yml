@@ -44,8 +44,9 @@ jobs:
         cd src/hyddown
         coverage run -m pytest test_all.py
     - name: Upload Coverage to Codecov 
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v2
       with:
+        version: "v0.1.15"
         fail_ci_if_error: true # optional (default = false)
         verbose: true # optional (default = false)
       env:
