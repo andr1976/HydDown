@@ -43,6 +43,7 @@ jobs:
       run: |
         cd src/hyddown
         coverage run -m pytest test_all.py
+        coverage xml
     - name: Upload Coverage to Codecov 
       uses: codecov/codecov-action@v2
       with:
