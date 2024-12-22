@@ -44,11 +44,11 @@ jobs:
         cd src/hyddown
         coverage run -m pytest test_all.py
         coverage xml
-    - name: Upload Coverage to Codecov 
-      uses: codecov/codecov-action@v3
-      with:
-        fail_ci_if_error: true # optional (default = false)
-        verbose: true # optional (default = false)
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+#    - name: Upload Coverage to Codecov 
+#      uses: codecov/codecov-action@v3
+#      with:
+#        fail_ci_if_error: true # optional (default = false)
+#        verbose: true # optional (default = false)
+#      env:
+#        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
