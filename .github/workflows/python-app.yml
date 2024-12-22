@@ -45,9 +45,8 @@ jobs:
         coverage run -m pytest test_all.py
         coverage xml
     - name: Upload Coverage to Codecov 
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v4
       with:
-        version: "v0.1.15"
         fail_ci_if_error: true # optional (default = false)
         verbose: true # optional (default = false)
       env:
