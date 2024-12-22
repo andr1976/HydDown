@@ -38,12 +38,11 @@ jobs:
     - name: Test with pytest
       run: |
         cd src/hyddown
-        pytest test_all.py
-    - name: Generate coverage report
-      run: |
-        cd src/hyddown
-        coverage run -m pytest test_all.py
-        coverage xml
+        pytest --cov=api.calculator --cov-report=xml
+    - name: Upload coverage reports to Codecov with GitHub Action
+      uses: codecov/codecov-action@v5
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 #    - name: Upload Coverage to Codecov 
 #      uses: codecov/codecov-action@v3
 #      with:
