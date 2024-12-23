@@ -35,6 +35,12 @@ where main.py is the main script and input.yml is the input file in Yaml syntax.
 
 Consult the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf) for a more rigorous explanation of the software, the implemented methods, and its usage. Further, the manual also contains a few validation studies. 
 
+## Citing HydDown 
+
+Please cite the following reference: 
+
+Andreasen, A., (2021). HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge. Journal of Open Source Software, 6(66), 3695, https://doi.org/10.21105/joss.03695
+
 ## Demonstration 
 The easiest way to explore the capability of HydDown is the [streamlit app](https://hyddown-jltaqjxtrsflh2famtkgsj.streamlit.app/). This version allows calculation of:
 
