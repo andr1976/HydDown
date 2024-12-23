@@ -25,6 +25,24 @@ Running the code is as simple as:
 
 where `main.py` is the main script and `input.yml` is the input file in Yaml syntax. 
 
+## Citing HydDown 
+If you use HydDown please cite the following reference [@Andreasen2021]:
+
+Andreasen, A., (2021). HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge. Journal of Open Source Software, 6(66), 3695, https://doi.org/10.21105/joss.03695
+
+    @article{Andreasen2021, 
+      doi = {10.21105/joss.03695}, 
+      url = {https://doi.org/10.21105/joss.03695}, 
+      year = {2021}, 
+      publisher = {The Open Journal}, 
+      volume = {6}, 
+      number = {66}, 
+      pages = {3695}, 
+      author = {Anders Andreasen}, 
+      title = {HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge}, 
+      journal = {Journal of Open Source Software} 
+    }
+
 ## Background
 HydDown started as a small spare-time project for calculation of vessel filling and depressurization behaviour.
 This was mainly to demonstrate that although perceived as a very tedious and difficult task to write your own code for such an apparently complex problem, actually only a fairly limited amount of code is necessary if you have a good thermodynamic backend.
@@ -72,7 +90,7 @@ where python3 is the symlink or full path to the python3 executable installed on
 
 ## Requirements
 
-- [Python](http://www.python.org) (3.8 - at least python3)
+- [Python](http://www.python.org) (3.8 - at least python3, not 3.9, see below)
 - [Numpy](https://numpy.org/)
 - [matplotlib](https://matplotlib.org/)
 - [Coolprop (6.4.1)](http://www.coolprop.org/)
@@ -81,6 +99,8 @@ where python3 is the symlink or full path to the python3 executable installed on
 - [pandas](https://pandas.pydata.org/)
 - [Scipy](https://www.scipy.org/)
 - [tqdm](https://tqdm.github.io/)
+
+It has been reported that the CoolProp `pip` package does not run out of the box with python 3.9. Hence, python 3.8 is recommended. 
 
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip.
 It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.
@@ -709,7 +729,7 @@ $$ W = C N_6 F_P Y \sqrt{x_{sizing} p_1 \rho_1} $$
 
 or equivalently:
 
-$$ W = C N_8 F_P Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$ 
+$$ W = C N_8 F_P p_1 Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$ 
 
 - C is the flow coefficient ($C_v$ or $K_v$)
 - $N_8$ is a unit specific constant, 94.8 for $C_v$ and bar as pressure unit

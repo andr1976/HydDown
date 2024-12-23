@@ -28,7 +28,7 @@ if __name__ == "__main__":
     temp = float(temp)+273.15
     fluid = sideb.selectbox(
         'Select fluid',
-        ('N2', 'He', 'H2', 'air', 'CH4'))
+        ('N2', 'He', 'H2', 'air', 'CH4', 'CO2'))
     option = sideb.selectbox(
         'Select calculation type',
         ('isothermal', 'isenthalpic', 'isentropic'))

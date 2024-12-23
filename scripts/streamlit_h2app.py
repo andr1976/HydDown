@@ -78,13 +78,13 @@ if __name__ == "__main__":
     input['heat_transfer']['h_inner']='calc'
     input['heat_transfer']['D_throat']=float(diam)
 
-    col = st.beta_columns(1)
+    col = st.columns(1)
     st.title('HydDown Type I H2 cylinder filling')
     st.subheader(r'https://github.com/andr1976/HydDown')
-    my_expander = st.beta_expander("Description")
+    my_expander = st.expander("Description")
     my_expander.write('Real gas vessel pressurisation at constant mass flow with heat transfer from gas to vessel and ambient. Orifice size is arbitrary and used for pressurisation rate.')
 
-    col1, col2= st.beta_columns(2)
+    col1, col2= st.columns(2)
     hdown=HydDown(input)
     hdown.run()
     
