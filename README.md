@@ -41,6 +41,18 @@ Please cite the following reference:
 
 Andreasen, A., (2021). HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge. Journal of Open Source Software, 6(66), 3695, https://doi.org/10.21105/joss.03695
 
+    @article{Andreasen2021, 
+      doi = {10.21105/joss.03695}, 
+      url = {https://doi.org/10.21105/joss.03695}, 
+      year = {2021}, 
+      publisher = {The Open Journal}, 
+      volume = {6}, 
+      number = {66}, 
+      pages = {3695}, 
+      author = {Anders Andreasen}, 
+      title = {HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge}, 
+      journal = {Journal of Open Source Software} 
+    }
 ## Demonstration 
 The easiest way to explore the capability of HydDown is the [streamlit app](https://hyddown-jltaqjxtrsflh2famtkgsj.streamlit.app/). This version allows calculation of:
 
