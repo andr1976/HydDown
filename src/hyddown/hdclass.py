@@ -12,6 +12,7 @@ import CoolProp.CoolProp as CP
 from hyddown import transport as tp
 from hyddown import validator
 from hyddown import fire
+from hyddown import thermesh as tm
 
 
 class HydDown:
@@ -203,6 +204,8 @@ class HydDown:
         self.T_fluid = np.zeros(data_len)
         self.T_vent = np.zeros(data_len)
         self.T_vessel = np.zeros(data_len)
+        self.T_inner_wall = np.zeros(data_len)
+        self.T_outer_wall = np.zeros(data_len)
         self.Q_outer = np.zeros(data_len)
         self.Q_inner = np.zeros(data_len)
         self.h_inside = np.zeros(data_len)
@@ -337,6 +340,8 @@ class HydDown:
         self.rho[0] = self.rho0
         self.T_fluid[0] = self.T0
         self.T_vessel[0] = self.T0
+        self.T_inner_wall[0] = self.T0
+        self.T_outer_wall[0] = self.T0
         if self.input["valve"]["flow"] == "discharge":
             self.T_vent[0] = self.T0
         self.H_mass[0] = self.fluid.hmass()
@@ -433,7 +438,7 @@ class HydDown:
 
         # Run actual integration by updating values by numerical integration/time stepping
         # Mass of fluid is calculated from previous time step mass and mass flow rate
-
+        T_profile = 0
         for i in tqdm(
             range(1, len(self.time_array)),
             desc="hyddown",
@@ -479,26 +484,34 @@ class HydDown:
                         else:
                             L = self.length
                         if input["valve"]["flow"] == "filling":
-                            T_film = (self.T_fluid[i - 1] + self.T_vessel[i - 1]) / 2
+                            # T_film = (self.T_fluid[i - 1] + self.T_vessel[i - 1]) / 2
+                            T_film = (
+                                self.T_fluid[i - 1] + self.T_inner_wall[i - 1]
+                            ) / 2
                             self.transport_fluid.update(
                                 CP.PT_INPUTS, self.P[i - 1], T_film
                             )
                             hi = tp.h_inside_mixed(
                                 L,
-                                self.T_vessel[i - 1],
+                                # self.T_vessel[i - 1],
+                                self.T_inner_wall[i - i],
                                 self.T_fluid[i - 1],
                                 self.transport_fluid,
                                 self.mass_rate[i - 1],
                                 self.diameter,
                             )
                         else:
-                            T_film = (self.T_fluid[i - 1] + self.T_vessel[i - 1]) / 2
+                            # T_film = (self.T_fluid[i - 1] + self.T_vessel[i - 1]) / 2
+                            T_film = (
+                                self.T_fluid[i - 1] + self.T_inner_wall[i - 1]
+                            ) / 2
                             self.transport_fluid.update(
                                 CP.PT_INPUTS, self.P[i - 1], T_film
                             )
                             hi = tp.h_inside(
                                 L,
-                                self.T_vessel[i - 1],
+                                # self.T_vessel[i - 1],
+                                self.T_inner_wall[i - i],
                                 self.T_fluid[i - 1],
                                 self.transport_fluid,
                             )
@@ -507,21 +520,69 @@ class HydDown:
                         hi = self.h_in
 
                     self.h_inside[i] = hi
+                    # self.Q_inner[i] = (
+                    #     self.surf_area_inner
+                    #     * hi
+                    #     * (self.T_vessel[i - 1] - self.T_fluid[i - 1])
+                    # )
                     self.Q_inner[i] = (
                         self.surf_area_inner
                         * hi
-                        * (self.T_vessel[i - 1] - self.T_fluid[i - 1])
+                        * (self.T_inner_wall[i - 1] - self.T_fluid[i - 1])
                     )
+
+                    # self.Q_outer[i] = (
+                    #     self.surf_area_outer
+                    #     * self.h_out
+                    #     * (self.Tamb - self.T_vessel[i - 1])
+                    # )
+
                     self.Q_outer[i] = (
                         self.surf_area_outer
                         * self.h_out
-                        * (self.Tamb - self.T_vessel[i - 1])
+                        * (self.Tamb - self.T_outer_wall[i - 1])
                     )
                     self.T_vessel[i] = self.T_vessel[i - 1] + (
                         self.Q_outer[i] - self.Q_inner[i]
                     ) * self.tstep / (
                         self.vessel_cp * self.vessel_density * self.vol_solid
                     )
+                    if True:
+                        L = (
+                            self.thickness
+                        )  # Make sure the domain is large enough to be a semi-infinite solid
+                        k, rho, cp = 0.5, self.vessel_density, self.vessel_cp
+                        h = self.h_out  # Heat transfer coefficient
+                        nn = 11  # number of nodes
+                        z = np.linspace(0, L, nn)
+                        mesh = tm.Mesh(z, tm.LinearElement)  # Or `QuadraticElement` to
+                        # use quadratic shape functions
+                        bc = [
+                            {"h": h, "T_inf": self.Tamb},  # convective bc on the left
+                            {
+                                "h": self.h_inside[i],
+                                "T_inf": self.T_fluid[i - 1],
+                            },
+                        ]  # T on the right
+                        print(self.h_inside[i])
+                        # Material model (CPEEK is a function that takes T as input)
+                        cpeek = tm.isothermal_model(k, rho, cp)
+
+                        # Define and solve problem
+                        domain = tm.Domain(mesh, [cpeek], bc)
+                        if type(T_profile) == type(int()) and T_profile == 0:
+                            domain.set_T(self.Tamb * np.ones(nn))
+                        else:
+                            domain.set_T(T_profile[-1, :])
+
+                        # Solver details
+                        theta = 0.5
+                        dt = self.tstep / 10
+                        solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
+                        t, T_profile = tm.solve_ht(domain, solver)
+                        self.T_inner_wall[i] = T_profile[-1, -1]
+                        self.T_outer_wall[i] = T_profile[-1, 0]
+
                 elif self.heat_method == "s-b":
                     if self.vessel_orientation == "horizontal":
                         L = self.diameter
@@ -549,6 +610,7 @@ class HydDown:
                     ) * self.tstep / (
                         self.vessel_cp * self.vessel_density * self.vol_solid
                     )
+
                 elif self.heat_method == "specified_U":
                     self.Q_inner[i] = (
                         self.surf_area_outer
@@ -722,7 +784,12 @@ class HydDown:
                 self.Q_outer / self.surf_area_outer,
                 True,
             )
-
+            df.insert(
+                14, "Inner wall temperature  (oC)", self.T_inner_wall - 273.15, True
+            )
+            df.insert(
+                13, "Outer wall temperature  (oC)", self.T_outer_wall - 273.15, True
+            )
         return df
 
     def plot(self, filename=None, verbose=True):
@@ -746,6 +813,8 @@ class HydDown:
         plt.subplot(221)
         plt.plot(self.time_array, self.T_fluid - 273.15, "b", label="Fluid")
         plt.plot(self.time_array, self.T_vessel - 273.15, "g", label="Vessel")
+        plt.plot(self.time_array, self.T_inner_wall - 273.15, "g--", label="Inner wall")
+        plt.plot(self.time_array, self.T_outer_wall - 273.15, "g-.", label="Outer wall")
         if self.input["valve"]["flow"] == "discharge":
             plt.plot(self.time_array, self.T_vent - 273.15, "r", label="Vent")
         if "validation" in self.input:
