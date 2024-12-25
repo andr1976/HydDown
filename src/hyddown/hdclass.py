@@ -515,7 +515,6 @@ class HydDown:
                                 self.T_fluid[i - 1],
                                 self.transport_fluid,
                             )
-
                     else:
                         hi = self.h_in
 
@@ -547,6 +546,8 @@ class HydDown:
                     ) * self.tstep / (
                         self.vessel_cp * self.vessel_density * self.vol_solid
                     )
+                    self.T_inner_wall[i] = self.T_vessel[i]
+                    self.T_outer_wall[i] = self.T_vessel[i]
                     if True:
                         L = (
                             self.thickness
@@ -560,11 +561,12 @@ class HydDown:
                         bc = [
                             {"h": h, "T_inf": self.Tamb},  # convective bc on the left
                             {
-                                "h": self.h_inside[i],
-                                "T_inf": self.T_fluid[i - 1],
+                                "q": -self.Q_inner[i]
+                                / self.surf_area_inner
+                                # "h": self.h_inside[i],
+                                # "T_inf": self.T_fluid[i - 1],
                             },
                         ]  # T on the right
-                        print(self.h_inside[i])
                         # Material model (CPEEK is a function that takes T as input)
                         cpeek = tm.isothermal_model(k, rho, cp)
 
@@ -580,7 +582,9 @@ class HydDown:
                         dt = self.tstep / 10
                         solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
                         t, T_profile = tm.solve_ht(domain, solver)
-                        self.T_inner_wall[i] = T_profile[-1, -1]
+                        self.T_inner_wall[i] = (
+                            T_profile[-1, -1] + T_profile[-1, -1]
+                        ) / 2
                         self.T_outer_wall[i] = T_profile[-1, 0]
 
                 elif self.heat_method == "s-b":
