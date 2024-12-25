@@ -1133,7 +1133,7 @@ The first validation case is made against the commercial tool Honeywell Unisim D
 | Density         | 2000 kg/m$^3$ |
 | Heat capacity   | 962 J/(kg K) |
 | Thermal conductivity | 0.5 W/(m K) |
-| Outside $h$ | 2 W(m$^2$ K) |
+| Outside $h$ | 2 W/(m$^2$ K) |
 | Initial pressure| 182 bar|
 | Initial temperature| 6 $^\circ$C |
 |Discharge mass flow | 0.02 kg/s|
@@ -1141,5 +1141,42 @@ The first validation case is made against the commercial tool Honeywell Unisim D
 
 : Key vessel data and intial conditions {#tbl:1D-valid-1}
 
+The comparison between HydDown results and the corresponding simulations using Unisim Design Dynamics are shown in Figure [@fig:unisim_val]: As seen from the results the results obtained using HydDown closely resembles the Unisim Design results. The outer wall temperature is matched perfectly and the final gas temperature and inner vessel temperature deviates marginally by 1.5 and 1.9 $^\circ$C, respectively. Unisim predicts a sligtly lower gas temeprature and HydDown predicts a slightly lower inner wall temperature.  
+
+![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with simulation performed with Unisim Design Dynamics. The figure shows calculated gas and wall temperature (lines) compared to Unisim simulations (left) with Unisim results shown with points, calculated and Unisim simulation pressure (denoted "Experimental") (right).](docs/img/unisim_validation.png){#fig:unisim_val}
+
 
 ### Validation against KIT experiment
+Using data from Molkov *et al.* [@MOLKOV1][@MOLKOV2] experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*m, see references within refs. [@MOLKOV1][@MOLKOV2]. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*.
+
+| Type IV tank        |                |
+|---------------------|----------------|
+| External length     | 904 mm         |
+| ID                  | 180 mm         |
+| OD                  | 228 mm         |
+| **HDPE liner**      |                |
+| Thickness           | 7 mm           |
+| Density             | 945 kg/m$^3$   |
+| Heat capacity       |1584 J/(kg K)   |
+| Thermal conductivity|0.385 W/(m K)   |
+| **CFRP shell**      |                |
+| Thickness           |17 mm           |
+| Density             |1360 kg/m$^3$   |
+| Heat capacity       | 1020 J/(kg K)  |
+| Thermal conductivity| 0.5 W/(m K)    |
+| **Initial conditions** |             | 
+| Outside $h$         | 8 W/(m$^2$ K)  |
+| Initial pressure    |  700 bar       |
+| Initial temperature | 20 $^\circ$C   |
+| Gas                 | Helium         |
+
+In HydDown the type IV pressure vessel geometry as assumed that of a flat ended cylinder, with the length adjusted to give a total inventory volume of 19 liter. Furthermore, the transient 1D heat conductivity model applies a single value for density, heat capacity and thermal conductivity. In order to simulate the system a lumped heat cpacity and density for the typi IV cylinder is made. The thermal conductivty is set to that of the liner material, and the outer heat transfer coefficient is set to 8 W/(m$^2$K) as applied in the H2fills software [@KUROKI].
+
+![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for comparison with KIT experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature (left) and calculated and measured pressure (right).](docs/img/KIT_1.png){#fig:KIT_val}
+
+HydDown simulations are compared with the KIT experiement in Figure [@fig:KIT_val]. As seen from the results the depressurisation pressure is matched very well. The experimental gas temperature is also matched fairly well. The lowest simulated gas temperature is 182.3 K and the lowest experimental temperature is 177.5 K a difference of 4.8 K. The minimum gas temoperature occurs at an earlier time compared to the experimental results. The formaer at approx. 75 sec. and the latter at approx. 100 sec. This is also in agreement with the simulation model presented by Molkov *et al.* [@MOLKOV1]. The final gas temperature of the simulations is 237 K compared to the experimental value of 216 K. 
+
+Molkov *et al.* [@MOLKOV1] also made a thermal analysis of the thermocouple arrangement used in KIT experiment in order to estimate thermal lag in the temperature measurement. Incorporating the thermal model of the thermocouple arrangement displayed an improved prediction of the time of the minimum measured gas temperature as well as the final measured temperature. 
+
+
+

@@ -818,7 +818,7 @@ class HydDown:
                     plt.plot(
                         np.asarray(temp["gas_mean"]["time"]),
                         np.asarray(temp["gas_mean"]["temp"]) - 273.15,
-                        "b:",
+                        "b.",
                         label="Gas mean",
                     )
                 if "gas_high" in temp:
@@ -853,7 +853,7 @@ class HydDown:
                     plt.plot(
                         np.asarray(temp["wall_inner"]["time"]),
                         np.asarray(temp["wall_inner"]["temp"]) - 273.15,
-                        "g--",
+                        "g+",
                         label="Inner wall",
                     )
                 if "wall_high" in temp:
@@ -867,7 +867,7 @@ class HydDown:
                     plt.plot(
                         np.asarray(temp["wall_outer"]["time"]),
                         np.asarray(temp["wall_outer"]["temp"]) - 273.15,
-                        "g--",
+                        "gx",
                         label="Outer wall",
                     )
 
@@ -957,6 +957,24 @@ class HydDown:
         report["time_max_wall_temp"] = self.time_array[np.argmax(self.T_vessel)]
         report["min_wall_temp"] = min(self.T_vessel)
         report["time_min_wall_temp"] = self.time_array[np.argmin(self.T_vessel)]
+
+        report["max_inner_wall_temp"] = max(self.T_inner_wall)
+        report["time_max_inner_wall_temp"] = self.time_array[
+            np.argmax(self.T_inner_wall)
+        ]
+        report["min_inner_wall_temp"] = min(self.T_inner_wall)
+        report["time_min_inner_wall_temp"] = self.time_array[
+            np.argmin(self.T_inner_wall)
+        ]
+
+        report["max_outer_wall_temp"] = max(self.T_outer_wall)
+        report["time_max_outer_wall_temp"] = self.time_array[
+            np.argmax(self.T_outer_wall)
+        ]
+        report["min_outer_wall_temp"] = min(self.T_outer_wall)
+        report["time_min_outer_wall_temp"] = self.time_array[
+            np.argmin(self.T_outer_wall)
+        ]
 
         # Mass flows and inventory
         report["max_mass_rate"] = max(self.mass_rate)
