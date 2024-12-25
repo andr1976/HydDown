@@ -90,7 +90,7 @@ where python3 is the symlink or full path to the python3 executable installed on
 
 ## Requirements
 
-- [Python](http://www.python.org) (3.8 - at least python3, not 3.9, see below)
+- [Python](http://www.python.org) (Check CoolProp for latest suppeorted python version)
 - [Numpy](https://numpy.org/)
 - [matplotlib](https://matplotlib.org/)
 - [Coolprop (6.4.1)](http://www.coolprop.org/)
@@ -100,17 +100,15 @@ where python3 is the symlink or full path to the python3 executable installed on
 - [Scipy](https://www.scipy.org/)
 - [tqdm](https://tqdm.github.io/)
 
-It has been reported that the CoolProp `pip` package does not run out of the box with python 3.9. Hence, python 3.8 is recommended. 
-
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip.
-It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.
+It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but this hasn't been checked.
 
 ## Testing 
 Although testing is mainly intended for automated testing (CI) during development using github actions, testing of the installed package can be done for source install by:
 
     python -m pytest 
 
-run from the root folder. In writing 33 test should pass.
+run from the root folder. In writing 33+ test should pass.
 
 For the package installed with pip navigate to the install directory `../site-packages/hyddown` and run:
 
@@ -133,6 +131,7 @@ Length | m
 Area | m$^2$
 Heat flux | W/m$^2$
 Heat transfer coefficient | W/(m$^2$ K)
+Thermal conductivity | W/(m K)
 Density | kg/m$^3$
 Heat capacity | J/(kg K)
 
@@ -152,7 +151,7 @@ The present document is typeset using Markdown + [pandoc](https://pandoc.org/) w
 
 MIT License
 
-Copyright (c) 2021 Anders Andreasen
+Copyright (c) 2021-2025 Anders Andreasen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -842,16 +841,16 @@ $$ Nu = Nu_{forced} +  Nu_{natural} = 0.56Re_d^{0.67} + 0.104Ra_H^{0.352} $$
 ### Conduction
 For accurate prediction of the outer and especially the inner wall temperature for correct estimation of internal convective heat transfer and the average material temperature, the general equation of 1-D unsteady heat transfer shall be solved:
 
-$$ \frac{\delta T}{\delta t} = \frac{k}{C_p} \frac{\delta^2 T}{\delta x^2} $$
+$$ \frac{\delta T}{\delta t} = \frac{k}{\rho c_p} \frac{\delta^2 T}{\delta x^2} $$
 
 - T is temperature
 - x is the spatial (1-D) coordinate
-- k is the thermal conductivity 
-- $C_p$ is the heat capacity 
+- k is the thermal conductivity
+- $\rho$ is the material density
+- $C_p$ is the specific heat capacity 
 
-Here it is written in Cartesian coordinates, but for most applications to pressure equipment, cylindrical coordinates are applicable, at least for the shell.
 To be solved, the initial values and boundary values must be specified.
-In its present state, HydDown does not include the unsteady heat transfer model, i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature.
+In its default state (if thermal cobductivity is not applied for the vessel), HydDown does not include the unsteady heat transfer model, i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature.
 This is obviously a crude approximation, but might be justified depending in the Biot number:
 
 $$ Bi = \frac{hL}{k} $$
@@ -862,8 +861,17 @@ Striednig *et al.* [@STRIEDNIG] concluded that for a type I (steel) cylinder the
 
 With a typical thermal conductivity of 45 $W/m K$ for steel and a heat transfer coefficient up to 600 $W/m^2 K$ [@woodfield] the Biot number for a vessel with a wall thickness of 2 cm is 0.27.
 This is significantly higher than that approximated by [@STRIEDNIG].
-However, the Biot number is lower than 1, and the assumption of a uniform temperature is reasonable.
+However, the Biot number is significantly lower than 1, and the assumption of a uniform temperature is reasonable.
 However, for increased wall thickness, and/or for different materials with lower thermal conductivity, the error may grow to an unacceptable level. 
+
+Especially for vessels with low conductivity materials (or very thick walls) accurate estimation of the vessel wall temperatures requires the 1-D transient heat transfer problem to be solved. HydDown incorporates the [*thermesh*](https://github.com/wjbg/thermesh) code provided under an MIT license by Wouter Grouve [@thermesh]. The implemented model applies Cartesian coodinates as also applied in the h2fills program by NREL [@KUROKI], i.e. the curved vessel wall is assumed a flat plate. This may to some extent be justied by the relatively large radius of a cylindrical storage container compared to the vessel wall thichness (see also justification references in [@KUROKI]). 
+
+In HydDown, the 1-D transient heat conductivity problem is solved with *thermesh* assuming temperature independent vessel material density, heat capacity and thermal conductivity using Neumann boundary conditions:
+
+$$  -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=0} = q_\text{left}(t), \qquad
+    -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=L} = q_{\text{right}}(t) $$ 
+
+The heat flux at the outer (left) and inner (right) is calculated/updated for each major time step for the explicit solver for mass and energy balances. For each major time step *thermesh* is used to update the outer and inner wall temperature by solving the 1-D transient heat conductivity using a *minor* time step equal to 1/10th of the major time step and 11 nodes. For each time *thermesh* is called during major time steps the mesh is initialised with the temperature profile at the end of the former major time step. 
 
 ### Fire heat loads
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower [@scandpower] and API [@API521].
@@ -911,9 +919,10 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 ## Model implementation
 A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation as described in [@Sec:flow]:
 
-$$ m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t  $$ {#eq:euler_mass}
+$$ m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t  $$ 
+{#eq:euler_mass}
 
-$$ \dot{m}(i) = f(P,T,) $$
+$$\dot{m}(i) = f(P,T,) $$
 
 For each step, the mass relief/ left in the vessel is known.
 Since the volume is fixed the mass density is directly given. 
@@ -969,8 +978,10 @@ For the vessel wall a simple heat balance is also made:
 $$ T_{wall}(i+1) = T_{wall}(i)  + \frac{\dot{Q}_{outer} - \dot{Q}_{inner} } {c_p m_{vessel}} \Delta t $$
 
 where $\dot{Q}_{outer}$ is the convective heat transfer to or from the ambient surroundings from the outer surface of the vessel, with positive values indicating that heat is transferred from the surroundings to the vessel wall.
-This is either a fixed heat transfer coefficient (for now) with a specified ambient temperature or a calculated fire heat load.
-$\dot{Q}_{inner}$ is the internal heat transfer, either a fixed number or calculated as natural convection (for discharge) or mixed natural and forced convection (filling).
+This is either a fixed heat transfer coefficient with a specified ambient temperature (outer surface) or a calculated fire heat load.
+$\dot{Q}_{inner}$ is the internal heat transfer, either a fixed number or calculated as natural convection (for discharge) or mixed natural and forced convection (filling). 
+
+When the temperature profile of the vessel wall is calculated using the 1-D transient conductivity equation the vessel temperature as calculated above represent the mean vessel temperature and addition to this the outer and inner wall temperatures are calculated. 
 
 If a fixed $\dot{Q}$ is provided or a fixed overall heat transfer coefficient is provided the vessel wall temperature heat balance is not solved. 
 
@@ -1013,6 +1024,8 @@ The following gases and modes are considered:
 - High pressure hydrogen discharge
 - High pressure hydrogen filling
 - High pressure nitrogen discharge
+
+Furthermore, HydDown has also been benchmarked against external code by Ruiz and Moscardelli [@maraggi], who compared their GeoH2 app against HydDown and found excellent agreement for both pressure, mass flow rate and gas temperature for three different cases of discharge and filling.
 
 ## Hydrogen discharge
 Calculations with HydDown for high pressure hydrogen vessel discharge have been compared to three experiments from [@byrnes].
@@ -1102,3 +1115,10 @@ It is also noted that the minimum temperature is reached at approximately the sa
 The calculated vessel inner wall temperature does not decline as rapidly as the experiments, but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature.
 The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperature.
 Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
+
+## 1-D transient heat transfer
+
+### Validation against commercial simulation tool 
+
+
+### Validation against KIT experiment
