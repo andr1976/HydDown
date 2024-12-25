@@ -866,7 +866,7 @@ However, for increased wall thickness, and/or for different materials with lower
 
 Especially for vessels with low conductivity materials (or very thick walls) accurate estimation of the vessel wall temperatures requires the 1-D transient heat transfer problem to be solved. HydDown incorporates the [*thermesh*](https://github.com/wjbg/thermesh) code provided under an MIT license by Wouter Grouve [@thermesh]. The implemented model applies Cartesian coodinates as also applied in the h2fills program by NREL [@KUROKI], i.e. the curved vessel wall is assumed a flat plate. This may to some extent be justied by the relatively large radius of a cylindrical storage container compared to the vessel wall thichness (see also justification references in [@KUROKI]). 
 
-In HydDown, the 1-D transient heat conductivity problem is solved with *thermesh* assuming temperature independent vessel material density, heat capacity and thermal conductivity using Neumann boundary conditions:
+In HydDown, the 1-D transient heat conductivity problem is solved with *thermesh* assuming temperature independent vessel material density, heat capacity and thermal conductivity applying the Crank-Nicholson scheme using Neumann boundary conditions:
 
 $$  -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=0} = q_\text{left}(t), \qquad
     -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=L} = q_{\text{right}}(t) $$ 
@@ -919,8 +919,7 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 ## Model implementation
 A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation as described in [@Sec:flow]:
 
-$$ m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t  $$ 
-{#eq:euler_mass}
+$$ m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t  $$ {#eq:euler_mass}
 
 $$\dot{m}(i) = f(P,T,) $$
 
@@ -939,6 +938,8 @@ $$ T(i+1) = T(i) $$
 $$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
 $$ P(i+1) = EOS(D(i+1),T(i+1)) $$
 
+The notation $EOS(T,P)$ refers to a call to CoolProp either via PropsSI or the AbstractState solving the equation of state for specified temperature and pressure. Different state pairs are applied includeing combinations of density (D), specific enthalpy (H), specific entropy (S), specific internal energy (U).  
+ 
 ### Isenthalpic process
 For an isenthalpic process: 
 
@@ -1014,6 +1015,8 @@ An example calculation for the above mixture is shown in [@Fig:ng_all].
 The pressure and temperature trajectory is visualised along with the fluid mixture phase envelope in [@Fig:ng_pe].
 As seen from the figure, this case is borderline and the pressure/temperature trajectory just coincides with the dew line on the phase envelope.
 This plot is included in the example main script that comes with HydDown and serves as an important quality control. 
+
+For multi-component mixtures CoolProp does not provide solver for PH and UV-problems and these solvers have been included in HydDown by wrapping the CoolProp PT solver with a Nelder-Mead algorithm for solving for internal energy and density or pressure and enthalpy. 
 
 # Validation
 The code is provided as-is.
@@ -1119,6 +1122,24 @@ Especially at the beginning of the discharge it is considered likely that a sign
 ## 1-D transient heat transfer
 
 ### Validation against commercial simulation tool 
+The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. [@tbl:1D-valid-1]. 
+
+
+| Parameter       | Value       |
+|-----------------|-------------|
+| Length          | 6.4 m      |
+| ID              | 0.619 m     |
+| Wall thickness  | 0.024 m    |
+| Density         | 2000 kg/m$^3$ |
+| Heat capacity   | 962 J/(kg K) |
+| Thermal conductivity | 0.5 W/(m K) |
+| Outside $h$ | 2 W(m$^2$ K) |
+| Initial pressure| 182 bar|
+| Initial temperature| 6 $^\circ$C |
+|Discharge mass flow | 0.02 kg/s|
+| Gas | Hydrogen |
+
+: Key vessel data and intial conditions {#tbl:1D-valid-1}
 
 
 ### Validation against KIT experiment

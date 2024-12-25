@@ -60,6 +60,11 @@ def validate_mandatory_ruleset(input):
                 "diameter": {"required": True, "type": "number"},
                 "thickness": {"required": False, "type": "number", "min": 0.0},
                 "heat_capacity": {"required": False, "type": "number", "min": 1},
+                "thermal_conductivity": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.0001,
+                },
                 "density": {"required": False, "type": "number", "min": 1},
                 "orientation": {
                     "required": False,
@@ -166,6 +171,8 @@ def validate_mandatory_ruleset(input):
                         "wall_high",
                         "wall_low",
                         "wall_mean",
+                        "wall_inner",
+                        "wall_outer",
                         "gas_high",
                         "gas_low",
                         "gas_mean",
@@ -256,7 +263,41 @@ def validate_mandatory_ruleset(input):
                                 },
                             },
                         },
-                        "wall_low": {
+                        "wall_high": {
+                            "required": False,
+                            "type": "dict",
+                            "contains": ["time", "temp"],
+                            "schema": {
+                                "temp": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                                "time": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                            },
+                        },
+                        "wall_inner": {
+                            "required": False,
+                            "type": "dict",
+                            "contains": ["time", "temp"],
+                            "schema": {
+                                "temp": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                                "time": {
+                                    "required": False,
+                                    "type": "list",
+                                    "schema": {"type": "number"},
+                                },
+                            },
+                        },
+                        "wall_outer": {
                             "required": False,
                             "type": "dict",
                             "contains": ["time", "temp"],
@@ -320,6 +361,11 @@ def heat_transfer_validation(input):
                         "diameter": {"required": True, "type": "number"},
                         "thickness": {"required": True, "type": "number", "min": 0.0},
                         "heat_capacity": {"required": True, "type": "number", "min": 1},
+                        "thermal_conductivity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
                         "density": {"required": True, "type": "number", "min": 1},
                         "orientation": {
                             "required": True,

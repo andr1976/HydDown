@@ -548,37 +548,27 @@ class HydDown:
                     )
                     self.T_inner_wall[i] = self.T_vessel[i]
                     self.T_outer_wall[i] = self.T_vessel[i]
-                    if True:
-                        L = (
-                            self.thickness
-                        )  # Make sure the domain is large enough to be a semi-infinite solid
-                        k, rho, cp = 0.5, self.vessel_density, self.vessel_cp
-                        h = self.h_out  # Heat transfer coefficient
+                    if "thermal_conductivity" in self.input["vessel"].keys():
+                        k, rho, cp = (
+                            self.input["vessel"]["thermal_conductivity"],
+                            self.vessel_density,
+                            self.vessel_cp,
+                        )
                         nn = 11  # number of nodes
-                        z = np.linspace(0, L, nn)
+                        z = np.linspace(0, self.thickness, nn)
                         mesh = tm.Mesh(z, tm.LinearElement)  # Or `QuadraticElement` to
-                        # use quadratic shape functions
                         bc = [
-                            {"h": h, "T_inf": self.Tamb},  # convective bc on the left
-                            {
-                                "q": -self.Q_inner[i]
-                                / self.surf_area_inner
-                                # "h": self.h_inside[i],
-                                # "T_inf": self.T_fluid[i - 1],
-                            },
-                        ]  # T on the right
-                        # Material model (CPEEK is a function that takes T as input)
+                            {"q": -self.Q_outer[i] / self.surf_area_outer},
+                            {"q": -self.Q_inner[i] / self.surf_area_inner},
+                        ]
                         cpeek = tm.isothermal_model(k, rho, cp)
-
-                        # Define and solve problem
                         domain = tm.Domain(mesh, [cpeek], bc)
                         if type(T_profile) == type(int()) and T_profile == 0:
                             domain.set_T(self.Tamb * np.ones(nn))
                         else:
                             domain.set_T(T_profile[-1, :])
 
-                        # Solver details
-                        theta = 0.5
+                        theta = 0.5  # Crank-Nicholson scheme
                         dt = self.tstep / 10
                         solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
                         t, T_profile = tm.solve_ht(domain, solver)
@@ -629,8 +619,8 @@ class HydDown:
                     self.Q_inner[i] = 0.0
                     self.T_vessel[i] = self.T_vessel[0]
 
-                NMOL = self.mass_fluid[i - 1] / self.MW
-                NMOL_ADD = (self.mass_fluid[i] - self.mass_fluid[i - 1]) / self.MW
+                # NMOL = self.mass_fluid[i - 1] / self.MW
+                # NMOL_ADD = (self.mass_fluid[i] - self.mass_fluid[i - 1]) / self.MW
                 # New
                 U_start = self.U_mass[i - 1] * self.mass_fluid[i - 1]
 
@@ -859,13 +849,28 @@ class HydDown:
                         "g-.",
                         label="Wall high",
                     )
-                if "wall_low" in temp:
+                if "wall_inner" in temp:
                     plt.plot(
-                        np.asarray(temp["wall_low"]["time"]),
-                        np.asarray(temp["wall_low"]["temp"]) - 273.15,
+                        np.asarray(temp["wall_inner"]["time"]),
+                        np.asarray(temp["wall_inner"]["temp"]) - 273.15,
                         "g--",
-                        label="Wall low",
+                        label="Inner wall",
                     )
+                if "wall_high" in temp:
+                    plt.plot(
+                        np.asarray(temp["wall_high"]["time"]),
+                        np.asarray(temp["wall_high"]["temp"]) - 273.15,
+                        "g-.",
+                        label="Wall high",
+                    )
+                if "wall_outer" in temp:
+                    plt.plot(
+                        np.asarray(temp["wall_outer"]["time"]),
+                        np.asarray(temp["wall_outer"]["temp"]) - 273.15,
+                        "g--",
+                        label="Outer wall",
+                    )
+
         plt.legend(loc="best")
         plt.xlabel("Time (seconds)")
         plt.ylabel("Temperature ($^\circ$C)")
