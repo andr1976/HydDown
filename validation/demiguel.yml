@@ -1,0 +1,39 @@
+vessel:
+  length: 0.697995
+  diameter: 0.23
+  thickness: 0.0245
+  heat_capacity: 1134
+  density: 1249.
+  thermal_conductivity: 0.385 
+  orientation: "horizontal"
+initial:
+  temperature: 293.
+  pressure: 70000000.
+  fluid: "H2" 
+calculation:
+  type: "energybalance"
+  time_step: .3
+  end_time: 690.
+valve:
+  flow: "discharge"
+  type: "mdot"
+  time: [0, 300, 460,  520, 690] 
+  mdot: [0.0018, 0.0018, 0.0018, 0.0008, 0.00055]
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 298.15
+  D_throat : 0.0050
+  h_outer: 2. 
+  h_inner: "calc"
+validation:
+#  pressure:
+#    time: [0, 24.543, 49.952, 75.072, 99.904, 125.02, 149.86, 175.26, 199.81, 225.22, 250.05, 275.17, 300]
+#    pres: [698.23, 275.79, 145.79, 91.788, 60.977, 43.049, 28.985, 20.076,11.164,7.4083,3.6502,2.4699,0]
+  temperature:
+    wall_outer:
+      time: [11.4,86.2,161,238,313,388,462,539,614,689]
+      temp: [300,300,299,299,297,294,291,287,284,281]
+    gas_mean: 
+      time: [16.5, 90.6, 165, 239, 313,385,459,534,606,681]
+      temp: [297,281,266,253,241,229,218,220,226,233]
