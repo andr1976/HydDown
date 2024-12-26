@@ -13,7 +13,6 @@ calculation:
   type: "energybalance"
   time_step: 0.01
   end_time: 50.
-  eta: 1.0
 valve:
   flow: "discharge"
   type: "orifice"
