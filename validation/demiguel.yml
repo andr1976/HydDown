@@ -7,7 +7,7 @@ vessel:
   thermal_conductivity: 0.385 
   orientation: "horizontal"
 initial:
-  temperature: 293.
+  temperature: 298.15
   pressure: 70000000.
   fluid: "H2" 
 calculation:
