@@ -1,7 +1,5 @@
 # Thermeshc code adapted verbatim from https://github.com/wjbg/thermesh
 #
-
-
 from __future__ import annotations
 import numpy as np
 from typing import Callable, Union
@@ -51,7 +49,6 @@ class Domain:
     ==========
     mesh : Mesh
         Object with mesh information.
-
     bc : two-item list of dicts
         The boundary conditions are provided in a two-item list of
         dictionaries. The first dictionary (or zeroth item in the list)
@@ -61,14 +58,11 @@ class Domain:
         an applied temperature, "h" and "T_inf" the convective heat transfer
         coefficient and far field temperature, respectively, while "q"
         represents a direct flux on the surface which is directed inwards.
-
     constitutive_model : list[function]
         Functions that takes temperature as an input and provides a
         dictionary with the following keys: k, cp, rho. The list has a
         length equal to the number of subdomains in the mesh. The i-th
         function in the list belongs to the i-th subdomain.
-
-
     t : float
         Time.
     T : nd.array(dim=1, len=mesh.nn)
@@ -239,7 +233,7 @@ def isothermal_model(k: float, rho: float, cp: float) -> Callable:
     """
 
     def model(T: float) -> dict[str, float]:
-        """An isothermal constitutive model.
+        """A isothermal constitutive model.
 
         Parameter
         ---------

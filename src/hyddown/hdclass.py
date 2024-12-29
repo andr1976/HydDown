@@ -436,9 +436,11 @@ class HydDown:
 
         self.time_array[0] = 0
 
+        # setting heat transfer parameters
+        T_profile, T_profile2 = 0, 0
+
         # Run actual integration by updating values by numerical integration/time stepping
         # Mass of fluid is calculated from previous time step mass and mass flow rate
-        T_profile = 0
         for i in tqdm(
             range(1, len(self.time_array)),
             desc="hyddown",
@@ -546,36 +548,87 @@ class HydDown:
                     ) * self.tstep / (
                         self.vessel_cp * self.vessel_density * self.vol_solid
                     )
-                    self.T_inner_wall[i] = self.T_vessel[i]
-                    self.T_outer_wall[i] = self.T_vessel[i]
                     if "thermal_conductivity" in self.input["vessel"].keys():
+                        theta = 0.5  # Crank-Nicholson scheme
+                        dt = self.tstep / 10
                         k, rho, cp = (
                             self.input["vessel"]["thermal_conductivity"],
                             self.vessel_density,
                             self.vessel_cp,
                         )
-                        nn = 11  # number of nodes
-                        z = np.linspace(0, self.thickness, nn)
-                        mesh = tm.Mesh(z, tm.LinearElement)  # Or `QuadraticElement` to
-                        bc = [
-                            {"q": -self.Q_outer[i] / self.surf_area_outer},
-                            {"q": -self.Q_inner[i] / self.surf_area_inner},
-                        ]
-                        cpeek = tm.isothermal_model(k, rho, cp)
-                        domain = tm.Domain(mesh, [cpeek], bc)
-                        if type(T_profile) == type(int()) and T_profile == 0:
-                            domain.set_T(self.Tamb * np.ones(nn))
-                        else:
-                            domain.set_T(T_profile[-1, :])
+                        if "liner_thermal_conductivity" in self.input["vessel"].keys():
+                            nn = 11  # number of nodes
+                            z = np.linspace(0, self.thickness, nn)
+                            mesh = tm.Mesh(
+                                z, tm.LinearElement
+                            )  # Or `QuadraticElement` to
+                            bc = [
+                                {"q": -self.Q_outer[i] / self.surf_area_outer},
+                                {"q": -self.Q_inner[i] / self.surf_area_inner},
+                            ]
+                            cpeek = tm.isothermal_model(k, rho, cp)
+                            domain = tm.Domain(mesh, [cpeek], bc)
 
-                        theta = 0.5  # Crank-Nicholson scheme
-                        dt = self.tstep / 10
-                        solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
-                        t, T_profile = tm.solve_ht(domain, solver)
-                        self.T_inner_wall[i] = (
-                            T_profile[-1, -1] + T_profile[-1, -1]
-                        ) / 2
-                        self.T_outer_wall[i] = T_profile[-1, 0]
+                            if type(T_profile) == type(int()) and T_profile == 0:
+                                domain.set_T(self.Tamb * np.ones(nn))
+                            else:
+                                domain.set_T(T_profile[-1, :])
+
+                            solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
+                            t, T_profile = tm.solve_ht(domain, solver)
+
+                            self.T_outer_wall[i] = T_profile[-1, 0]
+                            self.T_inner_wall[i] = T_profile[-1, -1]
+                        else:
+                            # k, rho, cp = (
+                            #     self.input["vessel"]["thermal_conductivity"],
+                            #     self.vessel_density,
+                            #     self.vessel_cp,
+                            # )
+                            liner = tm.isothermal_model(k, rho, cp)
+                            shell = tm.isothermal_model(100 * k, rho, cp)
+                            # Domain and mesh for composite
+                            thk = 17e-3  # thickness in m
+                            nn = 11  # number of nodes
+                            z_comp = np.linspace(0, thk, nn)  # node locations
+                            # the bottom surface is located at z = 0.0
+
+                            # # Domain and mesh for PEEK
+                            thk = 7e-3  # thickness in m
+                            # # nn = 11  # number of nodes
+                            z_peek = np.linspace(-thk, 0, nn)  # node locations
+                            # # the top surface is now located at z = 0.0
+                            z2 = np.hstack((z_peek, z_comp[1:]))
+                            mesh2 = tm.Mesh(
+                                z2, tm.LinearElement
+                            )  # or tm.QuadraticElement
+                            for j, elem in enumerate(mesh2.elem):
+                                if elem.nodes.mean() > 0.0:
+                                    mesh2.subdomain[j] = 1
+
+                            # # The boundary conditions are the same as for TSC.
+                            bc = [
+                                {"q": -self.Q_outer[i] / self.surf_area_outer},
+                                {"q": -self.Q_inner[i] / self.surf_area_inner},
+                            ]
+                            # # bc = [{"T": 290}, {"T": 290}]
+                            domain2 = tm.Domain(mesh2, [liner, shell], bc)
+
+                            # # Next we assign the temperature distribution. For now we will average
+                            # # the temperature at the contact (more exact estimations take into
+                            # # account the density, specific heat and element size...)
+                            if type(T_profile2) == type(int()) and T_profile2 == 0:
+                                domain2.set_T(self.Tamb * np.ones(len(mesh2.nodes)))
+                            else:
+                                domain2.set_T(T_profile2[-1, :])
+                            solver2 = {"dt": dt, "t_end": self.tstep, "theta": theta}
+                            t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
+                            self.T_outer_wall[i] = T_profile2[-1, 0]
+                            self.T_inner_wall[i] = T_profile2[-1, -1]
+
+                    else:
+                        self.T_inner_wall[i] = self.T_vessel[i]
+                        self.T_outer_wall[i] = self.T_vessel[i]
 
                 elif self.heat_method == "s-b":
                     if self.vessel_orientation == "horizontal":
@@ -647,7 +700,6 @@ class HydDown:
                     + self.tstep * self.Q_inner[i]
                 )
                 self.U_mass[i] = U_end / self.mass_fluid[i]
-
                 P1, T1, self.U_res[i] = self.UDproblem(
                     U_end / self.mass_fluid[i],
                     self.rho[i],
