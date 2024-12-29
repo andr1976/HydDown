@@ -1,0 +1,39 @@
+vessel:
+  length: 0.7466
+  diameter: 0.18
+  thickness: 0.017
+  heat_capacity: 1020
+  density: 1360.
+  thermal_conductivity: 0.5 
+  liner_thickness: 0.007
+  liner_heat_capacity: 1584
+  liner_density: 945.
+  liner_thermal_conductivity: 0.385 
+  orientation: "horizontal"
+initial:
+  temperature: 293.
+  pressure: 70000000.
+  fluid: "He" 
+calculation:
+  type: "energybalance"
+  time_step: .2
+  end_time: 300.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter : 0.001
+  discharge_coef: 0.9
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 293.15
+  h_outer: 8. 
+  h_inner: "calc"
+validation:
+  pressure:
+    time: [0, 24.543, 49.952, 75.072, 99.904, 125.02, 149.86, 175.26, 199.81, 225.22, 250.05, 275.17, 300]
+    pres: [698.23, 275.79, 145.79, 91.788, 60.977, 43.049, 28.985, 20.076,11.164,7.4083,3.6502,2.4699,0]
+  temperature:
+    gas_mean: 
+      time: [0, 24.543, 49.952, 75.072, 99.904, 125.02, 149.86, 175.26, 199.81, 225.22, 250.05, 275.17, 300]
+      temp: [292.52, 246.99, 202.36, 183.85, 177.51, 178.82, 183.29, 188.66,194.47,200.74,206.56,212.38,216.85]

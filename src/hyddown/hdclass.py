@@ -503,7 +503,6 @@ class HydDown:
                                 self.diameter,
                             )
                         else:
-                            # T_film = (self.T_fluid[i - 1] + self.T_vessel[i - 1]) / 2
                             T_film = (
                                 self.T_fluid[i - 1] + self.T_inner_wall[i - 1]
                             ) / 2
@@ -512,7 +511,6 @@ class HydDown:
                             )
                             hi = tp.h_inside(
                                 L,
-                                # self.T_vessel[i - 1],
                                 self.T_inner_wall[i - i],
                                 self.T_fluid[i - 1],
                                 self.transport_fluid,
@@ -521,22 +519,12 @@ class HydDown:
                         hi = self.h_in
 
                     self.h_inside[i] = hi
-                    # self.Q_inner[i] = (
-                    #     self.surf_area_inner
-                    #     * hi
-                    #     * (self.T_vessel[i - 1] - self.T_fluid[i - 1])
-                    # )
+
                     self.Q_inner[i] = (
                         self.surf_area_inner
                         * hi
                         * (self.T_inner_wall[i - 1] - self.T_fluid[i - 1])
                     )
-
-                    # self.Q_outer[i] = (
-                    #     self.surf_area_outer
-                    #     * self.h_out
-                    #     * (self.Tamb - self.T_vessel[i - 1])
-                    # )
 
                     self.Q_outer[i] = (
                         self.surf_area_outer
@@ -556,7 +544,10 @@ class HydDown:
                             self.vessel_density,
                             self.vessel_cp,
                         )
-                        if "liner_thermal_conductivity" in self.input["vessel"].keys():
+                        if (
+                            "liner_thermal_conductivity"
+                            not in self.input["vessel"].keys()
+                        ):
                             nn = 11  # number of nodes
                             z = np.linspace(0, self.thickness, nn)
                             mesh = tm.Mesh(
@@ -580,51 +571,46 @@ class HydDown:
                             self.T_outer_wall[i] = T_profile[-1, 0]
                             self.T_inner_wall[i] = T_profile[-1, -1]
                         else:
-                            # k, rho, cp = (
-                            #     self.input["vessel"]["thermal_conductivity"],
-                            #     self.vessel_density,
-                            #     self.vessel_cp,
-                            # )
-                            liner = tm.isothermal_model(k, rho, cp)
-                            shell = tm.isothermal_model(100 * k, rho, cp)
-                            # Domain and mesh for composite
-                            thk = 17e-3  # thickness in m
+                            k_liner = self.input["vessel"]["liner_thermal_conductivity"]
+                            rho_liner = self.input["vessel"]["liner_density"]
+                            cp_liner = self.input["vessel"]["liner_heat_capacity"]
+                            liner = tm.isothermal_model(k_liner, rho_liner, cp_liner)
+                            # shell = tm.isothermal_model(k, rho, cp)
+                            shell = tm.isothermal_model(k, rho, cp)
+
+                            # Domain and mesh for shell
+                            thk = self.input["vessel"]["thickness"]  # thickness in m
                             nn = 11  # number of nodes
-                            z_comp = np.linspace(0, thk, nn)  # node locations
+                            z_shell = np.linspace(0, thk, nn)  # node locations
                             # the bottom surface is located at z = 0.0
 
-                            # # Domain and mesh for PEEK
-                            thk = 7e-3  # thickness in m
+                            # # Domain and mesh for liner
+                            thk = self.input["vessel"][
+                                "liner_thickness"
+                            ]  # thickness in m
                             # # nn = 11  # number of nodes
-                            z_peek = np.linspace(-thk, 0, nn)  # node locations
+                            z_liner = np.linspace(-thk, 0, nn)  # node locations
                             # # the top surface is now located at z = 0.0
-                            z2 = np.hstack((z_peek, z_comp[1:]))
-                            mesh2 = tm.Mesh(
-                                z2, tm.LinearElement
-                            )  # or tm.QuadraticElement
+                            z2 = np.hstack((z_liner, z_shell[1:]))
+                            mesh2 = tm.Mesh(z2, tm.LinearElement)
                             for j, elem in enumerate(mesh2.elem):
                                 if elem.nodes.mean() > 0.0:
                                     mesh2.subdomain[j] = 1
-
-                            # # The boundary conditions are the same as for TSC.
                             bc = [
-                                {"q": -self.Q_outer[i] / self.surf_area_outer},
                                 {"q": -self.Q_inner[i] / self.surf_area_inner},
+                                {"q": -self.Q_outer[i] / self.surf_area_outer},
                             ]
-                            # # bc = [{"T": 290}, {"T": 290}]
                             domain2 = tm.Domain(mesh2, [liner, shell], bc)
 
-                            # # Next we assign the temperature distribution. For now we will average
-                            # # the temperature at the contact (more exact estimations take into
-                            # # account the density, specific heat and element size...)
                             if type(T_profile2) == type(int()) and T_profile2 == 0:
                                 domain2.set_T(self.Tamb * np.ones(len(mesh2.nodes)))
                             else:
                                 domain2.set_T(T_profile2[-1, :])
                             solver2 = {"dt": dt, "t_end": self.tstep, "theta": theta}
                             t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
-                            self.T_outer_wall[i] = T_profile2[-1, 0]
-                            self.T_inner_wall[i] = T_profile2[-1, -1]
+
+                            self.T_outer_wall[i] = T_profile2[-1, -1]
+                            self.T_inner_wall[i] = T_profile2[-1, 0]
 
                     else:
                         self.T_inner_wall[i] = self.T_vessel[i]

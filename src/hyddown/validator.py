@@ -66,6 +66,14 @@ def validate_mandatory_ruleset(input):
                     "min": 0.0001,
                 },
                 "density": {"required": False, "type": "number", "min": 1},
+                "liner_thickness": {"required": False, "type": "number", "min": 0.0},
+                "liner_heat_capacity": {"required": False, "type": "number", "min": 1},
+                "liner_thermal_conductivity": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.0001,
+                },
+                "liner_density": {"required": False, "type": "number", "min": 1},
                 "orientation": {
                     "required": False,
                     "type": "string",
@@ -367,6 +375,26 @@ def heat_transfer_validation(input):
                             "min": 0.0001,
                         },
                         "density": {"required": True, "type": "number", "min": 1},
+                        "liner_thickness": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0,
+                        },
+                        "liner_heat_capacity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 1,
+                        },
+                        "liner_thermal_conductivity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
+                        "liner_density": {
+                            "required": False,
+                            "type": "number",
+                            "min": 1,
+                        },
                         "orientation": {
                             "required": True,
                             "type": "string",
