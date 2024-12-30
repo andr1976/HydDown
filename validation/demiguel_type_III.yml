@@ -1,7 +1,7 @@
 vessel:
   length: 0.6056
   diameter: 0.29
-  thickness: 0.0235
+  thickness: 0.02
   heat_capacity: 1298
   density: 1578.
   thermal_conductivity: 0.5
