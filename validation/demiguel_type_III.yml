@@ -1,11 +1,11 @@
 vessel:
   length: 0.6056
   diameter: 0.29
-  thickness: 0.020
+  thickness: 0.0235
   heat_capacity: 1298
   density: 1578.
   thermal_conductivity: 0.5
-  liner_thickness: 0.005
+  liner_thickness: 0.0065
   liner_heat_capacity: 900
   liner_density: 2700.
   liner_thermal_conductivity: 237 
