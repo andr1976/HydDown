@@ -43,6 +43,18 @@ Andreasen, A., (2021). HydDown: A Python package for calculation of hydrogen (or
       journal = {Journal of Open Source Software} 
     }
 
+This manual can be cited as [@Andreasen2024]:
+
+Anders Andreasen. HydDown - User guide and technical reference. 2024. ⟨hal-04858235⟩ 
+
+    @report{Andreasen2024, 
+      url = {https://hal.science/hal-04858235v1}, 
+      year = {2024}, 
+      publisher = {HAL open science}, 
+      author = {Anders Andreasen}, 
+      title = {HydDown -- user guide and technical reference}, 
+    }
+
 ## Background
 HydDown started as a small spare-time project for calculation of vessel filling and depressurization behaviour.
 This was mainly to demonstrate that although perceived as a very tedious and difficult task to write your own code for such an apparently complex problem, actually only a fairly limited amount of code is necessary if you have a good thermodynamic backend.
@@ -1120,6 +1132,7 @@ The main reason for the inability to match the vessel wall temperature is that t
 Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
 
 ## 1-D transient heat transfer
+A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just beacause of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned propoerties. These properties, in particular the thermal conductivty, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution. 
 
 ### Validation against commercial simulation tool 
 The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. [@tbl:1D-valid-1]. 
@@ -1146,8 +1159,8 @@ The comparison between HydDown results and the corresponding simulations using U
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with simulation performed with Unisim Design Dynamics. The figure shows calculated gas and wall temperature (lines) compared to Unisim simulations (left) with Unisim results shown with points, calculated and Unisim simulation pressure (denoted "Experimental") (right).](docs/img/unisim_validation.png){#fig:unisim_val}
 
 
-### Validation against KIT experiment
-Using data from Molkov *et al.* [@MOLKOV1][@MOLKOV2] experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*m, see references within refs. [@MOLKOV1][@MOLKOV2]. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*.
+### Validation against KIT experiment (Type IV)
+Using data from Molkov *et al.* [@MOLKOV1][@MOLKOV2] experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*m, see references within refs. [@MOLKOV1][@MOLKOV2]. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*. The initial conditions and vessel details are summarised below cf. [@tbl:1D-KIT].
 
 | Type IV tank        |                |
 |---------------------|----------------|
@@ -1170,7 +1183,10 @@ Using data from Molkov *et al.* [@MOLKOV1][@MOLKOV2] experiments performed at HY
 | Initial temperature | 20 $^\circ$C   |
 | Gas                 | Helium         |
 
-In HydDown the type IV pressure vessel geometry as assumed that of a flat ended cylinder, with the length adjusted to give a total inventory volume of 19 liter. Furthermore, the transient 1D heat conductivity model applies a single value for density, heat capacity and thermal conductivity. In order to simulate the system a lumped heat cpacity and density for the typi IV cylinder is made. The thermal conductivty is set to that of the liner material, and the outer heat transfer coefficient is set to 8 W/(m$^2$K) as applied in the H2fills software [@KUROKI].
+: Key vessel data and intial conditions {#tbl:1D-KIT}
+
+
+In HydDown the type IV pressure vessel geometry as assumed that of a flat ended cylinder, with the length adjusted to give a total inventory volume of 19 liter.  In order to simulate the system a lumped heat capacity and density for the type IV cylinder is made. The thermal conductivty is set to that of the liner material, and the outer heat transfer coefficient is set to 8 W/(m$^2$K) as applied in the H2fills software [@KUROKI]. For a type IV vessel, the application of an average value for density, heat capacity and thermal conductivity can be an acceptable approximation since the liner and composite shell material are not too dissimilar.
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for comparison with KIT experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature (left) and calculated and measured pressure (right).](docs/img/KIT_1.png){#fig:KIT_val}
 
@@ -1179,4 +1195,39 @@ HydDown simulations are compared with the KIT experiement in Figure [@fig:KIT_va
 Molkov *et al.* [@MOLKOV1] also made a thermal analysis of the thermocouple arrangement used in KIT experiment in order to estimate thermal lag in the temperature measurement. Incorporating the thermal model of the thermocouple arrangement displayed an improved prediction of the time of the minimum measured gas temperature as well as the final measured temperature. 
 
 
+## Validation against GasTeF experiments (Type IV)
+The experimental setup is described in more detail in refs. [@ACOSTA][@DEMIGUEL]. Different tank types where tested both for filling and discharge including a 29 liter type IV tank and a 40 liter type III tank. In the following the type IV tank is modelled. Key details such as the initial conditions and vessel details are summarised below cf. [@tbl:1D-GasTeF]. The geometry and thermal properties of the liner and composite shell material was not informed in the cited references and it is assumed to be similar to the KIT vessel descibed in the previous section, with the liner and composite shell thickness scaled to match the total thickness of the GasTeF type IV vessel.  
 
+| Type IV tank        |                |
+|---------------------|----------------|
+| External length     | 827 mm         |
+| ID                  | 230 mm         |
+| OD                  | 279 mm         |
+| Liner               | HDPE           |
+| Composite shell     | G&CRPE         |
+| **Initial conditions** |             |
+| Initial pressure    |  700 bar       |
+| Initial temperature | 25$\pm$2$^\circ$C   |
+| Gas                 | Hydrogen       |
+| Discharge rate      | 1.8 g/s        |
+
+: Key vessel data and intial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after whicg it drops {#tbl:1D-GasTeF}
+
+The simulations with HydDown and comparison against the GasTeF experient is shown in Figure {@fig:KIT_val}. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments. 
+
+
+![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with GasTeF experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature.](docs/img/demiguel.png){#fig:KIT_val}
+
+As seen the prediction of the external surface temperature of the composite shell is matched very well. The average gas temperature as calculated with HydDown matches the temperatures recorded in the lower half of the test vessel. Further, the minimum in gas temperature between 450 and 500 seconds are also matched well. The measured pressure was not reported in ref. [@DEMIGUEL]
+
+## Validation against Type III cylinder experiments
+As shown previously type IV cylinder thermal behaviour is matchhed fairly well when the liner/composite thermal material propoerties are lumped. For a Tyoe III vessel which has very dissimilar thermal propoerties of the liner and the composite shell, this approach is not adviceable. Luckily, the implemented 1D trannsient heat conduction code *thermesh* allows modelling bi-materials and this is also implemented in HydDown. 
+
+Unfortunately, it has not been possible to find reported experiments which include detailed information about the exact liner and shell composite thickness. 
+
+
+# Similar software 
+To be written
+
+# Future developmet of HydDown
+To be written
