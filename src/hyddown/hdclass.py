@@ -206,6 +206,7 @@ class HydDown:
         self.T_vessel = np.zeros(data_len)
         self.T_inner_wall = np.zeros(data_len)
         self.T_outer_wall = np.zeros(data_len)
+        self.T_bonded_wall = np.zeros(data_len)
         self.Q_outer = np.zeros(data_len)
         self.Q_inner = np.zeros(data_len)
         self.h_inside = np.zeros(data_len)
@@ -219,7 +220,7 @@ class HydDown:
         self.mass_fluid = np.zeros(data_len)
         self.mass_rate = np.zeros(data_len)
         self.time_array = np.zeros(data_len)
-
+        self.temp_profile = []
         self.rho0 = (
             self.fluid.rhomass()
         )  # PropsSI("D", "T", self.T0, "P", self.p0, self.species)
@@ -342,6 +343,7 @@ class HydDown:
         self.T_vessel[0] = self.T0
         self.T_inner_wall[0] = self.T0
         self.T_outer_wall[0] = self.T0
+        self.T_bonded_wall[0] = self.T0
         if self.input["valve"]["flow"] == "discharge":
             self.T_vent[0] = self.T0
         self.H_mass[0] = self.fluid.hmass()
@@ -592,6 +594,7 @@ class HydDown:
                             z_liner = np.linspace(-thk, 0, nn)  # node locations
                             # # the top surface is now located at z = 0.0
                             z2 = np.hstack((z_liner, z_shell[1:]))
+                            self.z = z2
                             mesh2 = tm.Mesh(z2, tm.LinearElement)
                             for j, elem in enumerate(mesh2.elem):
                                 if elem.nodes.mean() > 0.0:
@@ -611,7 +614,8 @@ class HydDown:
 
                             self.T_outer_wall[i] = T_profile2[-1, -1]
                             self.T_inner_wall[i] = T_profile2[-1, 0]
-
+                            self.T_bonded_wall[i] = T_profile2[-1, (nn - 1)]
+                            self.temp_profile.append(T_profile2[-1, :])
                     else:
                         self.T_inner_wall[i] = self.T_vessel[i]
                         self.T_outer_wall[i] = self.T_vessel[i]
@@ -844,7 +848,16 @@ class HydDown:
 
         plt.subplot(221)
         plt.plot(self.time_array, self.T_fluid - 273.15, "b", label="Fluid")
-        plt.plot(self.time_array, self.T_vessel - 273.15, "g", label="Vessel")
+        if "thermal_conductivity" not in self.input["vessel"].keys():
+            plt.plot(self.time_array, self.T_vessel - 273.15, "g", label="Vessel")
+        if "liner_thermal_conductivity" in self.input["vessel"].keys():
+            plt.plot(
+                self.time_array,
+                self.T_bonded_wall - 273.15,
+                "g",
+                label="Liner/composite",
+            )
+
         plt.plot(self.time_array, self.T_inner_wall - 273.15, "g--", label="Inner wall")
         plt.plot(self.time_array, self.T_outer_wall - 273.15, "g-.", label="Outer wall")
         if self.input["valve"]["flow"] == "discharge":

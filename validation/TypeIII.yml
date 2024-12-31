@@ -1,0 +1,32 @@
+vessel:
+  length: 0.697995
+  diameter: 0.23
+  thickness: 0.020
+  heat_capacity: 1298
+  density: 1578.
+  thermal_conductivity: 0.5
+  liner_thickness: 0.005
+  liner_heat_capacity: 900
+  liner_density: 2700.
+  liner_thermal_conductivity: 237  
+  orientation: "horizontal"
+initial:
+  temperature: 298.15
+  pressure: 70000000.
+  fluid: "H2" 
+calculation:
+  type: "energybalance"
+  time_step: .3
+  end_time: 690.
+valve:
+  flow: "discharge"
+  type: "mdot"
+  time: [0, 300, 480,  520, 690] 
+  mdot: [0.0018, 0.0018, 0.0018, 0.0008, 0.00055]
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 298.15
+  h_outer: 2. 
+  h_inner: "calc"
+

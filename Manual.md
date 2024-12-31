@@ -1224,6 +1224,31 @@ As seen the prediction of the external surface temperature of the composite shel
 As shown previously type IV cylinder thermal behaviour is matchhed fairly well when the liner/composite thermal material propoerties are lumped. For a Tyoe III vessel which has very dissimilar thermal propoerties of the liner and the composite shell, this approach is not adviceable. Luckily, the implemented 1D trannsient heat conduction code *thermesh* allows modelling bi-materials and this is also implemented in HydDown. 
 
 Unfortunately, it has not been possible to find reported experiments which include detailed information about the exact liner and shell composite thickness. 
+In lack of a good and complete validation cases, an example is made using the KIT cylinder in the previous section and replacing  the HPDE liner with an aluminum liner. 
+
+
+| Type IV tank        |                |
+|---------------------|----------------|
+| External length     | 904 mm         |
+| ID                  | 180 mm         |
+| OD                  | 228 mm         |
+| **Aluminum liner**      |                |
+| Thickness           | 7 mm           |
+| Density             | 2700 kg/m$^3$   |
+| Heat capacity       |900 J/(kg K)   |
+| Thermal conductivity|237 W/(m K)   |
+| **CFRP shell**      |                |
+| Thickness           |17 mm           |
+| Density             |1360 kg/m$^3$   |
+| Heat capacity       | 1020 J/(kg K)  |
+| Thermal conductivity| 0.5 W/(m K)    |
+| **Initial conditions** |             | 
+| Outside $h$         | 8 W/(m$^2$ K)  |
+| Initial pressure    |  700 bar       |
+| Initial temperature | 20 $^\circ$C   |
+| Gas                 | Helium         |
+
+: Key vessel data and intial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after whicg it drops. {#tbl:1D-TypeIII}
 
 
 # Similar software 
