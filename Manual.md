@@ -43,18 +43,6 @@ Andreasen, A., (2021). HydDown: A Python package for calculation of hydrogen (or
       journal = {Journal of Open Source Software} 
     }
 
-This manual can be cited as [@Andreasen2024]:
-
-Anders Andreasen. HydDown - User guide and technical reference. 2024. ⟨hal-04858235⟩ 
-
-    @report{Andreasen2024, 
-      url = {https://hal.science/hal-04858235v1}, 
-      year = {2024}, 
-      publisher = {HAL open science}, 
-      author = {Anders Andreasen}, 
-      title = {HydDown -- user guide and technical reference}, 
-    }
-
 ## Background
 HydDown started as a small spare-time project for calculation of vessel filling and depressurization behaviour.
 This was mainly to demonstrate that although perceived as a very tedious and difficult task to write your own code for such an apparently complex problem, actually only a fairly limited amount of code is necessary if you have a good thermodynamic backend.
@@ -102,7 +90,7 @@ where python3 is the symlink or full path to the python3 executable installed on
 
 ## Requirements
 
-- [Python](http://www.python.org) (Check CoolProp for latest suppeorted python version)
+- [Python](http://www.python.org) (3.8 - at least python3, not 3.9, see below)
 - [Numpy](https://numpy.org/)
 - [matplotlib](https://matplotlib.org/)
 - [Coolprop (6.4.1)](http://www.coolprop.org/)
@@ -112,15 +100,17 @@ where python3 is the symlink or full path to the python3 executable installed on
 - [Scipy](https://www.scipy.org/)
 - [tqdm](https://tqdm.github.io/)
 
+It has been reported that the CoolProp `pip` package does not run out of the box with python 3.9. Hence, python 3.8 is recommended. 
+
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip.
-It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but this hasn't been checked.
+It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but I haven't checked.
 
 ## Testing 
 Although testing is mainly intended for automated testing (CI) during development using github actions, testing of the installed package can be done for source install by:
 
     python -m pytest 
 
-run from the root folder. In writing 33+ test should pass.
+run from the root folder. In writing 33 test should pass.
 
 For the package installed with pip navigate to the install directory `../site-packages/hyddown` and run:
 
@@ -143,7 +133,6 @@ Length | m
 Area | m$^2$
 Heat flux | W/m$^2$
 Heat transfer coefficient | W/(m$^2$ K)
-Thermal conductivity | W/(m K)
 Density | kg/m$^3$
 Heat capacity | J/(kg K)
 
@@ -163,7 +152,7 @@ The present document is typeset using Markdown + [pandoc](https://pandoc.org/) w
 
 MIT License
 
-Copyright (c) 2021-2025 Anders Andreasen
+Copyright (c) 2021 Anders Andreasen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -397,7 +386,12 @@ vessel:
   diameter: number, mandatory
   thickness: number, required when heat transfer is calculated
   heat_capacity: number, required when heat transfer is calculated
-  density: number, required when heat transfer is calculated 
+  density: number, required when heat transfer is calculated
+  thermal_conductivity: number, optional, required for 1-D transient heat conduction in vessel wall 
+  liner_thickness: number, optional, required when heat transfer is calculated for type III/IV vessels
+  liner_heat_capacity: number, optional, required when heat transfer is calculated for type III/IV vessels
+  liner_density: number, optional, required when heat transfer is calculated for type III/IV vessels
+  thermal_conductivity: number, optional, required for 1-D transient heat conduction in vessel wall for type III/IV vessels
   orientation: string, required when heat transfer is calculated
 ~~~
 
@@ -853,16 +847,16 @@ $$ Nu = Nu_{forced} +  Nu_{natural} = 0.56Re_d^{0.67} + 0.104Ra_H^{0.352} $$
 ### Conduction
 For accurate prediction of the outer and especially the inner wall temperature for correct estimation of internal convective heat transfer and the average material temperature, the general equation of 1-D unsteady heat transfer shall be solved:
 
-$$ \frac{\delta T}{\delta t} = \frac{k}{\rho c_p} \frac{\delta^2 T}{\delta x^2} $$
+$$ \frac{\delta T}{\delta t} = \frac{k}{C_p} \frac{\delta^2 T}{\delta x^2} $$
 
 - T is temperature
 - x is the spatial (1-D) coordinate
-- k is the thermal conductivity
-- $\rho$ is the material density
-- $C_p$ is the specific heat capacity 
+- k is the thermal conductivity 
+- $C_p$ is the heat capacity 
 
+Here it is written in Cartesian coordinates, but for most applications to pressure equipment, cylindrical coordinates are applicable, at least for the shell.
 To be solved, the initial values and boundary values must be specified.
-In its default state (if thermal cobductivity is not applied for the vessel), HydDown does not include the unsteady heat transfer model, i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature.
+In its present state, HydDown does not include the unsteady heat transfer model, i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature.
 This is obviously a crude approximation, but might be justified depending in the Biot number:
 
 $$ Bi = \frac{hL}{k} $$
@@ -873,17 +867,8 @@ Striednig *et al.* [@STRIEDNIG] concluded that for a type I (steel) cylinder the
 
 With a typical thermal conductivity of 45 $W/m K$ for steel and a heat transfer coefficient up to 600 $W/m^2 K$ [@woodfield] the Biot number for a vessel with a wall thickness of 2 cm is 0.27.
 This is significantly higher than that approximated by [@STRIEDNIG].
-However, the Biot number is significantly lower than 1, and the assumption of a uniform temperature is reasonable.
+However, the Biot number is lower than 1, and the assumption of a uniform temperature is reasonable.
 However, for increased wall thickness, and/or for different materials with lower thermal conductivity, the error may grow to an unacceptable level. 
-
-Especially for vessels with low conductivity materials (or very thick walls) accurate estimation of the vessel wall temperatures requires the 1-D transient heat transfer problem to be solved. HydDown incorporates the [*thermesh*](https://github.com/wjbg/thermesh) code provided under an MIT license by Wouter Grouve [@thermesh]. The implemented model applies Cartesian coodinates as also applied in the h2fills program by NREL [@KUROKI], i.e. the curved vessel wall is assumed a flat plate. This may to some extent be justied by the relatively large radius of a cylindrical storage container compared to the vessel wall thichness (see also justification references in [@KUROKI]). 
-
-In HydDown, the 1-D transient heat conductivity problem is solved with *thermesh* assuming temperature independent vessel material density, heat capacity and thermal conductivity applying the Crank-Nicholson scheme using Neumann boundary conditions:
-
-$$  -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=0} = q_\text{left}(t), \qquad
-    -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=L} = q_{\text{right}}(t) $$ 
-
-The heat flux at the outer (left) and inner (right) is calculated/updated for each major time step for the explicit solver for mass and energy balances. For each major time step *thermesh* is used to update the outer and inner wall temperature by solving the 1-D transient heat conductivity using a *minor* time step equal to 1/10th of the major time step and 11 nodes. For each time *thermesh* is called during major time steps the mesh is initialised with the temperature profile at the end of the former major time step. 
 
 ### Fire heat loads
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower [@scandpower] and API [@API521].
@@ -933,7 +918,7 @@ A simple (naive) explicit Euler scheme is implemented to integrate the mass bala
 
 $$ m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t  $$ {#eq:euler_mass}
 
-$$\dot{m}(i) = f(P,T,) $$
+$$ \dot{m}(i) = f(P,T,) $$
 
 For each step, the mass relief/ left in the vessel is known.
 Since the volume is fixed the mass density is directly given. 
@@ -950,8 +935,6 @@ $$ T(i+1) = T(i) $$
 $$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
 $$ P(i+1) = EOS(D(i+1),T(i+1)) $$
 
-The notation $EOS(T,P)$ refers to a call to CoolProp either via PropsSI or the AbstractState solving the equation of state for specified temperature and pressure. Different state pairs are applied includeing combinations of density (D), specific enthalpy (H), specific entropy (S), specific internal energy (U).  
- 
 ### Isenthalpic process
 For an isenthalpic process: 
 
@@ -991,10 +974,8 @@ For the vessel wall a simple heat balance is also made:
 $$ T_{wall}(i+1) = T_{wall}(i)  + \frac{\dot{Q}_{outer} - \dot{Q}_{inner} } {c_p m_{vessel}} \Delta t $$
 
 where $\dot{Q}_{outer}$ is the convective heat transfer to or from the ambient surroundings from the outer surface of the vessel, with positive values indicating that heat is transferred from the surroundings to the vessel wall.
-This is either a fixed heat transfer coefficient with a specified ambient temperature (outer surface) or a calculated fire heat load.
-$\dot{Q}_{inner}$ is the internal heat transfer, either a fixed number or calculated as natural convection (for discharge) or mixed natural and forced convection (filling). 
-
-When the temperature profile of the vessel wall is calculated using the 1-D transient conductivity equation the vessel temperature as calculated above represent the mean vessel temperature and addition to this the outer and inner wall temperatures are calculated. 
+This is either a fixed heat transfer coefficient (for now) with a specified ambient temperature or a calculated fire heat load.
+$\dot{Q}_{inner}$ is the internal heat transfer, either a fixed number or calculated as natural convection (for discharge) or mixed natural and forced convection (filling).
 
 If a fixed $\dot{Q}$ is provided or a fixed overall heat transfer coefficient is provided the vessel wall temperature heat balance is not solved. 
 
@@ -1028,8 +1009,6 @@ The pressure and temperature trajectory is visualised along with the fluid mixtu
 As seen from the figure, this case is borderline and the pressure/temperature trajectory just coincides with the dew line on the phase envelope.
 This plot is included in the example main script that comes with HydDown and serves as an important quality control. 
 
-For multi-component mixtures CoolProp does not provide solver for PH and UV-problems and these solvers have been included in HydDown by wrapping the CoolProp PT solver with a Nelder-Mead algorithm for solving for internal energy and density or pressure and enthalpy. 
-
 # Validation
 The code is provided as-is.
 However, comparisons have been made to a few experiments from the literature.
@@ -1039,8 +1018,6 @@ The following gases and modes are considered:
 - High pressure hydrogen discharge
 - High pressure hydrogen filling
 - High pressure nitrogen discharge
-
-Furthermore, HydDown has also been benchmarked against external code by Ruiz and Moscardelli [@maraggi], who compared their GeoH2 app against HydDown and found excellent agreement for both pressure, mass flow rate and gas temperature for three different cases of discharge and filling.
 
 ## Hydrogen discharge
 Calculations with HydDown for high pressure hydrogen vessel discharge have been compared to three experiments from [@byrnes].
@@ -1130,129 +1107,3 @@ It is also noted that the minimum temperature is reached at approximately the sa
 The calculated vessel inner wall temperature does not decline as rapidly as the experiments, but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature.
 The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperature.
 Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
-
-## 1-D transient heat transfer
-A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just beacause of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned propoerties. These properties, in particular the thermal conductivty, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution. 
-
-### Validation against commercial simulation tool 
-The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. [@tbl:1D-valid-1]. 
-
-
-| Parameter       | Value       |
-|-----------------|-------------|
-| Length          | 6.4 m      |
-| ID              | 0.619 m     |
-| Wall thickness  | 0.024 m    |
-| Density         | 2000 kg/m$^3$ |
-| Heat capacity   | 962 J/(kg K) |
-| Thermal conductivity | 0.5 W/(m K) |
-| Outside $h$ | 2 W/(m$^2$ K) |
-| Initial pressure| 182 bar|
-| Initial temperature| 6 $^\circ$C |
-|Discharge mass flow | 0.02 kg/s|
-| Gas | Hydrogen |
-
-: Key vessel data and intial conditions {#tbl:1D-valid-1}
-
-The comparison between HydDown results and the corresponding simulations using Unisim Design Dynamics are shown in Figure [@fig:unisim_val]: As seen from the results the results obtained using HydDown closely resembles the Unisim Design results. The outer wall temperature is matched perfectly and the final gas temperature and inner vessel temperature deviates marginally by 1.5 and 1.9 $^\circ$C, respectively. Unisim predicts a sligtly lower gas temeprature and HydDown predicts a slightly lower inner wall temperature.  
-
-![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with simulation performed with Unisim Design Dynamics. The figure shows calculated gas and wall temperature (lines) compared to Unisim simulations (left) with Unisim results shown with points, calculated and Unisim simulation pressure (denoted "Experimental") (right).](docs/img/unisim_validation.png){#fig:unisim_val}
-
-
-### Validation against KIT experiment (Type IV)
-Using data from Molkov *et al.* [@MOLKOV1][@MOLKOV2] experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*m, see references within refs. [@MOLKOV1][@MOLKOV2]. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*. The initial conditions and vessel details are summarised below cf. [@tbl:1D-KIT].
-
-| Type IV tank        |                |
-|---------------------|----------------|
-| External length     | 904 mm         |
-| ID                  | 180 mm         |
-| OD                  | 228 mm         |
-| **HDPE liner**      |                |
-| Thickness           | 7 mm           |
-| Density             | 945 kg/m$^3$   |
-| Heat capacity       |1584 J/(kg K)   |
-| Thermal conductivity|0.385 W/(m K)   |
-| **CFRP shell**      |                |
-| Thickness           |17 mm           |
-| Density             |1360 kg/m$^3$   |
-| Heat capacity       | 1020 J/(kg K)  |
-| Thermal conductivity| 0.5 W/(m K)    |
-| **Initial conditions** |             | 
-| Outside $h$         | 8 W/(m$^2$ K)  |
-| Initial pressure    |  700 bar       |
-| Initial temperature | 20 $^\circ$C   |
-| Gas                 | Helium         |
-
-: Key vessel data and intial conditions {#tbl:1D-KIT}
-
-
-In HydDown the type IV pressure vessel geometry as assumed that of a flat ended cylinder, with the length adjusted to give a total inventory volume of 19 liter.  In order to simulate the system a lumped heat capacity and density for the type IV cylinder is made. The thermal conductivty is set to that of the liner material, and the outer heat transfer coefficient is set to 8 W/(m$^2$K) as applied in the H2fills software [@KUROKI]. For a type IV vessel, the application of an average value for density, heat capacity and thermal conductivity can be an acceptable approximation since the liner and composite shell material are not too dissimilar.
-
-![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for comparison with KIT experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature (left) and calculated and measured pressure (right).](docs/img/KIT_1.png){#fig:KIT_val}
-
-HydDown simulations are compared with the KIT experiement in Figure [@fig:KIT_val]. As seen from the results the depressurisation pressure is matched very well. The experimental gas temperature is also matched fairly well. The lowest simulated gas temperature is 182.3 K and the lowest experimental temperature is 177.5 K a difference of 4.8 K. The minimum gas temoperature occurs at an earlier time compared to the experimental results. The formaer at approx. 75 sec. and the latter at approx. 100 sec. This is also in agreement with the simulation model presented by Molkov *et al.* [@MOLKOV1]. The final gas temperature of the simulations is 237 K compared to the experimental value of 216 K. 
-
-Molkov *et al.* [@MOLKOV1] also made a thermal analysis of the thermocouple arrangement used in KIT experiment in order to estimate thermal lag in the temperature measurement. Incorporating the thermal model of the thermocouple arrangement displayed an improved prediction of the time of the minimum measured gas temperature as well as the final measured temperature. 
-
-
-## Validation against GasTeF experiments (Type IV)
-The experimental setup is described in more detail in refs. [@ACOSTA][@DEMIGUEL]. Different tank types where tested both for filling and discharge including a 29 liter type IV tank and a 40 liter type III tank. In the following the type IV tank is modelled. Key details such as the initial conditions and vessel details are summarised below cf. [@tbl:1D-GasTeF]. The geometry and thermal properties of the liner and composite shell material was not informed in the cited references and it is assumed to be similar to the KIT vessel descibed in the previous section, with the liner and composite shell thickness scaled to match the total thickness of the GasTeF type IV vessel.  
-
-| Type IV tank        |                |
-|---------------------|----------------|
-| External length     | 827 mm         |
-| ID                  | 230 mm         |
-| OD                  | 279 mm         |
-| Liner               | HDPE           |
-| Composite shell     | G&CRPE         |
-| **Initial conditions** |             |
-| Initial pressure    |  700 bar       |
-| Initial temperature | 25$\pm$2$^\circ$C   |
-| Gas                 | Hydrogen       |
-| Discharge rate      | 1.8 g/s        |
-
-: Key vessel data and intial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after whicg it drops {#tbl:1D-GasTeF}
-
-The simulations with HydDown and comparison against the GasTeF experient is shown in Figure {@fig:KIT_val}. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments. 
-
-
-![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with GasTeF experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature.](docs/img/demiguel.png){#fig:KIT_val}
-
-As seen the prediction of the external surface temperature of the composite shell is matched very well. The average gas temperature as calculated with HydDown matches the temperatures recorded in the lower half of the test vessel. Further, the minimum in gas temperature between 450 and 500 seconds are also matched well. The measured pressure was not reported in ref. [@DEMIGUEL]
-
-## Validation against Type III cylinder experiments
-As shown previously type IV cylinder thermal behaviour is matchhed fairly well when the liner/composite thermal material propoerties are lumped. For a Tyoe III vessel which has very dissimilar thermal propoerties of the liner and the composite shell, this approach is not adviceable. Luckily, the implemented 1D trannsient heat conduction code *thermesh* allows modelling bi-materials and this is also implemented in HydDown. 
-
-Unfortunately, it has not been possible to find reported experiments which include detailed information about the exact liner and shell composite thickness. 
-In lack of a good and complete validation cases, an example is made using the KIT cylinder in the previous section and replacing  the HPDE liner with an aluminum liner. 
-
-
-| Type IV tank        |                |
-|---------------------|----------------|
-| External length     | 904 mm         |
-| ID                  | 180 mm         |
-| OD                  | 228 mm         |
-| **Aluminum liner**      |                |
-| Thickness           | 7 mm           |
-| Density             | 2700 kg/m$^3$   |
-| Heat capacity       |900 J/(kg K)   |
-| Thermal conductivity|237 W/(m K)   |
-| **CFRP shell**      |                |
-| Thickness           |17 mm           |
-| Density             |1360 kg/m$^3$   |
-| Heat capacity       | 1020 J/(kg K)  |
-| Thermal conductivity| 0.5 W/(m K)    |
-| **Initial conditions** |             | 
-| Outside $h$         | 8 W/(m$^2$ K)  |
-| Initial pressure    |  700 bar       |
-| Initial temperature | 20 $^\circ$C   |
-| Gas                 | Helium         |
-
-: Key vessel data and intial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after whicg it drops. {#tbl:1D-TypeIII}
-
-
-# Similar software 
-To be written
-
-# Future developmet of HydDown
-To be written
