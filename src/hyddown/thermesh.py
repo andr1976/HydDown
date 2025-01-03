@@ -6,7 +6,7 @@ from typing import Callable, Union
 import numpy.typing as npt
 
 
-vector = matrix = npt.NDArray[np.float_]
+vector = matrix = npt.NDArray[np.float64]
 
 
 def solve_ht(domain: Domain, solver: dict[str, float]) -> tuple[vector, matrix]:

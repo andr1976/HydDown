@@ -1251,6 +1251,7 @@ In lack of a good and complete validation cases, an example is made using the KI
 : Key vessel data and intial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after whicg it drops. {#tbl:1D-TypeIII}
 
 
+
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for a hypothetical type III cylinder with dimensions similar to the KIT type IV cylinder.](docs/img/KIT_type_III.png){#fig:KIT_typeIII}
 
 
