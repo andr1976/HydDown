@@ -956,10 +956,26 @@ class HydDown:
         if filename != None:
             plt.savefig(filename + "_main.png")
 
+        if verbose:
+            plt.show()
+
+    def plot_envelope(self, filename=None, verbose=True):
+        """
+        Creating standard plots for the solved problem
+
+        Parameters
+        ----------
+        filename : str
+            Saving plots to filename if provideed (optional)
+        verbose : bool
+            Plotting on screen if True (optional)
+        """
+        import pylab as plt
+
         if filename != None:
             plt.figure(2, figsize=(12, 7), dpi=300)
         else:
-            plt.figure(2)
+            plt.figure(2, figsize=(8, 6))
 
         self.fluid.build_phase_envelope("None")
         PE = self.fluid.get_phase_envelope_data()
@@ -975,6 +991,55 @@ class HydDown:
 
         if filename != None:
             plt.savefig(filename + "_envelope.png")
+
+        if verbose:
+            plt.show()
+
+    def plot_tprofile(self, filename=None, verbose=True):
+        """
+        Creating standard plots for the solved problem
+
+        Parameters
+        ----------
+        filename : str
+            Saving plots to filename if provideed (optional)
+        verbose : bool
+            Plotting on screen if True (optional)
+        """
+        import pylab as plt
+        import numpy as np
+
+        if filename != None:
+            plt.figure(3, figsize=(12, 7), dpi=300)
+        else:
+            plt.figure(3, figsize=(8, 6))
+
+        X, Y = np.meshgrid(self.z , self.time_array[:-1])
+        x0 = self.z[0]
+        x1 = self.z[-1]
+        y0 = self.time_array[0]
+        y1 = self.time_array[-1]
+
+        #plt.contour(Y,X, np.asarray(self.temp_profile), origin ='lower')
+        plt.imshow(np.asarray(self.temp_profile).T, aspect = 'auto', extent=(y0,y1,x0,x1), origin='lower')
+
+        plt.colorbar(label="Temperature (K)")
+        plt.xlabel("Time (s)")
+        plt.ylabel("z (mm)")
+        # add title with descriptive text for z axis
+
+
+        if filename != None:
+            plt.savefig(filename + "_tprofile1.png")
+
+        if filename != None:
+            plt.figure(4, figsize=(12, 7), dpi=300)
+        else:
+            plt.figure(4, figsize=(8, 6))
+
+        if filename != None:
+            plt.savefig(filename + "_tprofile2.png")
+
 
         if verbose:
             plt.show()
