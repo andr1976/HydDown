@@ -3,8 +3,8 @@ vessel:
   diameter: 1.130
   thickness: 0.059
   heat_capacity: 490
-  density: 7800. 
-  thermal_conductivity: 45
+  density: 7800.
+  #thermal_conductivity: 45
   orientation: "vertical"
 initial:
   temperature: 303.01
@@ -24,7 +24,7 @@ valve:
 heat_transfer:
   type: "specified_h"
   temp_ambient: 303.01
-  h_outer: 5 
+  h_outer: 5
   h_inner: 'calc'
 validation:
   temperature:

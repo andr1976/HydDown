@@ -1032,17 +1032,26 @@ For multi-component mixtures CoolProp does not provide solver for PH and UV-prob
 
 # Validation
 The code is provided as-is.
-However, comparisons have been made to a few experiments from the literature.
+However, comparisons have been made to some experiments from the literature.
 
 The following gases and modes are considered:
 
 - High pressure hydrogen discharge
 - High pressure hydrogen filling
 - High pressure nitrogen discharge
+- High pressure multi-component gas discharge
+
+These cases are all for Type I (steel) cylinders and the simple heat transfer / heat balance model has been applied, ignoring the thermal gradient in the cylinder wall. It has been checked by applying the 1D transient heat conduction model that results basically unaffected by this assumption. In addition to these, a few cases for Type IV cylinders have also been included in order to validate the 1D transient heat conduction model applied. This includes
+
+- High hydrogen discharge - comparison with commercial software.
+- High pressure helium discharge experiment (Karlshuhe Institute of Technology)
+- High pressure hydrogen discharge (GasTeF experiment)
+
+Details on Type III experiments are sparse but some general observations are made for the difference between type III and type IV cylinders.
 
 Furthermore, HydDown has also been benchmarked against external code by Ruiz and Moscardelli [@maraggi], who compared their GeoH2 app against HydDown and found excellent agreement for both pressure, mass flow rate and gas temperature for three different cases of discharge and filling.
 
-## Hydrogen discharge
+## Hydrogen discharge (Type I)
 Calculations with HydDown for high pressure hydrogen vessel discharge have been compared to three experiments from [@byrnes].
 Byrnes *et al.* [@byrnes] have reported a number of rapid depressurization experiments using both nitrogen and hydrogen, with blowdown times being varied between 14 seconds to 33 minutes.
 The vessel used was a type "K" gas cylinder with a volume of 0.0499 m$^3$, an ID of 8.56 inches and shell length of 55 inches.
@@ -1069,7 +1078,7 @@ For the fast depressurization the heat transfer from the outside is of less impo
 
 ![Simulation of run 9 from [@byrnes].](docs/img/Byrnes_run9.png){#fig:byrnes_run9}
 
-## Hydrogen filling
+## Hydrogen filling (Type I)
 In order to compare HydDown to experimental values of hydrogen filling operation the experiments reported by Striednig *et al.* [@STRIEDNIG] are used.
 Experimental results were obtained using a type I tank (steel) with a volume of 0.0235 m$^3$.
 The filling of hydrogen of gas into the vessel was carried out with an upstream reservoir kept at 350 bar and the flow was controlled with an electronically controlled dispenser.
@@ -1111,7 +1120,7 @@ The cooling of the vessel by ambient air is slower and would require a longer ru
 
 ![Simulation of $H_2$ pressurization using 30 MPa/min [@STRIEDNIG].](docs/img/Striednig_fillingH2_30MPa_min.png){#fig:striednig30}
 
-## Nitrogen discharge
+## Nitrogen discharge (Type I)
 Calculations with HydDown are compared to experiment I1 from ref. [@Haque1992b].
 The experiment is a blowdown of a vertically oriented cylindrical vessel with flat ends.
 The vessel length is 1.524 m, the inside diameter is 0.273 m, and the wall thickness is 25 mm.
@@ -1128,8 +1137,17 @@ As seen from [@Fig:N2val], the calculations compare well with the experimental r
 The calculated temperature of the bulk vapor is within the experimental range of measured temperature at all times during the simulation.
 It is also noted that the minimum temperature is reached at approximately the same time as in the experiments.
 The calculated vessel inner wall temperature does not decline as rapidly as the experiments, but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature.
-The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperature.
-Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist.
+
+## Multi-component discharge (Type I)
+The experiments were conducted by Haque *et al.* [@Haque1992b] and the experimental data has been extracted from the Ph.d. thesis of Wong [@WONG].
+
+The experimental vessel is a full-size suction scrubber for a gas compressor which has a total volume of 2.78 m3, with length and inside diameter of 3.240 m (2.75 m tan-to-tan)
+and 1.130 m respectively. The wall thickness is 59 mm. For modelling the length of a flat-ended cylinder has been adjusted to give a total volume of 2.78 m3. An orifice diameter of 6.35 mm was used for discharge and for HydDown modelling the discharge coefficient was adjusted to 0.97 to match the experimental pressure. The results of HydDown and comparison with the experimental results are shown in [@fig:Multi-val].
+
+![Calculations of discharge of a non-condensable mixture (0.91/0.09 molefraction of methane/ethane) emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](docs/img/NG_validation.png){#fig:Multi-val}
+
+The minimum gas temperature simulated by HydDown -6 C, compared to the minimum measured average gas temperature of
+-10.3 C. The difference in measured vs calculated wall temperature is 2.3 C, with a lower measured wall temperature.  
 
 ## 1-D transient heat transfer
 A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just beacause of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned propoerties. These properties, in particular the thermal conductivty, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution.
