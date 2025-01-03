@@ -1248,12 +1248,13 @@ In lack of a good and complete validation cases, an example is made using the KI
 | Initial temperature | 20 $^\circ$C   |
 | Gas                 | Helium         |
 
-: Key vessel data and intial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after whicg it drops. {#tbl:1D-TypeIII}
+: Key vessel data and intial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops. {#tbl:1D-TypeIII}
 
-
+The results of HydDown simulation with the *artificial* type III cylinder is shown in Figure [@fig:KIT_typeIII]. As seen the immediate effect of replacing the HDPE liner with aluminum (compared to Figure [@fig:KIT_val]) is a lower temperature drop in the gas phase and a liner temperature which approached the gas temperature very closely. This is in general agreement with the observations in ref. [@DEMIGUEL].
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for a hypothetical type III cylinder with dimensions similar to the KIT type IV cylinder.](docs/img/KIT_type_III.png){#fig:KIT_typeIII}
 
+In Figure [@fig:KIT_typeIV_temp] and [@fig:KIT_typeIII_temp] the simuated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively.
 
 ![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction](docs/img/KIT_TypeIV_temp.png){#fig:KIT_typeIV_temp}
 
