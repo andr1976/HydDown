@@ -19,46 +19,46 @@ Further, heat is transferred from or to the surroundings via convective heat tra
 
 ![HydDown logo](docs/img/Sketch.png){#fig:logo}
 
-Running the code is as simple as: 
+Running the code is as simple as:
 
     python main.py input.yml
 
-where `main.py` is the main script and `input.yml` is the input file in Yaml syntax. 
+where `main.py` is the main script and `input.yml` is the input file in Yaml syntax.
 
-## Citing HydDown 
+## Citing HydDown
 If you use HydDown please cite the following reference [@Andreasen2021]:
 
 Andreasen, A., (2021). HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge. Journal of Open Source Software, 6(66), 3695, https://doi.org/10.21105/joss.03695
 
-    @article{Andreasen2021, 
-      doi = {10.21105/joss.03695}, 
-      url = {https://doi.org/10.21105/joss.03695}, 
-      year = {2021}, 
-      publisher = {The Open Journal}, 
-      volume = {6}, 
-      number = {66}, 
-      pages = {3695}, 
-      author = {Anders Andreasen}, 
-      title = {HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge}, 
-      journal = {Journal of Open Source Software} 
+    @article{Andreasen2021,
+      doi = {10.21105/joss.03695},
+      url = {https://doi.org/10.21105/joss.03695},
+      year = {2021},
+      publisher = {The Open Journal},
+      volume = {6},
+      number = {66},
+      pages = {3695},
+      author = {Anders Andreasen},
+      title = {HydDown: A Python package for calculation of hydrogen (or other gas) pressure vessel filling and discharge},
+      journal = {Journal of Open Source Software}
     }
 
 This manual can be cited as [@Andreasen2024]:
 
-Anders Andreasen. HydDown - User guide and technical reference. 2024. ⟨hal-04858235⟩ 
+Anders Andreasen. HydDown - User guide and technical reference. 2024. ⟨hal-04858235⟩
 
-    @report{Andreasen2024, 
-      url = {https://hal.science/hal-04858235v1}, 
-      year = {2024}, 
-      publisher = {HAL open science}, 
-      author = {Anders Andreasen}, 
-      title = {HydDown -- user guide and technical reference}, 
+    @report{Andreasen2024,
+      url = {https://hal.science/hal-04858235v1},
+      year = {2024},
+      publisher = {HAL open science},
+      author = {Anders Andreasen},
+      title = {HydDown -- user guide and technical reference},
     }
 
 ## Background
 HydDown started as a small spare-time project for calculation of vessel filling and depressurization behaviour.
 This was mainly to demonstrate that although perceived as a very tedious and difficult task to write your own code for such an apparently complex problem, actually only a fairly limited amount of code is necessary if you have a good thermodynamic backend.
-The code has evolved to a point where additional features will increase the complexity to the point where it is no longer a simple tool. 
+The code has evolved to a point where additional features will increase the complexity to the point where it is no longer a simple tool.
 
 A few choices has been made to keep things simple:
 
@@ -66,7 +66,7 @@ A few choices has been made to keep things simple:
 - Only pure substances are considered (limited multi-component capabilities are included)
 - Gas phase only
 - No temperature stratification in the gas phase
-- No temperature gradient through vessel wall 
+- No temperature gradient through vessel wall
 - Heat transfer is modelled as constant or simplified using empirical
   correlations
 
@@ -82,7 +82,7 @@ The main branch is located here:
 
 [`https://github.com/andr1976/HydDown`](https://github.com/andr1976/HydDown)
 
-Clone the repo by: 
+Clone the repo by:
 
     git clone https://github.com/andr1976/HydDown.git
 
@@ -98,7 +98,7 @@ In case `pip` links to a v2.7 of python you will get an error. If so try the fol
 
     python3 -m pip install hyddown
 
-where python3 is the symlink or full path to the python3 executable installed on your system. 
+where python3 is the symlink or full path to the python3 executable installed on your system.
 
 ## Requirements
 
@@ -115,30 +115,30 @@ where python3 is the symlink or full path to the python3 executable installed on
 The script is running on Windows 10 x64, with stock python installation from python.org and packages installed using pip.
 It should also run on Linux (it does on an Ubuntu image on GitHub) or in any conda environment as well, but this hasn't been checked.
 
-## Testing 
+## Testing
 Although testing is mainly intended for automated testing (CI) during development using github actions, testing of the installed package can be done for source install by:
 
-    python -m pytest 
+    python -m pytest
 
 run from the root folder. In writing 33+ test should pass.
 
 For the package installed with pip navigate to the install directory `../site-packages/hyddown` and run:
 
-    python -m pytest 
+    python -m pytest
 
 ## Units of measure
 The SI unit system is adapted for this project.
 The following common units are used in the present project and this also applies to the units used in the input files:
 
-Property | Unit | Comment 
+Property | Unit | Comment
 ----    | ----  | ----
 Temperature | K | $^\circ$ C is used in plots
 Pressure | Pa    | bar is used in plots
 Mass | kg |
 Volume | m$^3$ |
-Time | s | 
+Time | s |
 Energy | J |
-Duty/power | W 
+Duty/power | W
 Length | m
 Area | m$^2$
 Heat flux | W/m$^2$
@@ -152,12 +152,12 @@ Heat capacity | J/(kg K)
 As will be noted when presenting the equations implemented in the code, some of the equations utilise different units than the ones listed in [@tbl:units].
 However, it is important to note that unit conversions are built in to the methods implemented, so the user shall not worry about unit conversion.  
 
-## Credit 
+## Credit
 In the making of this document a great deal of material has been sourced (and modified) from a good colleague's M.Sc. thesis [@iskov], from co-published papers [@Bjerre2017][@safety4010011] and from on-line material published under permissive licenses (with proper citation).
 Further, the making of this project would not have possible without the awesome [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999].
 I am also thankful for enlightening discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark)  and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurization, nozzle flow and heat transfer considerations.
 
-The present document is typeset using Markdown + [pandoc](https://pandoc.org/) with the [Eisvogel](https://github.com/Wandmalfarbe/pandoc-latex-template) template. 
+The present document is typeset using Markdown + [pandoc](https://pandoc.org/) with the [Eisvogel](https://github.com/Wandmalfarbe/pandoc-latex-template) template.
 
 ## License
 
@@ -183,15 +183,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-# Usage 
+# Usage
 ## Basic usage
-From the source repository, running the code is as simple as: 
+From the source repository, running the code is as simple as:
 
     python src/main.py input.yml
 
-where main.py is the main script and input.yml is the input file in Yaml syntax. 
+where main.py is the main script and input.yml is the input file in Yaml syntax.
 
-The Yaml input file is edited to reflect the system of interest. 
+The Yaml input file is edited to reflect the system of interest.
 
 Further, a usable copy of a main script is installed in the python installation Scripts/ folder:
 
@@ -216,9 +216,9 @@ A few demonstrations of the codes capability are available as [`streamlit`](http
 - Response to external fire of vessel equipped with a PSV using the Stefan-Boltzmann fire equation at[`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_sbapp.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_sbapp.py)
 - Vessel depressurization including slow opening of valve at [`https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_cvapp.py`](https://share.streamlit.io/andr1976/hyddown/main/scripts/streamlit_cvapp.py)
 
-The various streamlit apps are also included in the scripts folder for running the scripts on a local machine. 
+The various streamlit apps are also included in the scripts folder for running the scripts on a local machine.
 
-## Calculation methods 
+## Calculation methods
 The following methods are implemented:
 
 - Isothermal: constant temperature of the fluid during depressurization (for a very slow process with a large heat reservoir)
@@ -238,9 +238,9 @@ For `isothermal`/`isenthalpic`/`isentropic`/`isenergetic` calculations the minim
 If heat transfer is to be considered the calculation type `energybalance` is required. A few options are possible:
 
 - Fixed U: U-value, i.e. overall heat transfer coefficient, is required and ambient temperature required.
-Based on the ambient (external) temperature, the fluid temperature, and the U-value, the heat flux Q is calculated for each time step. 
+Based on the ambient (external) temperature, the fluid temperature, and the U-value, the heat flux Q is calculated for each time step.
 In this calculation method the temperature of the vessel wall is not calculated:
- 
+
 $$ Q = UA(T_{ambient} - T_{fluid})  $$
 
 - Fixed Q: The external heat flux, Q, applied to the fluid is specified and constant.
@@ -253,7 +253,7 @@ The fire heat flux depends on the vessel wall temperature, and the wall temperat
 
 More elaborate description of the required input for the different calculation types are provided in [@Sec:input].
 
-## Script 
+## Script
 HydDown comes with a script which can be used as a command-line tool to start calculations.
 If an input filename (path) is given as the first argument, this input file will be used.
 If no arguments are passed, the script will look for an input file with the name `input.yml`.
@@ -281,7 +281,7 @@ if __name__ == "__main__":
     hdown.plot()
 ~~~
 
-## Module import 
+## Module import
 To use HydDown simple import the main calculation class `HydDown`.
 
 ~~~ {.Python}
@@ -300,7 +300,7 @@ vessel:
 initial:
   temperature: 388.0
   pressure: 15000000.
-  fluid: "N2" 
+  fluid: "N2"
 calculation:
   type: "isentropic"
   time_step: 0.05
@@ -313,7 +313,7 @@ valve:
   back_pressure: 101300.
 ~~~
 
-A more elaborate example which includes heat transfer and with validation data (some data points dropped for simplicity) included: 
+A more elaborate example which includes heat transfer and with validation data (some data points dropped for simplicity) included:
 
 ~~~ {.Yaml}
 vessel:
@@ -321,12 +321,12 @@ vessel:
   diameter: 0.273
   thickness: 0.025
   heat_capacity: 500
-  density: 7800. 
+  density: 7800.
   orientation: "vertical"
 initial:
   temperature: 288.0
   pressure: 15000000.
-  fluid: "N2" 
+  fluid: "N2"
 calculation:
   type: "energybalance"
   time_step: 0.05
@@ -340,13 +340,13 @@ valve:
 heat_transfer:
   type: "specified_h"
   temp_ambient: 288.
-  h_outer: 5 
-  h_inner: 'calc' 
+  h_outer: 5
+  h_inner: 'calc'
 validation:
   temperature:
     gas_high:
       time: [0.050285, ... , 99.994]
-      temp: [288.93, ... ,241.29] 
+      temp: [288.93, ... ,241.29]
     gas_low:
       time: [0.32393, ..., 100.11]
       temp: [288.67, ... ,215.28]
@@ -397,7 +397,7 @@ vessel:
   diameter: number, mandatory
   thickness: number, required when heat transfer is calculated
   heat_capacity: number, required when heat transfer is calculated
-  density: number, required when heat transfer is calculated 
+  density: number, required when heat transfer is calculated
   orientation: string, required when heat transfer is calculated
 ~~~
 
@@ -406,7 +406,7 @@ vessel:
 initial:
   temperature: number, mandatory
   pressure: number, mandatory
-  fluid: string, mandatory , e.g. "N2", "H2" 
+  fluid: string, mandatory , e.g. "N2", "H2"
 ~~~
 
 ### Valve
@@ -421,7 +421,7 @@ Different types of mass flow devices can be specified:
 
 For the physical devices a `back_pressure` is required for the flow calculations.
 The value of the `back_pressure` **is also used to specify the reservoir pressure when the vessel is filled**.
-See also [@Sec:flow] for details about the calculation of flow rates. 
+See also [@Sec:flow] for details about the calculation of flow rates.
 
 ~~~ {.Yaml}
 valve:
@@ -470,8 +470,8 @@ In order to plot measured data against simulated data the field `validation` is 
 
 The following arrays (one or more) are supported in the sub-field `temperature`:
 
-- `gas_high`: highest measured values of the bulk gas 
-- `gas_low`: lowest measured values of the bulk gas 
+- `gas_high`: highest measured values of the bulk gas
+- `gas_low`: lowest measured values of the bulk gas
 - `gas_mean`: average measured values of the bulk gas
 - `wall_mean`: average measured values of the vessel (inner) wall
 - `wall_high`  i.e. highest measured values of the vessel (inner) wall
@@ -486,7 +486,7 @@ validation:
   temperature:
     gas_high:
       time: [0.050285, ... , 99.994]
-      temp: [288.93, ... ,241.29] 
+      temp: [288.93, ... ,241.29]
     gas_low:
       time: [0.32393, ..., 100.11]
       temp: [288.67, ... ,215.28]
@@ -504,7 +504,7 @@ validation:
 
 # Theory
 In this chapter the basic theory and governing equations for the model implementation in HydDown is presented.
-The following main topics are covered: 
+The following main topics are covered:
 
 - thermodynamics
 - mass transfer
@@ -522,31 +522,31 @@ In general, the EOS are based on non-dimensional terms $\delta$ and $\tau$, wher
 
 $$ \delta=\rho/\rho_c $$
 $$ \tau=T_c/T $$
-    
+
 where $\rho_c$ and $T_c$ are the critical density of the fluid if it is a pure fluid.
 For pseudo-pure mixtures, the critical point is typically not used as the reducing state point, and often the maximum condensing temperature on the saturation curve is used instead.
 
 The non-dimensional Helmholtz energy of the fluid is given by
 
 $$ \alpha=\alpha^0+\alpha^r $$
-    
+
 where $\alpha^0$ is the ideal-gas contribution to the Helmholtz energy, and $\alpha^r$ is the residual Helmholtz energy contribution which accounts for non-ideal behavior.
 For a given set of $\delta$ and $\tau$, each of the terms $\alpha^0$ and $\alpha^r$ are known.
 The exact form of the Helmholtz energy terms is fluid dependent, but a relatively simple example is that of Nitrogen, which has the ideal-gas Helmholtz energy of
 
 $$  \alpha^0=\ln\delta+a_1\ln\tau+a_2+a_3\tau+a_4\tau^{-1}+a_5\tau^{-2}+a_6\tau^{-3}+a_7\ln[1-\exp(-a_8\tau)] $$
-    
+
 and the non-dimensional residual Helmholtz energy of
 
 $$    \alpha^r=\sum_{k=1}^{6}{N_k\delta^{i_k}\tau^{j_k}}+\sum_{k=7}^{32}{N_k\delta^{i_k}\tau^{j_k}\exp(-\delta^{l_k})}+\sum_{k=33}^{36}{N_k\delta^{i_k}\tau^{j_k}\exp(-\phi_k(\delta-1)^2-\beta_k(\tau-\gamma_k)^2)} $$
-    
+
 and all the terms other than $\delta$ and $\tau$ are fluid-dependent correlation parameters.
 
 The other thermodynamic parameters can then be obtained through analytic derivatives of the Helmholtz energy terms.
 For instance, the pressure is given by
 
 $$    p=\rho RT\left[1+\delta\left(\frac{\partial \alpha^r}{\partial \delta}\right)_{\tau} \right] $$
-    
+
 and the specific internal energy by
 
 $$    \frac{u}{RT}=\tau \left[\left(\frac{\partial \alpha^0}{\partial \tau}\right)_{\delta}+ \left(\frac{\partial \alpha^r}{\partial \tau}\right)_{\delta} \right] $$
@@ -559,24 +559,24 @@ $$    \frac{h}{RT}=\tau \left[\left(\frac{\partial \alpha^0}{\partial \tau}\righ
 which can also be written as
 
 $$    \frac{h}{RT}=\frac{u}{RT}+\frac{p}{\rho RT} $$
-    
+
 The specific entropy is given by
 
 $$    \frac{s}{R}=\tau \left[\left(\frac{\partial \alpha^0}{\partial \tau}\right)_{\delta}+ \left(\frac{\partial \alpha^r}{\partial \tau}\right)_{\delta} \right]-\alpha^0-\alpha^r $$
-    
+
 and the specific heats at constant volume and constant pressure respectively are given by
 
 $$    \frac{c_v}{R}=-\tau^2 \left[\left(\frac{\partial^2 \alpha^0}{\partial \tau^2}\right)_{\delta}+ \left(\frac{\partial^2 \alpha^r}{\partial \tau^2}\right)_{\delta} \right] $$
-    
+
 $$ \frac{c_p}{R}=\frac{c_v}{R}+\dfrac{\left[1+\delta\left(\frac{\partial \alpha^r}{\partial \delta}\right)_{\tau}-\delta\tau\left(\frac{\partial^2 \alpha^r}{\partial \delta\partial\tau}\right)\right]^2}{\left[1+2\delta\left(\frac{\partial \alpha^r}{\partial \delta}\right)_{\tau}+\delta^2\left(\frac{\partial^2 \alpha^r}{\partial \delta^2}\right)_{\tau}\right]} $$
-    
+
 The EOS is set up with temperature and density as the two independent properties, but often other inputs are known, most often temperature and pressure because they can be directly measured.
 As a result, if the density is desired for a known temperature and pressure, it can be obtained iteratively.
 
 ### First law for flow process {#sec:firstlaw}
 The control volume sketched in [@Fig:firstlaw], separated from the surrounding by a control surface, is used as a basis for the analysis of an open thermodynamic system with flowing streams (fs) in and out, according to [@sva]
 
-A general mass balance or continuity equation can be written: 
+A general mass balance or continuity equation can be written:
 
 ![Control volume with one entrance and one exit. The image has been sourced from [@firstlaw].](docs/img/First_law_open_system.png){#fig:firstlaw}
 
@@ -586,30 +586,30 @@ The first term is the accumulation term i.e. the rate of change of the mass insi
 
 $$ \Delta \left( \dot{m} \right) _{fs} = \dot{m}_2 - \dot{m}_1 $$
 
-An energy balance for the control volume, with the first law of thermodynamics applied, needs to account for all the energy modes with can cross the control surface. Each stream has a total energy 
+An energy balance for the control volume, with the first law of thermodynamics applied, needs to account for all the energy modes with can cross the control surface. Each stream has a total energy
 
 $$ U + \frac{1}{2}u^2 + zg $$
 
 where the first term is the specific internal energy, the second term is the kinetic energy and the last term is the potential energy.
-The rate at which each stream transports energy in or out of the control volume is given by 
+The rate at which each stream transports energy in or out of the control volume is given by
 
 $$ \dot{m} (U + \frac{1}{2}u^2 + zg) $$
 
-and in total 
+and in total
 
 $$  \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs}$$
 
 Furthermore, work (not to be confused with shaft work) is also associated with each stream in order to move the stream into or out from the control volume (one can think of a hypothetical piston pushing the fluid at constant pressure), and the work is equal to $PV$ on the basis of the specific fluid volume.
-The work rate for each stream is 
+The work rate for each stream is
 
 $$ \dot{m}(PV) $$
 
-and in total 
+and in total
 
 $$ \Delta\left[ \dot{m}(PV) \right]_{fs} $$
 
 Further, heat may be transferred to (or from) the control volume at a rate $\dot{Q}$ and shaft work may be applied, $\dot{W}_{shaft}$.
-Combining all this with the accumulation term given by the change in total internal energy the following general energy balance can be written: 
+Combining all this with the accumulation term given by the change in total internal energy the following general energy balance can be written:
 
 $$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} (U + \frac{1}{2}u^2 + zg) \right]_{fs} + \Delta \left[ \dot{m}(PV) \right]_{fs} = \dot{Q} +\dot{W}_{shaft}   $$
 
@@ -639,7 +639,7 @@ $$ \frac{P_{c}}{P_u}=\left (\frac{2}{k+1} \right)^\frac{k}{k-1} $$ {#eq:P_critic
 - $P_u$ is the upstream pressure. [kPa]
 - k is the isentropic coefficient, approximated by the ideal gas heat capacity ratio $C_p/C_v$. [-]
 
-In order to calculate the mass flow rate through an orifice equations are used based on literature from the Committee for the Prevention of Disasters [@yellowbook]. 
+In order to calculate the mass flow rate through an orifice equations are used based on literature from the Committee for the Prevention of Disasters [@yellowbook].
 
 To account for the difference in choked and non-choked flow a set limit pressure is introduced as in equation [@Eq:plimit].
 If the downstream pressure, $P_{down}$, is below the pressure limit, $ P_{limit}$, then the flow is choked, and the pressure used, $P_{used}$, in equation [@Eq:massfloworifice] should be the pressure limit, $P_{limit}$.
@@ -690,7 +690,7 @@ $$ W = \frac{A {C \cdot K_d \cdot  K_b \cdot  K_c \cdot  P_1}}{\sqrt{\frac{T\cdo
 $K_d$ is the effective coefficient of discharge, with a typical value of 0.975, for an installed PSV.
 $K_b$ is a back-pressure correction factor between 0 and 1, assumed to be 1.
 $K_c$ is a correction factor used when a rupture disk is installed upstream, otherwise it is 1.
-In the present implementation a value of 1 is assumed. 
+In the present implementation a value of 1 is assumed.
 
 $$ C=0.03948 \sqrt{k \left (\frac{2}{k+1}\right)^{\left (\frac{k+1}{k-1}\right)}} $$ {#eq:Stationary_sizing_C_function}
 
@@ -706,13 +706,13 @@ where $r$ is the ratio of backpressure to upstream relieving pressure, $P_2 / P_
 
 When modelling a pop action PSV/relief valve under dynamic conditions, the valve will go from closed to fully open in a short period of time when the set pressure, $P_{set}$, is reached.
 The pop action is illustrated in [@Fig:psv_hyst] which shows the opening and closing hysteresis of the PSV as a function of pressure.
-In order to close the pressure shall be reduced below the reseat pressure. 
+In order to close the pressure shall be reduced below the reseat pressure.
 
 ![Relief valve hysteresis adapted from [@iskov]](docs/img/hysteresis.pdf){#fig:psv_hyst}
 
 When specifying PSVs it common to use standard API sizes as shown in [@tbl:psv_sizes]
 
-Size    | Area [in$^2$]     |   Area [m$^2$] 
+Size    | Area [in$^2$]     |   Area [m$^2$]
 --------|-------------------|----------------------------
 D       |   0.110           |   7.09676 $\cdot$ 10$^{-5}$
 E       |   0.196           |   1.26451 $\cdot$ 10$^{-4}$
@@ -732,15 +732,15 @@ T       |   26.000          |   1.67741 $\cdot$ 10$^{-2}$
 : Standard PSV orifice sizes according to API {#tbl:psv_sizes}
 
 ### Control Valve
-For calculating the mass flow through a control valve, the ANSI/ISA [@borden][@ISA] methodology also described in IEC 60534 [@IEC60534] is applied. 
+For calculating the mass flow through a control valve, the ANSI/ISA [@borden][@ISA] methodology also described in IEC 60534 [@IEC60534] is applied.
 
-The flow model for a compressible fluid in the turbulent regime is: 
+The flow model for a compressible fluid in the turbulent regime is:
 
-$$ W = C N_6 F_P Y \sqrt{x_{sizing} p_1 \rho_1} $$ 
+$$ W = C N_6 F_P Y \sqrt{x_{sizing} p_1 \rho_1} $$
 
 or equivalently:
 
-$$ W = C N_8 F_P p_1 Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$ 
+$$ W = C N_8 F_P p_1 Y \sqrt{\frac{x_{sizing}M}{T_1 Z_1}} $$
 
 - C is the flow coefficient ($C_v$ or $K_v$)
 - $N_8$ is a unit specific constant, 94.8 for $C_v$ and bar as pressure unit
@@ -771,7 +771,7 @@ $$ F_\gamma = \frac{\gamma}{1.4} $$
 
 where $\gamma$ is the ideal gas $C_p/C_v$.
 It should be noted that the above equation has been derived from perfect gas behaviour and extension of an orifice model with $\gamma$ in the range of 1.08 to 1.65.
-If used outside the assumptions flow calculations may become inaccurate. 
+If used outside the assumptions flow calculations may become inaccurate.
 
 The expansion factor Y accounts for the change in density as the fluid passes from the valve inlet to the vena contracta.
 It also accounts for the change in the vena contracta area as the pressure differential is varied.
@@ -827,7 +827,7 @@ $$ Pr=\frac{c_p \mu}{k} $$ {#eq:prandtl_gas}
 - $g$ is the standard acceleration of gravity. [m/s$^2$]
 - $\rho$ is the gas density. [kg/m$^3$]
 - $L$ is the characteristic length. [m]
-- $\Delta T$ is the temperature difference of the surface and gas. [K] 
+- $\Delta T$ is the temperature difference of the surface and gas. [K]
 - $\mu$ is the dynamic viscosity. [kg/m$\cdot$s]
 - $c_p$ is the heat capacity of gas. [J/kg$\cdot$K]
 - $k$ is the thermal conductivity of gas. [J/m$\cdot$K]
@@ -841,7 +841,7 @@ A heat transfer coefficient shall be provided.
 ### Mixed convection
 Experiments have indicated that the internal heat transfer mechanism for a vessel subject to filling can be well approximated by that of combined natural convection and forced convection as found from measured Nusselt numbers being well correlated with Rayleigh and Reynolds number [@woodfield].
 
-For mixed convection the effective Nusselt number, $Nu$, can be approximated by 
+For mixed convection the effective Nusselt number, $Nu$, can be approximated by
 
 $$ Nu = (Nu_{forced}^n + Nu_{natural}^n)^{\frac{1}{n}} $$
 
@@ -859,7 +859,7 @@ $$ \frac{\delta T}{\delta t} = \frac{k}{\rho c_p} \frac{\delta^2 T}{\delta x^2} 
 - x is the spatial (1-D) coordinate
 - k is the thermal conductivity
 - $\rho$ is the material density
-- $C_p$ is the specific heat capacity 
+- $C_p$ is the specific heat capacity
 
 To be solved, the initial values and boundary values must be specified.
 In its default state (if thermal cobductivity is not applied for the vessel), HydDown does not include the unsteady heat transfer model, i.e. the assumption is that the temperature from outer to inner surface is uniform and equal to the average temperature.
@@ -869,21 +869,21 @@ $$ Bi = \frac{hL}{k} $$
 
 The Biot number is a simple measure of the ratio of the heat transfer resistances at the surface of a body to the inside of a body.
 The ratio gives an indication to which extent the temperature will vary in space (gradient) when the body is subject to a displacement in temperature at the surface boundary layer.
-Striednig *et al.* [@STRIEDNIG] concluded that for a type I (steel) cylinder the Biot number was approx. 0.03 and hence the error in assuming a uniform temperature in the vessel wall was low. 
+Striednig *et al.* [@STRIEDNIG] concluded that for a type I (steel) cylinder the Biot number was approx. 0.03 and hence the error in assuming a uniform temperature in the vessel wall was low.
 
 With a typical thermal conductivity of 45 $W/m K$ for steel and a heat transfer coefficient up to 600 $W/m^2 K$ [@woodfield] the Biot number for a vessel with a wall thickness of 2 cm is 0.27.
 This is significantly higher than that approximated by [@STRIEDNIG].
 However, the Biot number is significantly lower than 1, and the assumption of a uniform temperature is reasonable.
-However, for increased wall thickness, and/or for different materials with lower thermal conductivity, the error may grow to an unacceptable level. 
+However, for increased wall thickness, and/or for different materials with lower thermal conductivity, the error may grow to an unacceptable level.
 
-Especially for vessels with low conductivity materials (or very thick walls) accurate estimation of the vessel wall temperatures requires the 1-D transient heat transfer problem to be solved. HydDown incorporates the [*thermesh*](https://github.com/wjbg/thermesh) code provided under an MIT license by Wouter Grouve [@thermesh]. The implemented model applies Cartesian coodinates as also applied in the h2fills program by NREL [@KUROKI], i.e. the curved vessel wall is assumed a flat plate. This may to some extent be justied by the relatively large radius of a cylindrical storage container compared to the vessel wall thichness (see also justification references in [@KUROKI]). 
+Especially for vessels with low conductivity materials (or very thick walls) accurate estimation of the vessel wall temperatures requires the 1-D transient heat transfer problem to be solved. HydDown incorporates the [*thermesh*](https://github.com/wjbg/thermesh) code provided under an MIT license by Wouter Grouve [@thermesh]. The implemented model applies Cartesian coodinates as also applied in the h2fills program by NREL [@KUROKI], i.e. the curved vessel wall is assumed a flat plate. This may to some extent be justied by the relatively large radius of a cylindrical storage container compared to the vessel wall thichness (see also justification references in [@KUROKI]).
 
 In HydDown, the 1-D transient heat conductivity problem is solved with *thermesh* assuming temperature independent vessel material density, heat capacity and thermal conductivity applying the Crank-Nicholson scheme using Neumann boundary conditions:
 
 $$  -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=0} = q_\text{left}(t), \qquad
-    -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=L} = q_{\text{right}}(t) $$ 
+    -k_{\text{z}}\frac{\partial T}{\partial z}\Biggr|_{z=L} = q_{\text{right}}(t) $$
 
-The heat flux at the outer (left) and inner (right) is calculated/updated for each major time step for the explicit solver for mass and energy balances. For each major time step *thermesh* is used to update the outer and inner wall temperature by solving the 1-D transient heat conductivity using a *minor* time step equal to 1/10th of the major time step and 11 nodes. For each time *thermesh* is called during major time steps the mesh is initialised with the temperature profile at the end of the former major time step. 
+The heat flux at the outer (left) and inner (right) is calculated/updated for each major time step for the explicit solver for mass and energy balances. For each major time step *thermesh* is used to update the outer and inner wall temperature by solving the 1-D transient heat conductivity using a *minor* time step equal to 1/10th of the major time step and 11 nodes. For each time *thermesh* is called during major time steps the mesh is initialised with the temperature profile at the end of the former major time step.
 
 ### Fire heat loads
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower [@scandpower] and API [@API521].
@@ -936,7 +936,7 @@ $$ m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t  $$ {#eq:euler_mass}
 $$\dot{m}(i) = f(P,T,) $$
 
 For each step, the mass relief/ left in the vessel is known.
-Since the volume is fixed the mass density is directly given. 
+Since the volume is fixed the mass density is directly given.
 
 For the calculation methods (isentropic, isenthalpic, isenergetic, etc.), CoolProp allows specifying density and either H, S, or U directly - this is very handy and normally only TP, PH, or TS property pairs are implemented and you would need to code a second loop to make it into am UV, VH, or SV calculation.
 
@@ -951,9 +951,9 @@ $$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
 $$ P(i+1) = EOS(D(i+1),T(i+1)) $$
 
 The notation $EOS(T,P)$ refers to a call to CoolProp either via PropsSI or the AbstractState solving the equation of state for specified temperature and pressure. Different state pairs are applied includeing combinations of density (D), specific enthalpy (H), specific entropy (S), specific internal energy (U).  
- 
+
 ### Isenthalpic process
-For an isenthalpic process: 
+For an isenthalpic process:
 
 $$ H(i+1) = H(i) $$
 $$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
@@ -969,7 +969,7 @@ $$ P(i+1) = EOS(D(i+1),S(i+1)) $$
 $$ T(i+1) = EOS(D(i+1),S(i+1)) $$
 
 ### Isenergetic process
-For an isenergetic process: 
+For an isenergetic process:
 
 $$ U(i+1) = U(i) $$
 $$ D(i+1) = \frac{m_{cv}(i+1)}{V}$$
@@ -977,14 +977,14 @@ $$ P(i+1) = EOS(D(i+1),U(i+1)) $$
 $$ T(i+1) = EOS(D(i+1),U(i+1)) $$
 
 ### Energy balance
-The general first law applied to a flow process as outlined in [@Sec:firstlaw] subject to an explicit Euler scheme is: 
+The general first law applied to a flow process as outlined in [@Sec:firstlaw] subject to an explicit Euler scheme is:
 
 $$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
 $$ U_{cv}(i+1) = \frac{m_{cv}(i)U_{cv}(i) - \left( \dot{m}(i) H (i) +  \dot{Q}(i) \right) \Delta t}{m_{cv}(i+1)}  $$ {#eq:firstlaw_euler}
 
 The above assumes that mass flow is positive when leaving the control volume and heat rate is positive when transferred to the control volume.
 $H(i)$ is the specific enthalpy of the fluid in the control volume for a discharging process and it is equal to the energy of the entering stream for a filling process.
-The heat rate is calculated as outlined in [#Sec:heat]. 
+The heat rate is calculated as outlined in [#Sec:heat].
 
 For the vessel wall a simple heat balance is also made:
 
@@ -992,27 +992,27 @@ $$ T_{wall}(i+1) = T_{wall}(i)  + \frac{\dot{Q}_{outer} - \dot{Q}_{inner} } {c_p
 
 where $\dot{Q}_{outer}$ is the convective heat transfer to or from the ambient surroundings from the outer surface of the vessel, with positive values indicating that heat is transferred from the surroundings to the vessel wall.
 This is either a fixed heat transfer coefficient with a specified ambient temperature (outer surface) or a calculated fire heat load.
-$\dot{Q}_{inner}$ is the internal heat transfer, either a fixed number or calculated as natural convection (for discharge) or mixed natural and forced convection (filling). 
+$\dot{Q}_{inner}$ is the internal heat transfer, either a fixed number or calculated as natural convection (for discharge) or mixed natural and forced convection (filling).
 
-When the temperature profile of the vessel wall is calculated using the 1-D transient conductivity equation the vessel temperature as calculated above represent the mean vessel temperature and addition to this the outer and inner wall temperatures are calculated. 
+When the temperature profile of the vessel wall is calculated using the 1-D transient conductivity equation the vessel temperature as calculated above represent the mean vessel temperature and addition to this the outer and inner wall temperatures are calculated.
 
-If a fixed $\dot{Q}$ is provided or a fixed overall heat transfer coefficient is provided the vessel wall temperature heat balance is not solved. 
+If a fixed $\dot{Q}$ is provided or a fixed overall heat transfer coefficient is provided the vessel wall temperature heat balance is not solved.
 
 The remaining steps are update of temperature and pressure:
 
 $$ P(i+1) = EOS(D(i+1),U(i+1)) $$
 $$ T(i+1) = EOS(D(i+1),U(i+1)) $$
- 
+
 ## Multicomponent mixtures
 Although not an initial requirement, the code can handle multi-component gas mixtures.
 However, no validation has been performed.
 Furthermore, when calculations are done for multicomponent mixtures, the code runs significantly slower.
 Please note, that in case that liquid condensate is formed during discharge calculations and even if the calculations does not stop, the results cannot be considered reliable.
 This is because component balances are not made and it is always assumed that the discharge composition is the same as the global composition inside the vessel.
-When liquid condensate is formed the composition of the vapour phase will differ from the global composition. 
+When liquid condensate is formed the composition of the vapour phase will differ from the global composition.
 
 There are a few examples of multicomponent mixtures included with HydDown.
-In order to specify multicomponent mixtures the below example can be used as guidance: 
+In order to specify multicomponent mixtures the below example can be used as guidance:
 
     "Methane[9.01290129e-01]&Ethane[6.35063506e-02]&N2[7.80078008e-03]&CO2[2.34023402e-02]&Propane[3.50035004e-03]&Butane[5.00050005e-04]"
 
@@ -1020,15 +1020,15 @@ For component names please refer to the [Coolprop manual](http://www.coolprop.or
 
 ![Gas discharge of multicomponent mixture](docs/img/ng_all.png){#fig:ng_all}
 
-An example calculation for the above mixture is shown in [@Fig:ng_all]. 
+An example calculation for the above mixture is shown in [@Fig:ng_all].
 
 ![Multicomponent mixture phase envelope and pressure and temperature trajectory of the vessel inventory during discharge](docs/img/ng_pe.png){#fig:ng_pe}
 
 The pressure and temperature trajectory is visualised along with the fluid mixture phase envelope in [@Fig:ng_pe].
 As seen from the figure, this case is borderline and the pressure/temperature trajectory just coincides with the dew line on the phase envelope.
-This plot is included in the example main script that comes with HydDown and serves as an important quality control. 
+This plot is included in the example main script that comes with HydDown and serves as an important quality control.
 
-For multi-component mixtures CoolProp does not provide solver for PH and UV-problems and these solvers have been included in HydDown by wrapping the CoolProp PT solver with a Nelder-Mead algorithm for solving for internal energy and density or pressure and enthalpy. 
+For multi-component mixtures CoolProp does not provide solver for PH and UV-problems and these solvers have been included in HydDown by wrapping the CoolProp PT solver with a Nelder-Mead algorithm for solving for internal energy and density or pressure and enthalpy.
 
 # Validation
 The code is provided as-is.
@@ -1051,8 +1051,8 @@ A control valve is mounted on the neck of the cylinder with a fixed opening perc
 It is mentioned that the gas cylinder is placed inside a weather proof cabinet with perlite insulation in order to emulate adiabatic conditions.
 However the simulations run here are with a finite heat transfer coefficient on the outside of the cylinder.
 In their paper, detailed pressure and temperature traces are provided for three experimental runs: 7, 8, and 9, with depressurization from 2000 psia in 30 seconds, 480 seconds and 14 seconds, respectively.
-These experiments are simulated in [@Fig:byrnes_run7], [@Fig:byrnes_run8] and [@Fig:byrnes_run9]. 
-  
+These experiments are simulated in [@Fig:byrnes_run7], [@Fig:byrnes_run8] and [@Fig:byrnes_run9].
+
 ![Calculations of hydrogen discharge experiment run 7 from [@byrnes]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](docs/img/Byrnes_run7.png){#fig:byrnes_run7}
 
 The figure layout is general for all the validation studies conducted and will be described in brief for eased readability.
@@ -1069,11 +1069,11 @@ For the fast depressurization the heat transfer from the outside is of less impo
 
 ![Simulation of run 9 from [@byrnes].](docs/img/Byrnes_run9.png){#fig:byrnes_run9}
 
-## Hydrogen filling 
+## Hydrogen filling
 In order to compare HydDown to experimental values of hydrogen filling operation the experiments reported by Striednig *et al.* [@STRIEDNIG] are used.
 Experimental results were obtained using a type I tank (steel) with a volume of 0.0235 m$^3$.
 The filling of hydrogen of gas into the vessel was carried out with an upstream reservoir kept at 350 bar and the flow was controlled with an electronically controlled dispenser.
-Vessel details are provided below: 
+Vessel details are provided below:
 
 | Parameter       | Value       |
 |-----------------|-------------|
@@ -1103,7 +1103,7 @@ The slower the depressurization, the longer the plateau.
 During this temperature plateau, the heat transfer from the gas to the vessel and surroundings balance the temperature increase that would occur if performed at adiabatic (isolated) conditions.
 When the gas flow has ceased upon reaching the final pressure, the temperature starts to drop due to cooling of the gas by the colder vessel wall driven by convective heat transfer.
 The temperature stabilises at a temperature which is higher than the initial ambient temperature due to the heating of the steel vessel.
-The cooling of the vessel by ambient air is slower and would require a longer run time to be clearly visible. 
+The cooling of the vessel by ambient air is slower and would require a longer run time to be clearly visible.
 
 ![Simulation of $H_2$ pressurization using 5 MPa/min [@STRIEDNIG].](docs/img/Striednig_fillingH2_5MPa_min.png){#fig:striednig5}
 
@@ -1129,13 +1129,13 @@ The calculated temperature of the bulk vapor is within the experimental range of
 It is also noted that the minimum temperature is reached at approximately the same time as in the experiments.
 The calculated vessel inner wall temperature does not decline as rapidly as the experiments, but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature.
 The main reason for the inability to match the vessel wall temperature is that the model ignores the temperature gradient from the outer to the inner wall surface and uses an average material temperature.
-Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist. 
+Especially at the beginning of the discharge it is considered likely that a significant temperature gradient will exist.
 
 ## 1-D transient heat transfer
-A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just beacause of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned propoerties. These properties, in particular the thermal conductivty, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution. 
+A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just beacause of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned propoerties. These properties, in particular the thermal conductivty, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution.
 
-### Validation against commercial simulation tool 
-The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. [@tbl:1D-valid-1]. 
+### Validation against commercial simulation tool
+The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. [@tbl:1D-valid-1].
 
 
 | Parameter       | Value       |
@@ -1160,7 +1160,7 @@ The comparison between HydDown results and the corresponding simulations using U
 
 
 ### Validation against KIT experiment (Type IV)
-Using data from Molkov *et al.* [@MOLKOV1][@MOLKOV2] experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*m, see references within refs. [@MOLKOV1][@MOLKOV2]. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*. The initial conditions and vessel details are summarised below cf. [@tbl:1D-KIT].
+Using data from Molkov *et al.* [@MOLKOV1][@MOLKOV2] experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*, see references within refs. [@MOLKOV1][@MOLKOV2]. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*. The initial conditions and vessel details are summarised below cf. [@tbl:1D-KIT].
 
 | Type IV tank        |                |
 |---------------------|----------------|
@@ -1177,7 +1177,7 @@ Using data from Molkov *et al.* [@MOLKOV1][@MOLKOV2] experiments performed at HY
 | Density             |1360 kg/m$^3$   |
 | Heat capacity       | 1020 J/(kg K)  |
 | Thermal conductivity| 0.5 W/(m K)    |
-| **Initial conditions** |             | 
+| **Initial conditions** |             |
 | Outside $h$         | 8 W/(m$^2$ K)  |
 | Initial pressure    |  700 bar       |
 | Initial temperature | 20 $^\circ$C   |
@@ -1190,9 +1190,9 @@ In HydDown the type IV pressure vessel geometry as assumed that of a flat ended 
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for comparison with KIT experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature (left) and calculated and measured pressure (right).](docs/img/KIT_1.png){#fig:KIT_val}
 
-HydDown simulations are compared with the KIT experiement in Figure [@fig:KIT_val]. As seen from the results the depressurisation pressure is matched very well. The experimental gas temperature is also matched fairly well. The lowest simulated gas temperature is 182.3 K and the lowest experimental temperature is 177.5 K a difference of 4.8 K. The minimum gas temoperature occurs at an earlier time compared to the experimental results. The formaer at approx. 75 sec. and the latter at approx. 100 sec. This is also in agreement with the simulation model presented by Molkov *et al.* [@MOLKOV1]. The final gas temperature of the simulations is 237 K compared to the experimental value of 216 K. 
+HydDown simulations are compared with the KIT experiement in Figure [@fig:KIT_val]. As seen from the results the depressurisation pressure is matched very well. The experimental gas temperature is also matched fairly well. The lowest simulated gas temperature is 182.3 K and the lowest experimental temperature is 177.5 K a difference of 4.8 K. The minimum gas temoperature occurs at an earlier time compared to the experimental results. The formaer at approx. 75 sec. and the latter at approx. 100 sec. This is also in agreement with the simulation model presented by Molkov *et al.* [@MOLKOV1]. The final gas temperature of the simulations is 237 K compared to the experimental value of 216 K.
 
-Molkov *et al.* [@MOLKOV1] also made a thermal analysis of the thermocouple arrangement used in KIT experiment in order to estimate thermal lag in the temperature measurement. Incorporating the thermal model of the thermocouple arrangement displayed an improved prediction of the time of the minimum measured gas temperature as well as the final measured temperature. 
+Molkov *et al.* [@MOLKOV1] also made a thermal analysis of the thermocouple arrangement used in KIT experiment in order to estimate thermal lag in the temperature measurement. Incorporating the thermal model of the thermocouple arrangement displayed an improved prediction of the time of the minimum measured gas temperature as well as the final measured temperature.
 
 
 ## Validation against GasTeF experiments (Type IV)
@@ -1213,7 +1213,7 @@ The experimental setup is described in more detail in refs. [@ACOSTA][@DEMIGUEL]
 
 : Key vessel data and intial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after whicg it drops {#tbl:1D-GasTeF}
 
-The simulations with HydDown and comparison against the GasTeF experient is shown in Figure {@fig:KIT_val}. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments. 
+The simulations with HydDown and comparison against the GasTeF experient is shown in Figure {@fig:KIT_val}. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
 
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with GasTeF experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature.](docs/img/demiguel.png){#fig:KIT_val}
@@ -1221,10 +1221,10 @@ The simulations with HydDown and comparison against the GasTeF experient is show
 As seen the prediction of the external surface temperature of the composite shell is matched very well. The average gas temperature as calculated with HydDown matches the temperatures recorded in the lower half of the test vessel. Further, the minimum in gas temperature between 450 and 500 seconds are also matched well. The measured pressure was not reported in ref. [@DEMIGUEL]
 
 ## Validation against Type III cylinder experiments
-As shown previously type IV cylinder thermal behaviour is matchhed fairly well when the liner/composite thermal material propoerties are lumped. For a Tyoe III vessel which has very dissimilar thermal propoerties of the liner and the composite shell, this approach is not adviceable. Luckily, the implemented 1D trannsient heat conduction code *thermesh* allows modelling bi-materials and this is also implemented in HydDown. 
+As shown previously type IV cylinder thermal behaviour is matchhed fairly well when the liner/composite thermal material propoerties are lumped. For a Tyoe III vessel which has very dissimilar thermal propoerties of the liner and the composite shell, this approach is not adviceable. Luckily, the implemented 1D trannsient heat conduction code *thermesh* allows modelling bi-materials and this is also implemented in HydDown.
 
-Unfortunately, it has not been possible to find reported experiments which include detailed information about the exact liner and shell composite thickness. 
-In lack of a good and complete validation cases, an example is made using the KIT cylinder in the previous section and replacing  the HPDE liner with an aluminum liner. 
+Unfortunately, it has not been possible to find reported experiments which include detailed information about the exact liner and shell composite thickness.
+In lack of a good and complete validation cases, an example is made using the KIT cylinder in the previous section and replacing  the HPDE liner with an aluminum liner.
 
 
 | Type IV tank        |                |
@@ -1242,7 +1242,7 @@ In lack of a good and complete validation cases, an example is made using the KI
 | Density             |1360 kg/m$^3$   |
 | Heat capacity       | 1020 J/(kg K)  |
 | Thermal conductivity| 0.5 W/(m K)    |
-| **Initial conditions** |             | 
+| **Initial conditions** |             |
 | Outside $h$         | 8 W/(m$^2$ K)  |
 | Initial pressure    |  700 bar       |
 | Initial temperature | 20 $^\circ$C   |
@@ -1254,13 +1254,13 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for a hypothetical type III cylinder with dimensions similar to the KIT type IV cylinder.](docs/img/KIT_type_III.png){#fig:KIT_typeIII}
 
-In Figure [@fig:KIT_typeIV_temp] and [@fig:KIT_typeIII_temp] the simuated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively.
+In Figure [@fig:KIT_typeIV_temp] and [@fig:KIT_typeIII_temp] the simuated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
 
-![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction](docs/img/KIT_TypeIV_temp.png){#fig:KIT_typeIV_temp}
+![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell,](docs/img/KIT_TypeIV_temp.png){#fig:KIT_typeIV_temp}
 
-![Calculations of type III vessel wall temperature profile with 1D transient heat conduction](docs/img/KIT_TypeIII_temp.png){#fig:KIT_typeIII_temp}
+![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell,](docs/img/KIT_TypeIII_temp.png){#fig:KIT_typeIII_temp}
 
-# Similar software 
+# Similar software
 To be written
 
 # Future developmet of HydDown
