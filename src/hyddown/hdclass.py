@@ -1006,6 +1006,9 @@ class HydDown:
         verbose : bool
             Plotting on screen if True (optional)
         """
+
+        # Add some checks if the profile has been constructed
+        # return some
         import pylab as plt
         import numpy as np
 
@@ -1014,7 +1017,7 @@ class HydDown:
         else:
             plt.figure(3, figsize=(8, 6))
 
-        X, Y = np.meshgrid(self.z , self.time_array[:-1])
+        X, Y = np.meshgrid(self.z*1e3 , self.time_array[:-1])
         x0 = self.z[0]
         x1 = self.z[-1]
         y0 = self.time_array[0]
@@ -1037,10 +1040,16 @@ class HydDown:
         else:
             plt.figure(4, figsize=(8, 6))
 
+        n = math.floor(len(self.time_array)/15)
+        for i in range(len(self.time_array[::n])):
+            plt.plot(self.temp_profile[::n][i], self.z*1e3,label=f"t = {int(self.time_array[::n][i])} s.")
+        plt.legend(loc="best")
+        plt.ylabel("z (mm)")
+        plt.xlabel("Temperature (K)")
+        plt.title("Temperature distribution")
+
         if filename != None:
             plt.savefig(filename + "_tprofile2.png")
-
-
         if verbose:
             plt.show()
 
