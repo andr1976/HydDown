@@ -673,6 +673,7 @@ class HydDown:
 
                 # Finding the inlet/outlet enthalpy rate for the energy balance
                 if input["valve"]["flow"] == "filling":
+                    #h_in = self.fluid.hmass()
                     h_in = x * self.res_fluid.hmass() + (1 - x) * self.res_fluid.umass()
 
                 else:
@@ -1041,7 +1042,7 @@ class HydDown:
         else:
             plt.figure(4, figsize=(8, 6))
 
-        
+
         n = math.floor(len(self.time_array)/15)
         for i in range(len(self.time_array[::n])):
             plt.plot(self.temp_profile[::n][i], self.z*1e3,label=f"t = {int(self.time_array[::n][i])} s.")

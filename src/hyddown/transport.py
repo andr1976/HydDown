@@ -18,9 +18,9 @@ def Gr(L, Tfluid, Tvessel, P, species):
         Vessel length
     Tfluid : float
         Temperature of the bulk fluid inventory
-    Tvessel : float 
-        Temperature of the vessel wall (bulk) 
-    P : float 
+    Tvessel : float
+        Temperature of the vessel wall (bulk)
+    P : float
         Pressure of fluid inventory
 
     Returns
@@ -45,8 +45,8 @@ def Pr(T, P, species):
     Parameters
     ----------
     T : float
-        Temperature of the fluid film interface 
-    P : float 
+        Temperature of the fluid film interface
+    P : float
         Pressure of fluid inventory
 
     Returns
@@ -72,7 +72,7 @@ def Nu(Ra, Pr):
     ----------
     Ra : float
         Raleigh number
-    Pr : float 
+    Pr : float
         Prandtl number
 
     Returns
@@ -99,11 +99,11 @@ def h_inside(L, Tvessel, Tfluid, fluid):
         Vessel length
     Tfluid : float
         Temperature of the bulk fluid inventory
-    Tvessel : float 
-        Temperature of the vessel wall (bulk) 
+    Tvessel : float
+        Temperature of the vessel wall (bulk)
     fluid : obj
-        Coolprop fluid object 
-    
+        Coolprop fluid object
+
     Returns
     ----------
     h_inner : float
@@ -133,11 +133,11 @@ def h_inner(L, Tfluid, Tvessel, P, species):
         Vessel length
     Tfluid : float
         Temperature of the bulk fluid inventory
-    Tvessel : float 
-        Temperature of the vessel wall (bulk) 
+    Tvessel : float
+        Temperature of the vessel wall (bulk)
     species : str
         Fluid definition string
-    
+
     Returns
     ----------
     h_inner : float
@@ -162,13 +162,13 @@ def h_inside_mixed(L, Tvessel, Tfluid, fluid, mdot, D):
         Vessel length
     Tfluid : float
         Temperature of the bulk fluid inventory
-    Tvessel : float 
-        Temperature of the vessel wall (bulk) 
+    Tvessel : float
+        Temperature of the vessel wall (bulk)
     fluid : obj
-        Coolprop fluid object 
-    mdot : float 
+        Coolprop fluid object
+    mdot : float
         Mass flow
-    D : float 
+    D : float
         Characteristic diameter for Reynolds number estimation
 
     Returns
@@ -188,7 +188,6 @@ def h_inside_mixed(L, Tvessel, Tfluid, fluid, mdot, D):
     Ra = Pr * Gr
 
     NNu_free = Nu(Ra,Pr)  # 0.13 * NRa**0.333
-
     Re = 4 * abs(mdot) / (visc * math.pi * D)
     NNu_forced = 0.56 * Re ** 0.67
     return (NNu_free + NNu_forced) * cond  / L
@@ -205,18 +204,18 @@ def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
         Vessel length
     Tfluid : float
         Temperature of the bulk fluid inventory
-    Tvessel : float 
-        Temperature of the vessel wall (bulk) 
+    Tvessel : float
+        Temperature of the vessel wall (bulk)
     P : float
         Fluid pressure
     species : str
-        Fluid definition string 
-    mdot : float 
+        Fluid definition string
+    mdot : float
         Mass flow
-    D : float 
+    D : float
         Characteristic diameter for Reynolds number estimation
-        
-    
+
+
     Returns
     ----------
     h_inner : float
@@ -244,14 +243,14 @@ def gas_release_rate(P1, P2, rho, k, CD, area):
 
     Parameters
     ----------
-    P1 : float 
+    P1 : float
         Upstream pressure
-    P2 : float 
+    P2 : float
         Downstream pressure
-    rho : float 
+    rho : float
         Fluid density
-    k : float 
-        Ideal gas k (Cp/Cv) 
+    k : float
+        Ideal gas k (Cp/Cv)
     CD : float
         Coefficient of discharge
     are : float
@@ -294,28 +293,28 @@ def relief_valve(P1, Pback, Pset, blowdown, k, CD, T1, Z, MW, area):
     ----------
     P1 : float
         Upstream pressure
-    Pback : float 
+    Pback : float
         Downstream / backpressure
     Pset : float
         Set pressure of the PSV / relief valve
-    blowdown : float 
+    blowdown : float
         The percentage of the set pressure at which the valve reseats
-    k : float 
-        Ideal gas k (Cp/Cv) 
+    k : float
+        Ideal gas k (Cp/Cv)
     CD : float
         Coefficient of discharge
     T1 : float
         Upstream temperature
-    Z : float 
+    Z : float
         Compressibility
-    MW : float 
+    MW : float
         Molecular weight of the gas relieved
-    area : float 
+    area : float
         PSV orifice area
-    
+
     Returns
     ----------
-        : float 
+        : float
         Relief rate / mass flow
     """
 
@@ -349,31 +348,31 @@ def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
     ----------
     P1 : float
         Upstream pressure
-    Pback : float 
+    Pback : float
         Downstream / backpressure
-    k : float 
-        Ideal gas k (Cp/Cv) 
+    k : float
+        Ideal gas k (Cp/Cv)
     CD : float
         Coefficient of discharge
     T1 : float
         Upstream temperature
-    Z : float 
+    Z : float
         Compressibility
-    MW : float 
+    MW : float
         Molecular weight of the gas relieved
-    area : float 
+    area : float
         PSV orifice area
 
     Returns
     ----------
-        : float 
+        : float
         Relief rate / mass flow
     """
 
 
     P1 = P1 / 1000
     Pback = Pback / 1000
-    area = area * 1e6 
+    area = area * 1e6
     MW = MW * 1000
     C = 0.03948 * (k * (2 / (k + 1)) ** ((k + 1) / (k - 1))) ** 0.5
     if P1 / Pback > ((k + 1) / 2) ** ((k) / (k - 1)):
@@ -388,17 +387,17 @@ def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
 def cv_vs_time(Cv_max,t,time_constant=0,characteristic="linear"):
     """
     Control valve flow coefficient vs time / actuator postion
-    assuming a linear rate of actuator for the three archetypes of 
-    characteristics: linear, equal percentage and fast/quick opening. 
-    
+    assuming a linear rate of actuator for the three archetypes of
+    characteristics: linear, equal percentage and fast/quick opening.
+
     Parameters
     ----------
-    Cv_max : float 
+    Cv_max : float
         Valve flow coefficient at full open position
     t : float
-        Time 
+        Time
     time_constant : float (optional)
-        The time required for the actuator to fully open. 
+        The time required for the actuator to fully open.
         Default to instant open
     characteristic : string (optional)
         Valve characteristic
@@ -431,18 +430,18 @@ def control_valve(P1, P2, T, Z, MW, gamma, Cv, xT=0.75, FP=1):
     ----------
     P1 : float
         Upstream pressure
-    P2 : float 
+    P2 : float
         Downstream / backpressure
     T : float
         Upstream temperature
-    Z : float 
+    Z : float
         Upstream compressibility
-    MW : float 
+    MW : float
         Molecular weight of the gas relieved
-    gamma : float 
-        Upstream Ideal gas k (Cp/Cv) 
+    gamma : float
+        Upstream Ideal gas k (Cp/Cv)
     Cv : float
-        Valve coefficient 
+        Valve coefficient
     xT : float
         Value of xT for valve fitting assembly, default value
     FP : float
