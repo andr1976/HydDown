@@ -1238,10 +1238,10 @@ The simulations with HydDown and comparison against the GasTeF experient is show
 
 As seen the prediction of the external surface temperature of the composite shell is matched very well. The average gas temperature as calculated with HydDown matches the temperatures recorded in the lower half of the test vessel. Further, the minimum in gas temperature between 450 and 500 seconds are also matched well. The measured pressure was not reported in ref. [@DEMIGUEL]
 
-## Validation against Type III cylinder experiments
-As shown previously type IV cylinder thermal behaviour is matchhed fairly well when the liner/composite thermal material propoerties are lumped. For a Tyoe III vessel which has very dissimilar thermal propoerties of the liner and the composite shell, this approach is not adviceable. Luckily, the implemented 1D trannsient heat conduction code *thermesh* allows modelling bi-materials and this is also implemented in HydDown.
+## Validation against Type III cylinder discharge experiments
+As shown previously type IV cylinder thermal behaviour is matched fairly well when the liner/composite thermal material properties are lumped. For a Type III vessel which has very dissimilar thermal properties of the liner and the composite shell, this approach is not advisable. Luckily, the implemented 1D transient heat conduction code *thermesh* allows modelling bi-materials and this is also implemented in HydDown.
 
-Unfortunately, it has not been possible to find reported experiments which include detailed information about the exact liner and shell composite thickness.
+Unfortunately, it has not been possible to find reported discharge experiments which include detailed information about the exact liner and shell composite thickness.
 In lack of a good and complete validation cases, an example is made using the KIT cylinder in the previous section and replacing  the HPDE liner with an aluminum liner.
 
 
@@ -1272,11 +1272,14 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for a hypothetical type III cylinder with dimensions similar to the KIT type IV cylinder.](docs/img/KIT_type_III.png){#fig:KIT_typeIII}
 
-In Figure [@fig:KIT_typeIV_temp] and [@fig:KIT_typeIII_temp] the simuated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
+In Figure [@fig:KIT_typeIV_temp] and [@fig:KIT_typeIII_temp] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
 
 ![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell,](docs/img/KIT_TypeIV_temp.png){#fig:KIT_typeIV_temp}
 
 ![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell,](docs/img/KIT_TypeIII_temp.png){#fig:KIT_typeIII_temp}
+
+## Validation against Type III cylinder filling experiments
+
 
 # Similar software
 To be written
