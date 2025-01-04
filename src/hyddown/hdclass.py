@@ -1017,12 +1017,13 @@ class HydDown:
         else:
             plt.figure(3, figsize=(8, 6))
 
-        X, Y = np.meshgrid(self.z*1e3 , self.time_array[:-1])
-        x0 = self.z[0]
-        x1 = self.z[-1]
+        #X, Y = np.meshgrid(self.z*1e3 , self.time_array[:-1])
+        x0 = self.z[0]*1e3
+        x1 = self.z[-1]*1e3
         y0 = self.time_array[0]
         y1 = self.time_array[-1]
 
+        #plt.subplot(211)
         #plt.contour(Y,X, np.asarray(self.temp_profile), origin ='lower')
         plt.imshow(np.asarray(self.temp_profile).T, aspect = 'auto', extent=(y0,y1,x0,x1), origin='lower')
 
@@ -1033,13 +1034,14 @@ class HydDown:
 
 
         if filename != None:
-            plt.savefig(filename + "_tprofile1.png")
+                plt.savefig(filename + "_tprofile1.png")
 
         if filename != None:
             plt.figure(4, figsize=(12, 7), dpi=300)
         else:
             plt.figure(4, figsize=(8, 6))
 
+        
         n = math.floor(len(self.time_array)/15)
         for i in range(len(self.time_array[::n])):
             plt.plot(self.temp_profile[::n][i], self.z*1e3,label=f"t = {int(self.time_array[::n][i])} s.")
