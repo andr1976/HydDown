@@ -34,7 +34,7 @@ jobs:
           git add docs/MANUAL.pdf
           git commit -m "Updated manual"
       - name: Push changes # push the output folder to your repo
-        uses: ad-m/github-push-action@master
+        uses: ad-m/github-push-action@development
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           force: true
