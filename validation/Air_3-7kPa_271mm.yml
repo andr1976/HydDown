@@ -3,17 +3,16 @@ vessel:
   diameter: 0.20
   thickness: 0.05
   heat_capacity: 500
-  density: 7800. 
+  density: 7800.
   orientation: "horizontal"
 initial:
   temperature: 295.0
   pressure: 3700.
-  fluid: "air" 
+  fluid: "air"
 calculation:
   type: "energybalance"
   time_step: 0.05
   end_time: 80.
-  eta: 1
 valve:
   flow: "filling"
   type: "orifice"
@@ -23,14 +22,14 @@ valve:
 heat_transfer:
   type: "specified_h"
   temp_ambient: 295.
-  h_outer: 5. 
+  h_outer: 5.
   h_inner: "calc"
   D_throat : 0.10
 validation:
   temperature:
     gas_high:
       time: [ 0.0383,  0.473,  0.308,   1.12,   2.73,   6.91,   12.5,     17,   21.8,   27.3,   29.1,   31.6,   35.4,   46.3,   55.2,   64.2,   77.8]
-      temp: [295.8,301.5,306.6,309.9,312.1,314.1,313.7,312.3,311.4,  310,308.2,304.8,  306,303.3,301.5,300.2,298.8] 
+      temp: [295.8,301.5,306.6,309.9,312.1,314.1,313.7,312.3,311.4,  310,308.2,304.8,  306,303.3,301.5,300.2,298.8]
   pressure:
     time: [ 0.3882, 2.3087, 5.0182, 6.9438, 9.4554, 12.369, 13.319, 16.254, 19.198, 25.705, 41.089, 56.079, 69.689, 77.184]
     pres: [ 0.019082,  0.17692,  0.33477,    0.477,  0.63658,  0.77362,  0.88289,  0.95577,   1.0009,   1.0062,   1.0082,   1.0068,   1.0053,   1.0054]

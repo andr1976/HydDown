@@ -1150,7 +1150,7 @@ The minimum gas temperature simulated by HydDown -6 C, compared to the minimum m
 -10.3 C. The difference in measured vs calculated wall temperature is 2.3 C, with a lower measured wall temperature.  
 
 ## 1-D transient heat transfer
-A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just beacause of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned propoerties. These properties, in particular the thermal conductivty, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution.
+A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just because of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned properties. These properties, in particular the thermal conductivity, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution.
 
 ### Validation against commercial simulation tool
 The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. [@tbl:1D-valid-1].
@@ -1229,12 +1229,12 @@ The experimental setup is described in more detail in refs. [@ACOSTA][@DEMIGUEL]
 | Gas                 | Hydrogen       |
 | Discharge rate      | 1.8 g/s        |
 
-: Key vessel data and intial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after whicg it drops {#tbl:1D-GasTeF}
+: Key vessel data and initial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops {#tbl:1D-GasTeF}
 
-The simulations with HydDown and comparison against the GasTeF experient is shown in Figure {@fig:KIT_val}. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
+The simulations with HydDown and comparison against the GasTeF experient is shown in Figure [@fig:GasTeF_val]. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
 
 
-![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with GasTeF experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature.](docs/img/demiguel.png){#fig:KIT_val}
+![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with GasTeF experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature.](docs/img/demiguel.png){#fig:GasTeF_val}
 
 As seen the prediction of the external surface temperature of the composite shell is matched very well. The average gas temperature as calculated with HydDown matches the temperatures recorded in the lower half of the test vessel. Further, the minimum in gas temperature between 450 and 500 seconds are also matched well. The measured pressure was not reported in ref. [@DEMIGUEL]
 
@@ -1245,7 +1245,7 @@ Unfortunately, it has not been possible to find reported discharge experiments w
 In lack of a good and complete validation cases, an example is made using the KIT cylinder in the previous section and replacing  the HPDE liner with an aluminum liner.
 
 
-| Type IV tank        |                |
+| Type III tank        |                |
 |---------------------|----------------|
 | External length     | 904 mm         |
 | ID                  | 180 mm         |
@@ -1266,7 +1266,7 @@ In lack of a good and complete validation cases, an example is made using the KI
 | Initial temperature | 20 $^\circ$C   |
 | Gas                 | Helium         |
 
-: Key vessel data and intial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops. {#tbl:1D-TypeIII}
+: Key vessel data and initial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops. {#tbl:1D-TypeIII}
 
 The results of HydDown simulation with the *artificial* type III cylinder is shown in Figure [@fig:KIT_typeIII]. As seen the immediate effect of replacing the HDPE liner with aluminum (compared to Figure [@fig:KIT_val]) is a lower temperature drop in the gas phase and a liner temperature which approached the gas temperature very closely. This is in general agreement with the observations in ref. [@DEMIGUEL].
 
@@ -1279,6 +1279,37 @@ In Figure [@fig:KIT_typeIV_temp] and [@fig:KIT_typeIII_temp] the simulated tempe
 ![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell,](docs/img/KIT_TypeIII_temp.png){#fig:KIT_typeIII_temp}
 
 ## Validation against Type III cylinder filling experiments
+For HydDown type III cylinder filling experimental validation, the work of Dicken and Mérida [@Dicken] is used. They conducted experiments of filling a 74 liter type III cylinder and also compared measurements with CFD calculations. Details of type III cyinder tested is shown in Table [@tbl:Dicken-TypeIII]. For HydDown simulation the length of a flat-ended cylinder has been adjusted to give a total cylinder volume of 74 liter. The time-dependent filling mass flow  has been sourced from ref. [@Dicken] and scaled in order to match the final experimental pressure.
+
+
+| Type III tank        |                |
+|---------------------|----------------|
+| External length     | 893 mm         |
+| ID                  | 358  mm         |
+| OD                  | 396 mm         |
+| **Aluminum liner**      |                |
+| Thickness           | 4 mm           |
+| Density             | 2700 kg/m$^3$   |
+| Heat capacity       |900 J/(kg K)   |
+| Thermal conductivity|167 W/(m K)   |
+| **CFRP shell**      |                |
+| Thickness           |15 mm           |
+| Density             |938 kg/m$^3$   |
+| Heat capacity       | 1494 J/(kg K)  |
+| Thermal conductivity| 1.0 W/(m K)    |
+| **Initial conditions** |             |
+| Outside $h$         | 8 W/(m$^2$ K)  |
+| Initial pressure    |  93 bar       |
+| Initial temperature | 20.25 $^\circ$C   |
+| Gas                 | H2         |
+
+: Key vessel data and initial conditions for Type III cylinder simulations.  {#tbl:Dicken-TypeIII}
+
+Simulation results from HydDown is compared to the experimental data of Dicken and Mérida in Figure [@fig:Dicken_typeIII]. As seen from the results the gas temperature calculated with HydDown is generally higher than the experimental results. The final calculated temperature is 74.2$^\circ$C, compared to the final measured temperature of 68.9$^\circ$C. The CFD calculations performed by Dicken and Mérida [@Dicken] was also higher than the experimental value (71.3$\circ$C). Another CFD analysis of the investigated system by Hall and Ramasamy [@Hall] revealed a final mean gas temperature of 71.4$^\circ$C, and a zero-dimensional model by the same authors gave an end temperature of 72.4$^\circ$C.   
+
+![Calculations of vessel pressure, gas temperature and wall temperature (inner/outer) with 1D transient heat conduction model during hydrogen filling. Comparison is made against experimental results from Dicken and Mérida [@Dicken] for pressure and gas temperature. Inner wall (liner) temperature is compared to CFD simulations [@Dicken] ](docs/img/dicken_typeIII.png){#fig:Dicken_typeIII}
+
+In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric avareage of all seven positions from front to back of the cylinder. As seen from Figure [@fig:Dicken_typeIII] the average value from HydDown (52.5$\circ$C)compares very well with the  average CFD results at the end of filling (52.1$\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
 
 
 # Similar software
