@@ -1137,6 +1137,7 @@ As seen from [@Fig:N2val], the calculations compare well with the experimental r
 The calculated temperature of the bulk vapor is within the experimental range of measured temperature at all times during the simulation.
 It is also noted that the minimum temperature is reached at approximately the same time as in the experiments.
 The calculated vessel inner wall temperature does not decline as rapidly as the experiments, but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature.
+<!--
 
 ## Multi-component discharge (Type I)
 The experiments were conducted by Haque *et al.* [@Haque1992b] and the experimental data has been extracted from the Ph.d. thesis of Wong [@WONG].
@@ -1316,4 +1317,4 @@ In lack of measured vessel inner wall temperature (liner) the values calculated 
 To be written
 
 # Future developmet of HydDown
-To be written
+To be written -->
