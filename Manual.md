@@ -1150,7 +1150,7 @@ and 1.130 m respectively. The wall thickness is 59 mm. For modelling the length 
 The minimum gas temperature simulated by HydDown -6 C, compared to the minimum measured average gas temperature of
 -10.3 C. The difference in measured vs calculated wall temperature is 2.3 C, with a lower measured wall temperature.  
 
-<!--
+
 ## 1-D transient heat transfer
 A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just because of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned properties. These properties, in particular the thermal conductivity, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution.
 
@@ -1318,4 +1318,4 @@ In lack of measured vessel inner wall temperature (liner) the values calculated 
 To be written
 
 # Future developmet of HydDown
-To be written -->
+To be written 

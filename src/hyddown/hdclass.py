@@ -552,6 +552,7 @@ class HydDown:
                         ):
                             nn = 11  # number of nodes
                             z = np.linspace(0, self.thickness, nn)
+                            self.z = z
                             mesh = tm.Mesh(
                                 z, tm.LinearElement
                             )  # Or `QuadraticElement` to

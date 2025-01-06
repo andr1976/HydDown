@@ -3,7 +3,7 @@ name: Compile manual
 on:
   push:
     branches:
-      - "development"
+      - main
 #    paths:
 #      - 'Manual.md
 
