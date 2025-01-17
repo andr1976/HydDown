@@ -1015,7 +1015,7 @@ class HydDown:
         import numpy as np
 
         if filename != None:
-            plt.figure(3, figsize=(12, 7), dpi=300)
+            plt.figure(3, figsize=(8, 6))
         else:
             plt.figure(3, figsize=(8, 6))
 
@@ -1036,10 +1036,10 @@ class HydDown:
 
 
         if filename != None:
-                plt.savefig(filename + "_tprofile1.png")
+                plt.savefig(filename + "_tprofile1.png", dpi=300)
 
         if filename != None:
-            plt.figure(4, figsize=(12, 7), dpi=300)
+            plt.figure(4, figsize=(8, 6))
         else:
             plt.figure(4, figsize=(8, 6))
 
@@ -1053,7 +1053,7 @@ class HydDown:
         plt.title("Temperature distribution")
 
         if filename != None:
-            plt.savefig(filename + "_tprofile2.png")
+            plt.savefig(filename + "_tprofile2.png", dpi=300)
         if verbose:
             plt.show()
 
