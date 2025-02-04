@@ -398,6 +398,11 @@ vessel:
   thickness: number, required when heat transfer is calculated
   heat_capacity: number, required when heat transfer is calculated
   density: number, required when heat transfer is calculated
+  thermal_conductivity: number, required for 1-D transient heat transfer
+  liner_thickness: number, required only for bi-material 1-D transient heat transfer
+  liner_heat_capacity: number, required only for bi-material 1-D transient heat transfer 
+  liner_density: number, required only for bi-material 1-D transient heat transfer
+  liner_thermal_conductivity: number, required only for bi-material 1-D transient heat transfer  
   orientation: string, required when heat transfer is calculated
 ~~~
 
@@ -476,6 +481,8 @@ The following arrays (one or more) are supported in the sub-field `temperature`:
 - `wall_mean`: average measured values of the vessel (inner) wall
 - `wall_high`  i.e. highest measured values of the vessel (inner) wall
 - `wall_low`  i.e. lowest measured values of the vessel (inner) wall
+- `wall_outer`  i.e. external measured values of the vessel (outer) wall
+- `wall_inner`  i.e. internal measured values of the vessel (inner) wall
 
 For each of the above fields arrays for `time`and `temp`shall be supplied with matching length.
 
@@ -1278,15 +1285,15 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 In Figures [@fig:KIT_typeIV_temp1]  [@fig:KIT_typeIII_temp2] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
 
 <div id="fig:figureRef">
-![](docs/img/KIT_II_tprofile2.png){#fig:KIT_typeIV_temp1 width=70%}
-![](docs/img/KIT_II_tprofile1.png){#fig:KIT_typeIV_temp2 width=80%}
+![Temperature thorugh wall at different times](docs/img/KIT_II_tprofile2.png){#fig:KIT_typeIV_temp1 width=70%}
+![Spatioal and temporal temprature contour](docs/img/KIT_II_tprofile1.png){#fig:KIT_typeIV_temp2 width=80%}
 
 Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell
 </div>
 
 <div id="fig:figureRef1">
-![](docs/img/KIT_III_tprofile2.png){#fig:KIT_typeIII_temp1 width=70%}
-![](docs/img/KIT_III_tprofile1.png){#fig:KIT_typeIII_temp2 width=80%}
+![Temperature thorugh wall at different times](docs/img/KIT_III_tprofile2.png){#fig:KIT_typeIII_temp1 width=70%}
+![Spatioal and temporal temprature contour](docs/img/KIT_III_tprofile1.png){#fig:KIT_typeIII_temp2 width=80%}
 
 Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell
 </div>
