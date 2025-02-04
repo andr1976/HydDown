@@ -66,7 +66,7 @@ A few choices has been made to keep things simple:
 - Only pure substances are considered (limited multi-component capabilities are included)
 - Gas phase only
 - No temperature stratification in the gas phase
-- No temperature gradient through vessel wall
+- A default of of no temperature gradient through vessel wall. 
 - Heat transfer is modelled as constant or simplified using empirical
   correlations
 
@@ -74,6 +74,8 @@ These choices make the problem much simpler to solve:
 First of all, the the pure substance Helmholtz energy based equation of state (HEOS) in `coolprop` offers a lot of convenience in terms of the property pairs/state variables that can be set independently.
 Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required.
 That being said, the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
+
+In the latest revision 1-D transient heat conduction through the vessel wall is now an option if required for low thermal conductivity materials and e.g. type III/IV vessels. 
 
 ## Getting the software
 The source code can be obtained either from GitHub (via `git` or via the latest tar-ball release) or via **pip** . No packaged releases have currently been planned for **conda**.  
@@ -1011,9 +1013,7 @@ $$ P(i+1) = EOS(D(i+1),U(i+1)) $$
 $$ T(i+1) = EOS(D(i+1),U(i+1)) $$
 
 ## Multicomponent mixtures
-Although not an initial requirement, the code can handle multi-component gas mixtures.
-However, no validation has been performed.
-Furthermore, when calculations are done for multicomponent mixtures, the code runs significantly slower.
+Although not an initial requirement, the code can handle multi-component gas mixtures. When calculations are done for multicomponent mixtures, the code runs significantly slower.
 Please note, that in case that liquid condensate is formed during discharge calculations and even if the calculations does not stop, the results cannot be considered reliable.
 This is because component balances are not made and it is always assumed that the discharge composition is the same as the global composition inside the vessel.
 When liquid condensate is formed the composition of the vapour phase will differ from the global composition.
@@ -1048,13 +1048,13 @@ The following gases and modes are considered:
 - High pressure nitrogen discharge
 - High pressure multi-component gas discharge
 
-These cases are all for Type I (steel) cylinders and the simple heat transfer / heat balance model has been applied, ignoring the thermal gradient in the cylinder wall. It has been checked by applying the 1D transient heat conduction model that results basically unaffected by this assumption. In addition to these, a few cases for Type IV cylinders have also been included in order to validate the 1D transient heat conduction model applied. This includes
+These cases are all for Type I (steel) cylinders and the simple heat transfer / heat balance model has been applied, ignoring the thermal gradient in the cylinder wall. It has been checked by applying the 1D transient heat conduction model that the results are basically unaffected by this assumption. In addition to these, a few cases for Type IV cylinders have also been included in order to validate the 1D transient heat conduction model applied. This includes
 
 - High hydrogen discharge - comparison with commercial software.
 - High pressure helium discharge experiment (Karlshuhe Institute of Technology)
 - High pressure hydrogen discharge (GasTeF experiment)
 
-Details on Type III experiments are sparse but some general observations are made for the difference between type III and type IV cylinders.
+Details on Type III experiments are sparse but some general observations are made for the difference between type III and type IV cylinders and a single type III filling experiment is modelled.
 
 Furthermore, HydDown has also been benchmarked against external code by Ruiz and Moscardelli [@maraggi], who compared their GeoH2 app against HydDown and found excellent agreement for both pressure, mass flow rate and gas temperature for three different cases of discharge and filling.
 
@@ -1155,8 +1155,8 @@ and 1.130 m respectively. The wall thickness is 59 mm. For modelling the length 
 
 ![Calculations of discharge of a non-condensable mixture (0.91/0.09 molefraction of methane/ethane) emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](docs/img/NG_validation.png){#fig:Multi-val}
 
-The minimum gas temperature simulated by HydDown -6 C, compared to the minimum measured average gas temperature of
--10.3 C. The difference in measured vs calculated wall temperature is 2.3 C, with a lower measured wall temperature.  
+The minimum gas temperature simulated by HydDown is -6$^\circ$C, compared to the minimum measured average gas temperature of
+-10.3$^\circ$C. The difference in measured vs calculated wall temperature is 2.3$^\circ$C, with a lower measured wall temperature.  
 
 
 ## 1-D transient heat transfer
@@ -1218,7 +1218,7 @@ In HydDown the type IV pressure vessel geometry as assumed that of a flat ended 
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for comparison with KIT experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature (left) and calculated and measured pressure (right).](docs/img/KIT_1.png){#fig:KIT_val}
 
-HydDown simulations are compared with the KIT experiement in Figure [@fig:KIT_val]. As seen from the results the depressurisation pressure is matched very well. The experimental gas temperature is also matched fairly well. The lowest simulated gas temperature is 182.3 K and the lowest experimental temperature is 177.5 K a difference of 4.8 K. The minimum gas temoperature occurs at an earlier time compared to the experimental results. The formaer at approx. 75 sec. and the latter at approx. 100 sec. This is also in agreement with the simulation model presented by Molkov *et al.* [@MOLKOV1]. The final gas temperature of the simulations is 237 K compared to the experimental value of 216 K.
+HydDown simulations are compared with the KIT experiement in Figure [@fig:KIT_val]. As seen from the results the depressurisation pressure is matched very well. The experimental gas temperature is also matched fairly well. The lowest simulated gas temperature is 182.3 K and the lowest experimental temperature is 177.5 K a difference of 4.8 K. The minimum gas temperature occurs at an earlier time compared to the experimental results. The former at approx. 75 sec. and the latter at approx. 100 sec. This is also in agreement with the simulation model presented by Molkov *et al.* [@MOLKOV1]. The final gas temperature of the simulations is 237 K compared to the experimental value of 216 K.
 
 Molkov *et al.* [@MOLKOV1] also made a thermal analysis of the thermocouple arrangement used in KIT experiment in order to estimate thermal lag in the temperature measurement. Incorporating the thermal model of the thermocouple arrangement displayed an improved prediction of the time of the minimum measured gas temperature as well as the final measured temperature.
 
@@ -1329,7 +1329,7 @@ Simulation results from HydDown is compared to the experimental data of Dicken a
 
 ![Calculations of vessel pressure, gas temperature and wall temperature (inner/outer) with 1D transient heat conduction model during hydrogen filling. Comparison is made against experimental results from Dicken and Mérida [@Dicken] for pressure and gas temperature. Inner wall (liner) temperature is compared to CFD simulations [@Dicken] ](docs/img/dicken_typeIII.png){#fig:Dicken_typeIII}
 
-In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric avareage of all seven positions from front to back of the cylinder. As seen from Figure [@fig:Dicken_typeIII] the average value from HydDown (52.5$^\circ$C)compares very well with the  average CFD results at the end of filling (52.1$^\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $^\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
+In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric average of all seven positions from front to back of the cylinder. As seen from Figure [@fig:Dicken_typeIII] the average value from HydDown (52.5$^\circ$C)compares very well with the  average CFD results at the end of filling (52.1$^\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $^\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
 
 
 # Similar software
