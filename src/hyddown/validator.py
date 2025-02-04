@@ -271,7 +271,7 @@ def validate_mandatory_ruleset(input):
                                 },
                             },
                         },
-                        "wall_high": {
+                        "wall_low": {
                             "required": False,
                             "type": "dict",
                             "contains": ["time", "temp"],
