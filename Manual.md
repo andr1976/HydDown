@@ -670,7 +670,7 @@ When the pressure inside the vessels reaches the opening pressure, the force exe
 The flow of gas out of the vessels will lower the pressure and thereby also the force exerted on the disc.
 When the pressure in the vessels is reduced to the reset pressure, the PSV will close and the disc will again hinder the gas flow.
 
-![Conventional/pop action PSV adapted from [@iskov] and [@API520]](docs/img/PSV.pdf){#fig:psv}
+![Conventional/pop action PSV adapted from [@iskov] and [@API520]](docs/img/PSV.pdf){#fig:psv width=80%}
 
 The relief valve model implemented in HydDown is the API 520 equations [@API520] for gas relief for both sonic/critical as well as subcritical flow. No corrections factors are implemented in HydDown.
 
@@ -708,7 +708,7 @@ When modelling a pop action PSV/relief valve under dynamic conditions, the valve
 The pop action is illustrated in [@Fig:psv_hyst] which shows the opening and closing hysteresis of the PSV as a function of pressure.
 In order to close the pressure shall be reduced below the reseat pressure.
 
-![Relief valve hysteresis adapted from [@iskov]](docs/img/hysteresis.pdf){#fig:psv_hyst}
+![Relief valve hysteresis adapted from [@iskov]](docs/img/hysteresis.pdf){#fig:psv_hyst width=80%}
 
 When specifying PSVs it common to use standard API sizes as shown in [@tbl:psv_sizes]
 
@@ -1018,17 +1018,17 @@ In order to specify multicomponent mixtures the below example can be used as gui
 
 For component names please refer to the [Coolprop manual](http://www.coolprop.org/fluid_properties/PurePseudoPure.html#list-of-fluids).
 
-![Gas discharge of multicomponent mixture](docs/img/ng_all.png){#fig:ng_all}
-
 An example calculation for the above mixture is shown in [@Fig:ng_all].
-
-![Multicomponent mixture phase envelope and pressure and temperature trajectory of the vessel inventory during discharge](docs/img/ng_pe.png){#fig:ng_pe}
 
 The pressure and temperature trajectory is visualised along with the fluid mixture phase envelope in [@Fig:ng_pe].
 As seen from the figure, this case is borderline and the pressure/temperature trajectory just coincides with the dew line on the phase envelope.
 This plot is included in the example main script that comes with HydDown and serves as an important quality control.
 
 For multi-component mixtures CoolProp does not provide solver for PH and UV-problems and these solvers have been included in HydDown by wrapping the CoolProp PT solver with a Nelder-Mead algorithm for solving for internal energy and density or pressure and enthalpy.
+
+![Gas discharge of multicomponent mixture](docs/img/ng_all.png){#fig:ng_all}
+
+![Multicomponent mixture phase envelope and pressure and temperature trajectory of the vessel inventory during discharge](docs/img/ng_pe.png){#fig:ng_pe width=80%}
 
 # Validation
 The code is provided as-is.
@@ -1236,7 +1236,7 @@ The experimental setup is described in more detail in refs. [@ACOSTA][@DEMIGUEL]
 The simulations with HydDown and comparison against the GasTeF experient is shown in Figure [@fig:GasTeF_val]. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
 
 
-![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with GasTeF experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature.](docs/img/demiguel.png){#fig:GasTeF_val}
+![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during hydrogen discharge for comparison with GasTeF experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature.](docs/img/demiguel.png){#fig:GasTeF_val width=80%}
 
 As seen the prediction of the external surface temperature of the composite shell is matched very well. The average gas temperature as calculated with HydDown matches the temperatures recorded in the lower half of the test vessel. Further, the minimum in gas temperature between 450 and 500 seconds are also matched well. The measured pressure was not reported in ref. [@DEMIGUEL]
 
@@ -1276,15 +1276,15 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 
 In Figures [@fig:KIT_typeIV_temp1]  [@fig:KIT_typeIII_temp2] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
 
-![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile2.png){#fig:KIT_typeIV_temp1 width=80%}
+![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile2.png){#fig:KIT_typeIV_temp1 width=70%}
 
-![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile1.png){#fig:KIT_typeIV_temp2 width=80%}
-
-
-![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile2.png){#fig:KIT_typeIII_temp1 width=80%}
+![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile1.png){#fig:KIT_typeIV_temp2 width=70%}
 
 
-![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile1.png){#fig:KIT_typeIII_temp2 width=80%}
+![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile2.png){#fig:KIT_typeIII_temp1 width=70%}
+
+
+![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile1.png){#fig:KIT_typeIII_temp2 width=70%}
 
 
 ## Validation against Type III cylinder filling experiments
