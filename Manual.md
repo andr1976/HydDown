@@ -48,7 +48,7 @@ This manual can be cited as [@Andreasen2024]:
 Anders Andreasen. HydDown - User guide and technical reference. 2024. ⟨hal-04858235⟩
 
     @report{Andreasen2024,
-      url = {https://hal.science/hal-04858235v1},
+      url = {https://hal.science/hal-04858235},
       year = {2024},
       publisher = {HAL open science},
       author = {Anders Andreasen},
@@ -1150,7 +1150,7 @@ and 1.130 m respectively. The wall thickness is 59 mm. For modelling the length 
 The minimum gas temperature simulated by HydDown -6 C, compared to the minimum measured average gas temperature of
 -10.3 C. The difference in measured vs calculated wall temperature is 2.3 C, with a lower measured wall temperature.  
 
-<!--
+
 ## 1-D transient heat transfer
 A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just because of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned properties. These properties, in particular the thermal conductivity, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution.
 
@@ -1274,11 +1274,18 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for a hypothetical type III cylinder with dimensions similar to the KIT type IV cylinder.](docs/img/KIT_type_III.png){#fig:KIT_typeIII}
 
-In Figure [@fig:KIT_typeIV_temp] and [@fig:KIT_typeIII_temp] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
+In Figures [@fig:KIT_typeIV_temp1]  [@fig:KIT_typeIII_temp2] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
 
-![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell,](docs/img/KIT_TypeIV_temp.png){#fig:KIT_typeIV_temp}
+![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile2.png){ width = 50% }{#fig:KIT_typeIV_temp1}
 
-![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell,](docs/img/KIT_TypeIII_temp.png){#fig:KIT_typeIII_temp}
+![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile1.png){ width = 50% }{#fig:KIT_typeIV_temp2}
+
+
+![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile2.png){ width = 50% }{#fig:KIT_typeIII_temp1}
+
+
+![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile1.png){ width = 50% }{#fig:KIT_typeIII_temp2}
+
 
 ## Validation against Type III cylinder filling experiments
 For HydDown type III cylinder filling experimental validation, the work of Dicken and Mérida [@Dicken] is used. They conducted experiments of filling a 74 liter type III cylinder and also compared measurements with CFD calculations. Details of type III cyinder tested is shown in Table [@tbl:Dicken-TypeIII]. For HydDown simulation the length of a flat-ended cylinder has been adjusted to give a total cylinder volume of 74 liter. The time-dependent filling mass flow  has been sourced from ref. [@Dicken] and scaled in order to match the final experimental pressure.
@@ -1318,4 +1325,4 @@ In lack of measured vessel inner wall temperature (liner) the values calculated 
 To be written
 
 # Future developmet of HydDown
-To be written -->
+To be written 
