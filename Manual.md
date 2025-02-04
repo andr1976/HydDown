@@ -1276,15 +1276,15 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 
 In Figures [@fig:KIT_typeIV_temp1]  [@fig:KIT_typeIII_temp2] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
 
-![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile2.png){ width=50% }{#fig:KIT_typeIV_temp1}
+![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile2.png){#fig:KIT_typeIV_temp1 width=80%}
 
-![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile1.png){ width=50% }{#fig:KIT_typeIV_temp2}
-
-
-![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile2.png){ width=50% }{#fig:KIT_typeIII_temp1}
+![Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_II_tprofile1.png){#fig:KIT_typeIV_temp2 width=80%}
 
 
-![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile1.png){ width=50% }{#fig:KIT_typeIII_temp2}
+![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile2.png){#fig:KIT_typeIII_temp1 width=80%}
+
+
+![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile1.png){#fig:KIT_typeIII_temp2 width=80%}
 
 
 ## Validation against Type III cylinder filling experiments
@@ -1314,11 +1314,11 @@ For HydDown type III cylinder filling experimental validation, the work of Dicke
 
 : Key vessel data and initial conditions for Type III cylinder simulations.  {#tbl:Dicken-TypeIII}
 
-Simulation results from HydDown is compared to the experimental data of Dicken and Mérida in Figure [@fig:Dicken_typeIII]. As seen from the results the gas temperature calculated with HydDown is generally higher than the experimental results. The final calculated temperature is 74.2$^\circ$C, compared to the final measured temperature of 68.9$^\circ$C. The CFD calculations performed by Dicken and Mérida [@Dicken] was also higher than the experimental value (71.3$\circ$C). Another CFD analysis of the investigated system by Hall and Ramasamy [@Hall] revealed a final mean gas temperature of 71.4$^\circ$C, and a zero-dimensional model by the same authors gave an end temperature of 72.4$^\circ$C.   
+Simulation results from HydDown is compared to the experimental data of Dicken and Mérida in Figure [@fig:Dicken_typeIII]. As seen from the results the gas temperature calculated with HydDown is generally higher than the experimental results. The final calculated temperature is 74.2$^\circ$C, compared to the final measured temperature of 68.9$^\circ$C. The CFD calculations performed by Dicken and Mérida [@Dicken] was also higher than the experimental value (71.3$^\circ$C). Another CFD analysis of the investigated system by Hall and Ramasamy [@Hall] revealed a final mean gas temperature of 71.4$^\circ$C, and a zero-dimensional model by the same authors gave an end temperature of 72.4$^\circ$C.   
 
 ![Calculations of vessel pressure, gas temperature and wall temperature (inner/outer) with 1D transient heat conduction model during hydrogen filling. Comparison is made against experimental results from Dicken and Mérida [@Dicken] for pressure and gas temperature. Inner wall (liner) temperature is compared to CFD simulations [@Dicken] ](docs/img/dicken_typeIII.png){#fig:Dicken_typeIII}
 
-In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric avareage of all seven positions from front to back of the cylinder. As seen from Figure [@fig:Dicken_typeIII] the average value from HydDown (52.5$\circ$C)compares very well with the  average CFD results at the end of filling (52.1$\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
+In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric avareage of all seven positions from front to back of the cylinder. As seen from Figure [@fig:Dicken_typeIII] the average value from HydDown (52.5$^\circ$C)compares very well with the  average CFD results at the end of filling (52.1$^\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $^\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
 
 
 # Similar software
@@ -1326,3 +1326,6 @@ To be written
 
 # Future developmet of HydDown
 To be written 
+
+# Example use cases 
+To be written
