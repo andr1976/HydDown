@@ -909,10 +909,10 @@ class HydDown:
                         "g+",
                         label="Inner wall",
                     )
-                if "wall_high" in temp:
+                if "wall_low" in temp:
                     plt.plot(
-                        np.asarray(temp["wall_high"]["time"]),
-                        np.asarray(temp["wall_high"]["temp"]) - 273.15,
+                        np.asarray(temp["wall_low"]["time"]),
+                        np.asarray(temp["wall_low"]["temp"]) - 273.15,
                         "g-.",
                         label="Wall high",
                     )
