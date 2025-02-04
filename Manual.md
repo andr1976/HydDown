@@ -1278,19 +1278,18 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 In Figures [@fig:KIT_typeIV_temp1]  [@fig:KIT_typeIII_temp2] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
 
 <div id="fig:figureRef">
-
-![(A)](docs/img/KIT_II_tprofile2.png){#fig:KIT_typeIV_temp1 width=70%}
-
-![(B)](docs/img/KIT_II_tprofile1.png){#fig:KIT_typeIV_temp2 width=70%}
+![](docs/img/KIT_II_tprofile2.png){#fig:KIT_typeIV_temp1 width=70%}
+![](docs/img/KIT_II_tprofile1.png){#fig:KIT_typeIV_temp2 width=80%}
 
 Calculations of type IV vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell
 </div>
 
-![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile2.png){#fig:KIT_typeIII_temp1 width=70%}
+<div id="fig:figureRef1">
+![](docs/img/KIT_III_tprofile2.png){#fig:KIT_typeIII_temp1 width=70%}
+![](docs/img/KIT_III_tprofile1.png){#fig:KIT_typeIII_temp2 width=80%}
 
-
-![Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell](docs/img/KIT_III_tprofile1.png){#fig:KIT_typeIII_temp2 width=70%}
-
+Calculations of type III vessel wall temperature profile with 1D transient heat conduction. z=0 is the bonding interfance between liner and composite, z<0 is the liner and z>0 is the composite shell
+</div>
 
 ## Validation against Type III cylinder filling experiments
 For HydDown type III cylinder filling experimental validation, the work of Dicken and Mérida [@Dicken] is used. They conducted experiments of filling a 74 liter type III cylinder and also compared measurements with CFD calculations. Details of type III cyinder tested is shown in Table [@tbl:Dicken-TypeIII]. For HydDown simulation the length of a flat-ended cylinder has been adjusted to give a total cylinder volume of 74 liter. The time-dependent filling mass flow  has been sourced from ref. [@Dicken] and scaled in order to match the final experimental pressure.
