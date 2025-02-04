@@ -55,3 +55,9 @@ src/hyddown/__pycache__/hdclass.cpython-310.pyc
 src/hyddown/__pycache__/thermesh.cpython-310.pyc
 src/hyddown/__pycache__/transport.cpython-310.pyc
 src/hyddown/__pycache__/validator.cpython-310.pyc
+src/hyddown/__pycache__/__init__.cpython-311.pyc
+src/hyddown/__pycache__/fire.cpython-311.pyc
+src/hyddown/__pycache__/hdclass.cpython-311.pyc
+src/hyddown/__pycache__/thermesh.cpython-311.pyc
+src/hyddown/__pycache__/transport.cpython-311.pyc
+src/hyddown/__pycache__/validator.cpython-311.pyc
