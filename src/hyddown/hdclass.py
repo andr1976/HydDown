@@ -552,6 +552,7 @@ class HydDown:
                         ):
                             nn = 11  # number of nodes
                             z = np.linspace(0, self.thickness, nn)
+                            self.z = z
                             mesh = tm.Mesh(
                                 z, tm.LinearElement
                             )  # Or `QuadraticElement` to
@@ -908,10 +909,10 @@ class HydDown:
                         "g+",
                         label="Inner wall",
                     )
-                if "wall_high" in temp:
+                if "wall_low" in temp:
                     plt.plot(
-                        np.asarray(temp["wall_high"]["time"]),
-                        np.asarray(temp["wall_high"]["temp"]) - 273.15,
+                        np.asarray(temp["wall_low"]["time"]),
+                        np.asarray(temp["wall_low"]["temp"]) - 273.15,
                         "g-.",
                         label="Wall high",
                     )
@@ -1014,7 +1015,7 @@ class HydDown:
         import numpy as np
 
         if filename != None:
-            plt.figure(3, figsize=(12, 7), dpi=300)
+            plt.figure(3, figsize=(8, 6))
         else:
             plt.figure(3, figsize=(8, 6))
 
@@ -1035,10 +1036,10 @@ class HydDown:
 
 
         if filename != None:
-                plt.savefig(filename + "_tprofile1.png")
+                plt.savefig(filename + "_tprofile1.png", dpi=300)
 
         if filename != None:
-            plt.figure(4, figsize=(12, 7), dpi=300)
+            plt.figure(4, figsize=(8, 6))
         else:
             plt.figure(4, figsize=(8, 6))
 
@@ -1052,7 +1053,7 @@ class HydDown:
         plt.title("Temperature distribution")
 
         if filename != None:
-            plt.savefig(filename + "_tprofile2.png")
+            plt.savefig(filename + "_tprofile2.png", dpi=300)
         if verbose:
             plt.show()
 

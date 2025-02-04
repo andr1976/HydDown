@@ -74,9 +74,12 @@ def read_input():
                 back_pressure = float(back_pressure) * 1e5
 
                 #fluid = st.selectbox('Select fluid', ('H2', 'He', 'N2', 'air', 'CH4', 'O2'))
-                fluid = st.selectbox('Select fluid', ('H2', 'NG', 'He', 'N2', 'air', 'CH4','O2'))
+                fluid = st.selectbox('Select fluid', ('H2', 'NG', 'NG1', 'He', 'N2', 'air', 'CH4','O2'))
                 if fluid == 'NG':
                     fluid = "Methane[0.89571]&Ethane[5.6739e-02]&Propane[2.30395e-02]&Butane[1.03E-02]&Pentane[2.67E-03]&CO2[0.84e-02]&N2[0.3080e-2]"
+                if fluid == 'NG1':
+                    fluid = "Methane[0.860231]&Ethane[0.078217]&Propane[0.033786]&Butane[9.210E-03]&Pentane[2.573E-03]&Hexane[3.560E-04]&CO2[1.206E-02]&N2[3.701E-03]"
+    
                 mode = st.selectbox('Select mode', ('filling', 'discharge'))
                 temp = st.text_input("Initial temp. (C):", 25)
                 temp = float(temp) + 273.15
