@@ -1282,7 +1282,7 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 
 ![Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for a hypothetical type III cylinder with dimensions similar to the KIT type IV cylinder.](docs/img/KIT_type_III.png){#fig:KIT_typeIII}
 
-In Figures [@fig:figureVI] and [@fig:figureIII] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
+In Figures [@fig:figureIV] and [@fig:figureIII] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. [@MELIDEO20177304].
 
 <div id="fig:figureIV">
 ![Temperature thorugh wall at different times](docs/img/KIT_II_tprofile2.png){#fig:KIT_typeIV_temp1 width=70%}
