@@ -1227,7 +1227,7 @@ The experimental setup is described in more detail in refs. [@ACOSTA][@DEMIGUEL]
 | Composite shell     | G&CRPE         |
 | **Initial conditions** |             |
 | Initial pressure    |  700 bar       |
-| Initial temperature | 25$\pm$2$^\circ$C   |
+| Initial temperature | 25$\pm 2^\circ$C   |
 | Gas                 | Hydrogen       |
 | Discharge rate      | 1.8 g/s        |
 
