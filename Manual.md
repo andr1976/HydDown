@@ -670,7 +670,7 @@ When the pressure inside the vessels reaches the opening pressure, the force exe
 The flow of gas out of the vessels will lower the pressure and thereby also the force exerted on the disc.
 When the pressure in the vessels is reduced to the reset pressure, the PSV will close and the disc will again hinder the gas flow.
 
-![Conventional/pop action PSV adapted from [@iskov] and [@API520]](docs/img/PSV.pdf){#fig:psv width=80%}
+![Conventional/pop action PSV adapted from [@iskov] and [@API520]](docs/img/PSV.pdf){#fig:psv width=30%}
 
 The relief valve model implemented in HydDown is the API 520 equations [@API520] for gas relief for both sonic/critical as well as subcritical flow. No corrections factors are implemented in HydDown.
 
@@ -1026,9 +1026,9 @@ This plot is included in the example main script that comes with HydDown and ser
 
 For multi-component mixtures CoolProp does not provide solver for PH and UV-problems and these solvers have been included in HydDown by wrapping the CoolProp PT solver with a Nelder-Mead algorithm for solving for internal energy and density or pressure and enthalpy.
 
-![Gas discharge of multicomponent mixture](docs/img/ng_all.png){#fig:ng_all}
+![Gas discharge of multicomponent mixture](docs/img/ng_all.png){#fig:ng_all width=90%}
 
-![Multicomponent mixture phase envelope and pressure and temperature trajectory of the vessel inventory during discharge](docs/img/ng_pe.png){#fig:ng_pe width=80%}
+![Multicomponent mixture phase envelope and pressure and temperature trajectory of the vessel inventory during discharge](docs/img/ng_pe.png){#fig:ng_pe width=70%}
 
 # Validation
 The code is provided as-is.
@@ -1131,12 +1131,13 @@ The results are shown in [@Fig:N2val].
 The discharge coefficient of the orifice has been set to 0.8 in order to match the vessel pressure profile.
 The back pressure is set to atmospheric conditions.
 
-![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](docs/img/N2_filling.png){#fig:N2val}
 
 As seen from [@Fig:N2val], the calculations compare well with the experimental results.
 The calculated temperature of the bulk vapor is within the experimental range of measured temperature at all times during the simulation.
 It is also noted that the minimum temperature is reached at approximately the same time as in the experiments.
 The calculated vessel inner wall temperature does not decline as rapidly as the experiments, but from around a calculation time of 60 s, the temperature is within the experimentally observed inner wall temperature.
+
+![Calculations of nitrogen discharge emulating experiment I1 from [@Haque1992b]. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](docs/img/N2_filling.png){#fig:N2val}
 
 
 ## Multi-component discharge (Type I)
