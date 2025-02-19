@@ -1,5 +1,5 @@
 # HydDown hydrogen/other gas depressurisation
-# Copyright (c) 2021 Anders Andreasen
+# Copyright (c) 2021-2025 Anders Andreasen
 # Published under an MIT license
 
 import math
@@ -220,9 +220,9 @@ class HydDown:
         self.temp_profile = []
         self.rho0 = (
             self.fluid.rhomass()
-        )  # PropsSI("D", "T", self.T0, "P", self.p0, self.species)
+        ) 
         self.m0 = self.rho0 * self.vol
-        self.MW = self.fluid.molar_mass()  # PropsSI("M", self.species)
+        self.MW = self.fluid.molar_mass()  
 
     def PHres(self, T, P, H):
         """
@@ -463,9 +463,6 @@ class HydDown:
         # setting heat transfer parameters
         T_profile, T_profile2 = 0, 0
         relief_area = []
-        # Run actual integration by updating values by numerical integration/time stepping
-        # Mass of fluid is calculated from previou#
-        # self.fluid.build_phase_envelope("dummy")
         for i in tqdm(
             range(1, len(self.time_array)),
             desc="hyddown",
@@ -601,22 +598,16 @@ class HydDown:
                             rho_liner = self.input["vessel"]["liner_density"]
                             cp_liner = self.input["vessel"]["liner_heat_capacity"]
                             liner = tm.isothermal_model(k_liner, rho_liner, cp_liner)
-                            # shell = tm.isothermal_model(k, rho, cp)
                             shell = tm.isothermal_model(k, rho, cp)
 
-                            # Domain and mesh for shell
                             thk = self.input["vessel"]["thickness"]  # thickness in m
                             nn = 11  # number of nodes
                             z_shell = np.linspace(0, thk, nn)  # node locations
-                            # the bottom surface is located at z = 0.0
-
-                            # # Domain and mesh for liner
+                            
                             thk = self.input["vessel"][
                                 "liner_thickness"
-                            ]  # thickness in m
-                            # # nn = 11  # number of nodes
+                            ]  
                             z_liner = np.linspace(-thk, 0, nn)  # node locations
-                            # # the top surface is now located at z = 0.0
                             z2 = np.hstack((z_liner, z_shell[1:]))
                             self.z = z2
                             mesh2 = tm.Mesh(z2, tm.LinearElement)
@@ -717,32 +708,20 @@ class HydDown:
                 )
 
                 self.U_mass[i] = U_end / self.mass_fluid[i]
-                # P1, T1, self.U_res[i] = self.UDproblem(
-                #     U_end / self.mass_fluid[i],
-                #     self.rho[i],
-                #     self.P[i - 1],
-                #     self.T_fluid[i - 1],
-                # )
-
+                
+                # Not pretty if-statement and a hack for fire relief area estimation. Most cases go directly to the first ...else... clause
                 if input["valve"]["type"] == "relief":
                     if self.Pset <=  self.P[i-1]:
                         T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.Pset, Tguess = self.T_fluid[i-1]+5, relief=True)        
                         self.T_fluid[i] = T1
-                        
-                        #T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.Pset, Tguess = self.T_fluid[i-1]+5, relief=True)        
-                        #T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.P[i-1], Tguess = self.T_fluid[i-1]+5, relief=True)        
-                        #self.fluid.update(CP.PT_INPUTS, self.P[i-1], T1)
-                        #rho_old = self.fluid.rhomass()
                         P1 = self.Pset
                         self.P[i] = P1
                         self.T_fluid[i] = T1
                         self.fluid.update(CP.PT_INPUTS, self.P[i], T1)
-                        #self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i-1] / self.tstep
                         self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i] / self.tstep
                         relief_area.append(fluids.API520_A_g(self.mass_rate[i],T1,self.fluid.compressibility_factor(),self.MW*1000,self.fluid.cp0molar()/(self.fluid.cp0molar() - 8.314),P1,self.p_back,0.975,1,1))
                     else:
                         self.mass_rate[i] = 0
-                        self.U_mass[i] = U_end / self.mass_fluid[i]
                         P1, T1, self.U_res[i] = self.UDproblem(
                             U_end / self.mass_fluid[i],
                             self.rho[i],
@@ -755,7 +734,6 @@ class HydDown:
                         self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
 
                 else:
-                    self.U_mass[i] = U_end / self.mass_fluid[i]
                     P1, T1, self.U_res[i] = self.UDproblem(
                         U_end / self.mass_fluid[i],
                         self.rho[i],
@@ -770,13 +748,11 @@ class HydDown:
             else:
                 raise NameError("Unknown calculation method: " + self.method)
 
-            # Updating H,S,U states
             self.H_mass[i] = self.fluid.hmass()
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
 
-            # print("Progress", int(i/(self.time_tot / self.tstep)*100),"%",end="\r")
-
+            
             # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":
                 if "&" in self.species:
@@ -791,7 +767,7 @@ class HydDown:
             cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
 
             # Finally updating the mass rate for the mass balance in the next time step            
-            
+            # Already done of the valve is "relief" (estimation)
             if input["valve"]["type"] == "orifice":
                 if input["valve"]["flow"] == "filling":
                     k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar() - 8.314)
