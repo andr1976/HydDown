@@ -1,5 +1,5 @@
 # HydDown hydrogen/other gas depressurisation
-# Copyright (c) 2021 Anders Andreasen
+# Copyright (c) 2021-2025 Anders Andreasen
 # Published under an MIT license
 
 from cerberus import Validator
@@ -78,6 +78,11 @@ def validate_mandatory_ruleset(input):
                     "required": False,
                     "type": "string",
                     "allowed": ["vertical", "horizontal"],
+                },
+                "type" : {
+                    "required" : False,
+                    "type" : "string",
+                    "allowed" : {"Flat-end", "ASME F&D", "DIN"}
                 },
             },
         },
@@ -400,6 +405,11 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["vertical", "horizontal"],
                         },
+                        "type": {
+                            "required": False,
+                            "type": "string",
+                            "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                        },
                     },
                 },
                 "heat_transfer": {
@@ -448,6 +458,7 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["vertical", "horizontal"],
                         },
+                        "type" : {"required": False, "type" : "string", "allowed": ["Flat-end", "DIN", "ASME F&D"] }
                     },
                 },
                 "heat_transfer": {
@@ -487,6 +498,7 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["vertical", "horizontal"],
                         },
+                        "type" : {"required": False, "type" : "string", "allowed": ["Flat-end", "DIN", "ASME F&D"] }
                     },
                 },
                 "heat_transfer": {
@@ -523,6 +535,7 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["vertical", "horizontal"],
                         },
+                        "type" : {"required": False, "type" : "string", "allowed": ["Flat-end", "DIN", "ASME F&D"] }
                     },
                 },
                 "heat_transfer": {

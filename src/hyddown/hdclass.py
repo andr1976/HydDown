@@ -55,8 +55,26 @@ class HydDown:
         """
         self.length = self.input["vessel"]["length"]
         self.diameter = self.input["vessel"]["diameter"]
+        if "type" in self.input["vessel"]:
+            self.vessel_type = self.input["vessel"]["type"]
+        else:
+            self.vessel_type = "Flat-end"
+        
+        if self.input["vessel"]["orientation"] == "horizontal":
+            horizontal = True
+        else:
+            horizontal = False
 
-        self.inner_vol = fluids.TANK(L=self.length,D=self.diameter)
+        # Orientation
+        if self.vessel_type == "Flat-end":
+            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length, horizontal=horizontal)
+        elif self.vessel_type == "ASME F&D":
+            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length, sideA='torispherical', sideB='torispherical', horizontal=horizontal)
+        elif self.vessel_type == "DIN":
+            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length,  sideA='torispherical', sideB='torispherical', sideA_f=1, sideA_k=0.1, sideB_f=1, sideB_k=0.1, horizontal=horizontal)
+    
+        print(self.inner_vol.V_total)
+        
         if "thickness" in self.input['vessel']:
             self.outer_vol = self.inner_vol.add_thickness(self.input['vessel']['thickness'])
 
