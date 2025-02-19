@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.optimize import minimize
+from scipy.optimize import root_scalar  
 from CoolProp.CoolProp import PropsSI
 import CoolProp.CoolProp as CP
 from hyddown import transport as tp
@@ -96,6 +97,9 @@ class HydDown:
                 self.Pset = self.input["valve"]["set_pressure"]
                 self.blowdown = self.input["valve"]["blowdown"]
                 self.psv_state = "closed"
+        elif self.input['valve']['type'] == "relief":
+            self.p_back = self.input["valve"]["back_pressure"]
+            self.Pset = self.input["valve"]["set_pressure"]
         elif self.input["valve"]["type"] == "controlvalve":
             self.p_back = self.input["valve"]["back_pressure"]
             self.Cv = self.input["valve"]["Cv"]
@@ -242,8 +246,24 @@ class HydDown:
         """
         self.vent_fluid.update(CP.PT_INPUTS, P, T)
         return ((H - self.vent_fluid.hmass()) / H) ** 2
+    
+    def PHres_relief(self, T, P, H):
+        """
+        Residual enthalpy function to be minimised during a PH-problem
 
-    def PHproblem(self, H, P, Tguess):
+        Parameters
+        ----------
+        H : float
+            Enthalpy at initial/final conditions
+        P : float
+            Pressure at final conditions.
+        T : float
+            Updated estimate for the final temperature at P,H
+        """
+        self.fluid.update(CP.PT_INPUTS, P, T)
+        return ((H - self.fluid.hmass()) / H)
+
+    def PHproblem(self, H, P, Tguess, relief=False):
         """
         Defining a constant pressure, constant enthalpy problem i.e. typical adiabatic
         problem like e.g. valve flow for the vented flow (during discharge).
@@ -264,14 +284,23 @@ class HydDown:
         # Multicomponent case
         if "&" in self.species:
             x0 = Tguess
-            res = minimize(
-                self.PHres,
-                x0,
-                args=(P, H),
-                method="Nelder-Mead",
-                options={"xatol": 0.1, "fatol": 0.001},
-            )
-            T1 = res.x[0]
+            if relief == False: 
+                res = minimize(
+                    self.PHres,
+                    x0,
+                    args=(P, H),
+                    method="Nelder-Mead",
+                    options={"xatol": 0.1, "fatol": 0.001},
+                )
+                T1 = res.x[0]
+            else:
+                res = root_scalar(
+                    self.PHres_relief,
+                    args=(P, H),
+                    x0 = x0,
+                    method="newton",
+                )
+                T1 = res.root
         # single component fluid case
         else:
             T1 = PropsSI("T", "P", P, "H", H, self.species)
@@ -442,7 +471,8 @@ class HydDown:
         T_profile, T_profile2 = 0, 0
 
         # Run actual integration by updating values by numerical integration/time stepping
-        # Mass of fluid is calculated from previous time step mass and mass flow rate
+        # Mass of fluid is calculated from previou#
+        # self.fluid.build_phase_envelope("dummy")
         for i in tqdm(
             range(1, len(self.time_array)),
             desc="hyddown",
@@ -648,7 +678,9 @@ class HydDown:
                     ) * self.tstep / (
                         self.vessel_cp * self.vessel_density * self.vol_solid
                     )
-
+                    self.T_inner_wall[i] = self.T_vessel[i]
+                    self.T_outer_wall[i] = self.T_vessel[i]
+                    
                 elif self.heat_method == "specified_U":
                     self.Q_inner[i] = (
                         self.surf_area_outer
@@ -680,7 +712,6 @@ class HydDown:
                 else:
                     h_in = self.fluid.hmass()
 
-                P2 = self.P[i - 1]
                 if i > 1:
                     P1 = self.P[i - 2]
                 else:
@@ -691,17 +722,50 @@ class HydDown:
                     - self.tstep * self.mass_rate[i - 1] * h_in
                     + self.tstep * self.Q_inner[i]
                 )
-                self.U_mass[i] = U_end / self.mass_fluid[i]
-                P1, T1, self.U_res[i] = self.UDproblem(
-                    U_end / self.mass_fluid[i],
-                    self.rho[i],
-                    self.P[i - 1],
-                    self.T_fluid[i - 1],
-                )
 
-                self.P[i] = P1
-                self.T_fluid[i] = T1
-                self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+                self.U_mass[i] = U_end / self.mass_fluid[i]
+                # P1, T1, self.U_res[i] = self.UDproblem(
+                #     U_end / self.mass_fluid[i],
+                #     self.rho[i],
+                #     self.P[i - 1],
+                #     self.T_fluid[i - 1],
+                # )
+
+                if input["valve"]["type"] == "relief":
+                    if self.Pset <=  self.P[i-1]:
+                #        pass
+                        T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.Pset, Tguess = self.T_fluid[i-1]+5, relief=True)        
+                        P1 = self.Pset
+                        self.P[i] = P1
+                        self.T_fluid[i] = T1
+                        self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+                        self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i-1] / self.tstep
+                    
+                    else:
+                        self.mass_rate[i] = 0
+                        self.U_mass[i] = U_end / self.mass_fluid[i]
+                        P1, T1, self.U_res[i] = self.UDproblem(
+                            U_end / self.mass_fluid[i],
+                            self.rho[i],
+                            self.P[i - 1],
+                            self.T_fluid[i - 1],
+                        )
+                        self.P[i] = P1
+                        self.T_fluid[i] = T1
+                        self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+
+                else:
+                    self.U_mass[i] = U_end / self.mass_fluid[i]
+                    P1, T1, self.U_res[i] = self.UDproblem(
+                        U_end / self.mass_fluid[i],
+                        self.rho[i],
+                        self.P[i - 1],
+                        self.T_fluid[i - 1],
+                    )    
+                        
+                    self.P[i] = P1
+                    self.T_fluid[i] = T1
+                    self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
 
             else:
                 raise NameError("Unknown calculation method: " + self.method)
@@ -726,7 +790,8 @@ class HydDown:
 
             cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
 
-            # Finally updating the mass rate for the mass balance in the next time step
+            # Finally updating the mass rate for the mass balance in the next time step            
+            
             if input["valve"]["type"] == "orifice":
                 if input["valve"]["flow"] == "filling":
                     k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar() - 8.314)

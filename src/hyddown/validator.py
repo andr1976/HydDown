@@ -89,7 +89,7 @@ def validate_mandatory_ruleset(input):
                 "type": {
                     "required": True,
                     "type": "string",
-                    "allowed": ["orifice", "psv", "controlvalve", "mdot"],
+                    "allowed": ["orifice", "psv", "controlvalve", "mdot", "relief"],
                 },
                 "flow": {
                     "required": True,
@@ -572,6 +572,39 @@ def valve_validation(input):
         : bool
         True for success, False for failure
     """
+    schema_relief = {
+        "initial": {"required": True},
+        "calculation": {"required": True},
+        "validation": {"required": False},
+        "vessel": {"required": True},
+        "heat_transfer": {"required": True},
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["orifice", "psv", "controlvalve", "mdot", "relief"],
+                },
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge", "filling"],
+                },
+                "diameter": {"required": False, "type": "number", "min": 0},
+                "discharge_coef": {"required": False, "type": "number", "min": 0},
+                "set_pressure": {"required": True, "type": "number", "min": 0},
+                "end_pressure": {"type": "number", "min": 0},
+                "blowdown": {"required": False, "type": "number", "min": 0, "max": 1},
+                "back_pressure": {"required": True, "type": "number", "min": 0},
+                "Cv": {"type": "number", "min": 0},
+                "mdot": {"type": ["number", "list"]},
+                "time": {"type": "list"},
+            },
+        },
+    }
 
     schema_psv = {
         "initial": {"required": True},
@@ -701,6 +734,12 @@ def valve_validation(input):
         },
     }
 
+    if input["valve"]["type"] == "relief":
+        v = Validator(schema_relief)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
+    
     if input["valve"]["type"] == "psv":
         v = Validator(schema_psv)
         retval = v.validate(input)
