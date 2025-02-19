@@ -14,7 +14,7 @@ from hyddown import transport as tp
 from hyddown import validator
 from hyddown import fire
 from hyddown import thermesh as tm
-
+import fluids 
 
 class HydDown:
     """
@@ -55,6 +55,10 @@ class HydDown:
         """
         self.length = self.input["vessel"]["length"]
         self.diameter = self.input["vessel"]["diameter"]
+
+        self.inner_vol = fluids.TANK(L=self.length,D=self.diameter)
+        if "thickness" in self.input['vessel']:
+            self.outer_vol = self.inner_vol.add_thickness(self.input['vessel']['thickness'])
 
         self.p0 = self.input["initial"]["pressure"]
         self.T0 = self.input["initial"]["temperature"]
@@ -166,22 +170,11 @@ class HydDown:
         instantiating arrays for storing time-dependent results, setting additional
         required class attributes.
         """
-        self.vol = self.diameter**2 / 4 * math.pi * self.length  # m3
-        self.vol_tot = (
-            (self.diameter + 2 * self.thickness) ** 2
-            / 4
-            * math.pi
-            * (self.length + 2 * self.thickness)
-        )  # m3
+        self.vol = self.inner_vol.V_total
+        self.vol_tot = self.outer_vol.V_total
         self.vol_solid = self.vol_tot - self.vol
-        self.surf_area_outer = (
-            self.diameter + 2 * self.thickness
-        ) ** 2 / 4 * math.pi * 2 + (self.diameter + 2 * self.thickness) * math.pi * (
-            self.length + 2 * self.thickness
-        )
-        self.surf_area_inner = (self.diameter) ** 2 / 4 * math.pi * 2 + (
-            self.diameter
-        ) * math.pi * self.length
+        self.surf_area_outer = self.outer_vol.A
+        self.surf_area_inner = self.inner_vol.A
 
         self.fluid = CP.AbstractState("HEOS", self.comp)
         self.fluid.specify_phase(CP.iphase_gas)
@@ -469,7 +462,7 @@ class HydDown:
 
         # setting heat transfer parameters
         T_profile, T_profile2 = 0, 0
-
+        relief_area = []
         # Run actual integration by updating values by numerical integration/time stepping
         # Mass of fluid is calculated from previou#
         # self.fluid.build_phase_envelope("dummy")
@@ -733,14 +726,20 @@ class HydDown:
 
                 if input["valve"]["type"] == "relief":
                     if self.Pset <=  self.P[i-1]:
-                #        pass
                         T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.Pset, Tguess = self.T_fluid[i-1]+5, relief=True)        
+                        self.T_fluid[i] = T1
+                        
+                        #T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.Pset, Tguess = self.T_fluid[i-1]+5, relief=True)        
+                        #T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.P[i-1], Tguess = self.T_fluid[i-1]+5, relief=True)        
+                        #self.fluid.update(CP.PT_INPUTS, self.P[i-1], T1)
+                        #rho_old = self.fluid.rhomass()
                         P1 = self.Pset
                         self.P[i] = P1
                         self.T_fluid[i] = T1
-                        self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
-                        self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i-1] / self.tstep
-                    
+                        self.fluid.update(CP.PT_INPUTS, self.P[i], T1)
+                        #self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i-1] / self.tstep
+                        self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i] / self.tstep
+                        relief_area.append(fluids.API520_A_g(self.mass_rate[i],T1,self.fluid.compressibility_factor(),self.MW*1000,self.fluid.cp0molar()/(self.fluid.cp0molar() - 8.314),P1,self.p_back,0.975,1,1))
                     else:
                         self.mass_rate[i] = 0
                         self.U_mass[i] = U_end / self.mass_fluid[i]
@@ -750,6 +749,7 @@ class HydDown:
                             self.P[i - 1],
                             self.T_fluid[i - 1],
                         )
+                        
                         self.P[i] = P1
                         self.T_fluid[i] = T1
                         self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
@@ -853,6 +853,8 @@ class HydDown:
             if massflow_stop_switch:
                 self.mass_rate[i] = 0
         self.isrun = True
+        if relief_area:
+            print("Relief area:", 2*math.sqrt(max(relief_area[1:])/math.pi), max(self.mass_rate))
 
     def get_dataframe(self):
         """
