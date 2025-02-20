@@ -73,7 +73,6 @@ class HydDown:
         elif self.vessel_type == "DIN":
             self.inner_vol = fluids.TANK(D = self.diameter, L=self.length,  sideA='torispherical', sideB='torispherical', sideA_f=1, sideA_k=0.1, sideB_f=1, sideB_k=0.1, horizontal=horizontal)
     
-        print(self.inner_vol.V_total)
         
         if "thickness" in self.input['vessel']:
             self.outer_vol = self.inner_vol.add_thickness(self.input['vessel']['thickness'])
@@ -235,6 +234,7 @@ class HydDown:
         self.mass_fluid = np.zeros(data_len)
         self.mass_rate = np.zeros(data_len)
         self.time_array = np.zeros(data_len)
+        self.relief_area = np.zeros(data_len)
         self.temp_profile = []
         self.rho0 = (
             self.fluid.rhomass()
@@ -737,7 +737,7 @@ class HydDown:
                         self.T_fluid[i] = T1
                         self.fluid.update(CP.PT_INPUTS, self.P[i], T1)
                         self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i] / self.tstep
-                        relief_area.append(fluids.API520_A_g(self.mass_rate[i],T1,self.fluid.compressibility_factor(),self.MW*1000,self.fluid.cp0molar()/(self.fluid.cp0molar() - 8.314),P1,self.p_back,0.975,1,1))
+                        self.relief_area[i] = fluids.API520_A_g(self.mass_rate[i],T1,self.fluid.compressibility_factor(),self.MW*1000,self.fluid.cp0molar()/(self.fluid.cp0molar() - 8.314),P1,self.p_back,0.975,1,1)
                     else:
                         self.mass_rate[i] = 0
                         P1, T1, self.U_res[i] = self.UDproblem(
@@ -847,8 +847,12 @@ class HydDown:
             if massflow_stop_switch:
                 self.mass_rate[i] = 0
         self.isrun = True
-        if relief_area:
-            print("Relief area:", 2*math.sqrt(max(relief_area[1:])/math.pi), max(self.mass_rate))
+
+        if input["valve"]["type"] == "relief":
+            idx_max = self.mass_rate.argmax()
+            self.mass_rate[idx_max] = (self.mass_rate[idx_max-1] +  self.mass_rate[idx_max+1]) / 2
+            self.relief_area[idx_max] = (self.relief_area[idx_max-1] +  self.relief_area[idx_max+1]) / 2
+            #print("Relief area:", 2*math.sqrt(max(relief_area[1:])/math.pi), max(self.mass_rate))
 
     def get_dataframe(self):
         """
@@ -910,6 +914,7 @@ class HydDown:
             plt.figure(1, figsize=(8, 6))
 
         plt.subplot(221)
+        
         plt.plot(self.time_array, self.T_fluid - 273.15, "b", label="Fluid")
         if "thermal_conductivity" not in self.input["vessel"].keys():
             plt.plot(self.time_array, self.T_vessel - 273.15, "g", label="Vessel")
@@ -1021,6 +1026,7 @@ class HydDown:
 
         if verbose:
             plt.show()
+        return 
 
     def plot_envelope(self, filename=None, verbose=True):
         """
@@ -1168,6 +1174,7 @@ class HydDown:
 
         # Mass flows and inventory
         report["max_mass_rate"] = max(self.mass_rate)
+        report["time_max_mass_rate"] = self.time_array[self.mass_rate.argmax()]
         report["initial_mass"] = self.mass_fluid[0]
         report["final_mass"] = self.mass_fluid[-1]
         report["volume"] = self.vol
