@@ -1,0 +1,26 @@
+vessel:
+  length: 6.4
+  diameter: 0.619
+  thickness: 0.024
+  heat_capacity: 962
+  density: 2000. 
+  thermal_conductivity: 0.5
+  orientation: "horizontal"
+initial:
+  temperature: 279.0
+  pressure: 18200000.
+  fluid: "H2" 
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 760.
+valve:
+  flow: "discharge"
+  type: "mdot"
+  mdot : 0.02
+  back_pressure: 5001300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 279.
+  h_outer: 2. 
+  h_inner: "calc"
