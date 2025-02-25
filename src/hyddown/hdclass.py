@@ -600,7 +600,7 @@ class HydDown:
                                 z, tm.LinearElement
                             )  # Or `QuadraticElement` to
                             bc = [
-                                {"q": -self.Q_outer[i] / self.surf_area_outer},
+                                {"q": self.Q_outer[i] / self.surf_area_outer},
                                 {"q": -self.Q_inner[i] / self.surf_area_inner},
                             ]
                             cpeek = tm.isothermal_model(k, rho, cp)
@@ -639,7 +639,7 @@ class HydDown:
                                     mesh2.subdomain[j] = 1
                             bc = [
                                 {"q": -self.Q_inner[i] / self.surf_area_inner},
-                                {"q": -self.Q_outer[i] / self.surf_area_outer},
+                                {"q": self.Q_outer[i] / self.surf_area_outer},
                             ]
                             domain2 = tm.Domain(mesh2, [liner, shell], bc)
 
