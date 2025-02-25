@@ -1,6 +1,6 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.2
 Name: HydDown
-Version: 0.16.2
+Version: 0.20.0
 Summary: Hydrogen (or other pure gas phase species) pressure vessel filling and discharge calculations
 Home-page: https://github.com/andr1976/HydDown/
 Author: Anders Andreasen
@@ -9,7 +9,7 @@ Project-URL: Bug Tracker, https://github.com/andr1976/HydDown/new/main/issues
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
-Requires-Python: >=3.6
+Requires-Python: <3.12,>=3.6
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: tqdm
@@ -96,7 +96,7 @@ A few choices is made to keep things simple to begin with:
 - Mainly pure substances are considered (mixtures can be handled - but calculations can be slow)
 - Gas phase only 
 - No temperture stratification in the gas phase
-- No temperture gradient through vessel wall
+- Default option of no temperture gradient through vessel wall (now extended with a 1-D transient heat conduction model to allow modelling of vessels with low thermal conductivety e.g. type III/IV vessels).
 
 The code is as simple as possible. The above choices makes the problem a lot more simple to solve, First of all the pure substance Helmholtz energy based equation of state (HEOS) in coolprop offers a lot of convenience in terms of the property pairs/state variables that can be set independently. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
