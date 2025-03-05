@@ -9,6 +9,7 @@ initial:
   temperature: 298.15
   pressure: 10000000
   fluid: "N2" 
+  fluid: "N2[0.99]&O2[0.01]" 
 calculation:
   type: "energybalance"
   time_step: 1
@@ -16,9 +17,9 @@ calculation:
 valve:
   flow: "discharge"
   type: "psv"
-  diameter: 0.03507891862878782
+  diameter: 0.023
   discharge_coef: 0.975
-  set_pressure: 121000000
+  set_pressure: 12100000
   blowdown: 0.1
   back_pressure: 101300.
 heat_transfer:

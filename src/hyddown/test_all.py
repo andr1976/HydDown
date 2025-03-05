@@ -405,23 +405,23 @@ def test_thermesh():
     # Domain coordinates and thermal diffusivity
     z = np.linspace(0, L, 50)
 
-    fig = plt.figure(figsize=(2.4, 2.0))
-    ax = fig.add_subplot(1, 1, 1)
-    ax.set_title("Analytical solution")
-    ax.set_xlabel("z/L")
-    ax.set_ylabel(r"$\Delta$T ($^{\circ}$C)")
-    ax.set_xlim([0, 1])
-    for t in t_inc:
-        plt.plot(
-            z / L,
-            analytical_solution(z, t, rho, cp, k, h, T_inf),
-            "k",
-            linewidth=0.5,
-        )
-    plt.text(0.04, 1, "2")
-    plt.text(0.12, 5, "10")
-    plt.text(0.40, 8, "25")
-    plt.tight_layout()
+    # fig = plt.figure(figsize=(2.4, 2.0))
+    # ax = fig.add_subplot(1, 1, 1)
+    # ax.set_title("Analytical solution")
+    # ax.set_xlabel("z/L")
+    # ax.set_ylabel(r"$\Delta$T ($^{\circ}$C)")
+    # ax.set_xlim([0, 1])
+    # for t in t_inc:
+    #     plt.plot(
+    #         z / L,
+    #         analytical_solution(z, t, rho, cp, k, h, T_inf),
+    #         "k",
+    #         linewidth=0.5,
+    #     )
+    # plt.text(0.04, 1, "2")
+    # plt.text(0.12, 5, "10")
+    # plt.text(0.40, 8, "25")
+    # plt.tight_layout()
     # plt.savefig("../fig/conv_analytical_sol.png", dpi=600)
     # plt.show(block=False)
 
@@ -466,34 +466,31 @@ def test_thermesh():
     t, T = tm.solve_ht(domain, solver)
 
     # Plot numerical solution
-    fig = plt.figure(figsize=(2.4, 2.0))
-    ax = fig.add_subplot(1, 1, 1)
-    ax.set_title(
-        "FE solution (dz/L="
-        + str((z[1] - z[0]) / L)
-        + ", dt="
-        + str(dt)
-        + r" s., $\Theta$="
-        + str(theta)
-        + ")"
-    )
-    ax.set_xlabel("z/L")
-    ax.set_ylabel(r"$\Delta$T ($^{\circ}$C)")
-    ax.set_xlim([0, 1])
+    # fig = plt.figure(figsize=(2.4, 2.0))
+    # ax = fig.add_subplot(1, 1, 1)
+    # ax.set_title(
+    #     "FE solution (dz/L="
+    #     + str((z[1] - z[0]) / L)
+    #     + ", dt="
+    #     + str(dt)
+    #     + r" s., $\Theta$="
+    #     + str(theta)
+    #     + ")"
+    # )
+    # ax.set_xlabel("z/L")
+    # ax.set_ylabel(r"$\Delta$T ($^{\circ}$C)")
+    # ax.set_xlim([0, 1])
     t_inc = np.array([2, 10, 25]) / dt
-    for i in t_inc.astype(int):
-        plt.plot(z / L, T[i, :], "k", linewidth=0.5)
-    plt.text(0.04, 1, "2")
-    plt.text(0.12, 5, "10")
-    plt.text(0.40, 8, "25")
-    plt.tight_layout()
+    # for i in t_inc.astype(int):
+    #     plt.plot(z / L, T[i, :], "k", linewidth=0.5)
+    # plt.text(0.04, 1, "2")
+    # plt.text(0.12, 5, "10")
+    # plt.text(0.40, 8, "25")
+    # plt.tight_layout()
     # plt.savefig("../fig/conv_FE_t0.5_dt0.1s.png", dpi=600)
     # plt.show(block=False)
     analytical = analytical_solution(z, 25, rho, cp, k, h, T_inf)
-    print(T[-1, :])
-    print(analytical)
-    print(sum((T[-1, :] - analytical) ** 2))
-
+    
     assert T[-1, 0] == pytest.approx(analytical[0], abs=0.3)
     assert sum((T[-1, :] - analytical) ** 2) < 1
 

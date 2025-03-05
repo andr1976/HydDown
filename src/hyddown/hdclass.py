@@ -1,5 +1,5 @@
 # HydDown hydrogen/other gas depressurisation
-# Copyright (c) 2021 Anders Andreasen
+# Copyright (c) 2021-2025 Anders Andreasen
 # Published under an MIT license
 
 import math
@@ -7,13 +7,14 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.optimize import minimize
+from scipy.optimize import root_scalar  
 from CoolProp.CoolProp import PropsSI
 import CoolProp.CoolProp as CP
 from hyddown import transport as tp
 from hyddown import validator
 from hyddown import fire
 from hyddown import thermesh as tm
-
+import fluids 
 
 class HydDown:
     """
@@ -54,6 +55,32 @@ class HydDown:
         """
         self.length = self.input["vessel"]["length"]
         self.diameter = self.input["vessel"]["diameter"]
+        if "type" in self.input["vessel"]:
+            self.vessel_type = self.input["vessel"]["type"]
+        else:
+            self.vessel_type = "Flat-end"
+        
+        if "orientation" in  self.input['vessel']:
+            if self.input["vessel"]["orientation"] == "horizontal":
+                horizontal = True
+            else:
+                horizontal = False
+        else:
+            horizontal = True
+            # Orientation
+        
+        if self.vessel_type == "Flat-end":
+            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length, horizontal=horizontal)
+        elif self.vessel_type == "ASME F&D":
+            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length, sideA='torispherical', sideB='torispherical', horizontal=horizontal)
+        elif self.vessel_type == "DIN":
+            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length,  sideA='torispherical', sideB='torispherical', sideA_f=1, sideA_k=0.1, sideB_f=1, sideB_k=0.1, horizontal=horizontal)
+    
+        
+        if "thickness" in self.input['vessel']:
+            self.outer_vol = self.inner_vol.add_thickness(self.input['vessel']['thickness'])
+        else:
+            self.outer_vol = self.inner_vol.add_thickness(0.0)
 
         self.p0 = self.input["initial"]["pressure"]
         self.T0 = self.input["initial"]["temperature"]
@@ -96,6 +123,9 @@ class HydDown:
                 self.Pset = self.input["valve"]["set_pressure"]
                 self.blowdown = self.input["valve"]["blowdown"]
                 self.psv_state = "closed"
+        elif self.input['valve']['type'] == "relief":
+            self.p_back = self.input["valve"]["back_pressure"]
+            self.Pset = self.input["valve"]["set_pressure"]
         elif self.input["valve"]["type"] == "controlvalve":
             self.p_back = self.input["valve"]["back_pressure"]
             self.Cv = self.input["valve"]["Cv"]
@@ -162,22 +192,11 @@ class HydDown:
         instantiating arrays for storing time-dependent results, setting additional
         required class attributes.
         """
-        self.vol = self.diameter**2 / 4 * math.pi * self.length  # m3
-        self.vol_tot = (
-            (self.diameter + 2 * self.thickness) ** 2
-            / 4
-            * math.pi
-            * (self.length + 2 * self.thickness)
-        )  # m3
+        self.vol = self.inner_vol.V_total
+        self.vol_tot = self.outer_vol.V_total
         self.vol_solid = self.vol_tot - self.vol
-        self.surf_area_outer = (
-            self.diameter + 2 * self.thickness
-        ) ** 2 / 4 * math.pi * 2 + (self.diameter + 2 * self.thickness) * math.pi * (
-            self.length + 2 * self.thickness
-        )
-        self.surf_area_inner = (self.diameter) ** 2 / 4 * math.pi * 2 + (
-            self.diameter
-        ) * math.pi * self.length
+        self.surf_area_outer = self.outer_vol.A
+        self.surf_area_inner = self.inner_vol.A
 
         self.fluid = CP.AbstractState("HEOS", self.comp)
         self.fluid.specify_phase(CP.iphase_gas)
@@ -220,12 +239,13 @@ class HydDown:
         self.mass_fluid = np.zeros(data_len)
         self.mass_rate = np.zeros(data_len)
         self.time_array = np.zeros(data_len)
+        self.relief_area = np.zeros(data_len)
         self.temp_profile = []
         self.rho0 = (
             self.fluid.rhomass()
-        )  # PropsSI("D", "T", self.T0, "P", self.p0, self.species)
+        ) 
         self.m0 = self.rho0 * self.vol
-        self.MW = self.fluid.molar_mass()  # PropsSI("M", self.species)
+        self.MW = self.fluid.molar_mass()  
 
     def PHres(self, T, P, H):
         """
@@ -242,8 +262,24 @@ class HydDown:
         """
         self.vent_fluid.update(CP.PT_INPUTS, P, T)
         return ((H - self.vent_fluid.hmass()) / H) ** 2
+    
+    def PHres_relief(self, T, P, H):
+        """
+        Residual enthalpy function to be minimised during a PH-problem
 
-    def PHproblem(self, H, P, Tguess):
+        Parameters
+        ----------
+        H : float
+            Enthalpy at initial/final conditions
+        P : float
+            Pressure at final conditions.
+        T : float
+            Updated estimate for the final temperature at P,H
+        """
+        self.fluid.update(CP.PT_INPUTS, P, T)
+        return ((H - self.fluid.hmass()) / H)
+
+    def PHproblem(self, H, P, Tguess, relief=False):
         """
         Defining a constant pressure, constant enthalpy problem i.e. typical adiabatic
         problem like e.g. valve flow for the vented flow (during discharge).
@@ -264,14 +300,23 @@ class HydDown:
         # Multicomponent case
         if "&" in self.species:
             x0 = Tguess
-            res = minimize(
-                self.PHres,
-                x0,
-                args=(P, H),
-                method="Nelder-Mead",
-                options={"xatol": 0.1, "fatol": 0.001},
-            )
-            T1 = res.x[0]
+            if relief == False: 
+                res = minimize(
+                    self.PHres,
+                    x0,
+                    args=(P, H),
+                    method="Nelder-Mead",
+                    options={"xatol": 0.1, "fatol": 0.001},
+                )
+                T1 = res.x[0]
+            else:
+                res = root_scalar(
+                    self.PHres_relief,
+                    args=(P, H),
+                    x0 = x0,
+                    method="newton",
+                )
+                T1 = res.root
         # single component fluid case
         else:
             T1 = PropsSI("T", "P", P, "H", H, self.species)
@@ -440,9 +485,7 @@ class HydDown:
 
         # setting heat transfer parameters
         T_profile, T_profile2 = 0, 0
-
-        # Run actual integration by updating values by numerical integration/time stepping
-        # Mass of fluid is calculated from previous time step mass and mass flow rate
+        relief_area = []
         for i in tqdm(
             range(1, len(self.time_array)),
             desc="hyddown",
@@ -578,22 +621,16 @@ class HydDown:
                             rho_liner = self.input["vessel"]["liner_density"]
                             cp_liner = self.input["vessel"]["liner_heat_capacity"]
                             liner = tm.isothermal_model(k_liner, rho_liner, cp_liner)
-                            # shell = tm.isothermal_model(k, rho, cp)
                             shell = tm.isothermal_model(k, rho, cp)
 
-                            # Domain and mesh for shell
                             thk = self.input["vessel"]["thickness"]  # thickness in m
                             nn = 11  # number of nodes
                             z_shell = np.linspace(0, thk, nn)  # node locations
-                            # the bottom surface is located at z = 0.0
-
-                            # # Domain and mesh for liner
+                            
                             thk = self.input["vessel"][
                                 "liner_thickness"
-                            ]  # thickness in m
-                            # # nn = 11  # number of nodes
+                            ]  
                             z_liner = np.linspace(-thk, 0, nn)  # node locations
-                            # # the top surface is now located at z = 0.0
                             z2 = np.hstack((z_liner, z_shell[1:]))
                             self.z = z2
                             mesh2 = tm.Mesh(z2, tm.LinearElement)
@@ -648,7 +685,9 @@ class HydDown:
                     ) * self.tstep / (
                         self.vessel_cp * self.vessel_density * self.vol_solid
                     )
-
+                    self.T_inner_wall[i] = self.T_vessel[i]
+                    self.T_outer_wall[i] = self.T_vessel[i]
+                    
                 elif self.heat_method == "specified_U":
                     self.Q_inner[i] = (
                         self.surf_area_outer
@@ -680,7 +719,6 @@ class HydDown:
                 else:
                     h_in = self.fluid.hmass()
 
-                P2 = self.P[i - 1]
                 if i > 1:
                     P1 = self.P[i - 2]
                 else:
@@ -691,28 +729,53 @@ class HydDown:
                     - self.tstep * self.mass_rate[i - 1] * h_in
                     + self.tstep * self.Q_inner[i]
                 )
-                self.U_mass[i] = U_end / self.mass_fluid[i]
-                P1, T1, self.U_res[i] = self.UDproblem(
-                    U_end / self.mass_fluid[i],
-                    self.rho[i],
-                    self.P[i - 1],
-                    self.T_fluid[i - 1],
-                )
 
-                self.P[i] = P1
-                self.T_fluid[i] = T1
-                self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+                self.U_mass[i] = U_end / self.mass_fluid[i]
+                
+                # Not pretty if-statement and a hack for fire relief area estimation. Most cases go directly to the first ...else... clause
+                if input["valve"]["type"] == "relief":
+                    if self.Pset <=  self.P[i-1]:
+                        T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.Pset, Tguess = self.T_fluid[i-1]+5, relief=True)        
+                        self.T_fluid[i] = T1
+                        P1 = self.Pset
+                        self.P[i] = P1
+                        self.T_fluid[i] = T1
+                        self.fluid.update(CP.PT_INPUTS, self.P[i], T1)
+                        self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i] / self.tstep
+                        self.relief_area[i] = fluids.API520_A_g(self.mass_rate[i],T1,self.fluid.compressibility_factor(),self.MW*1000,self.fluid.cp0molar()/(self.fluid.cp0molar() - 8.314),P1,self.p_back,0.975,1,1)
+                    else:
+                        self.mass_rate[i] = 0
+                        P1, T1, self.U_res[i] = self.UDproblem(
+                            U_end / self.mass_fluid[i],
+                            self.rho[i],
+                            self.P[i - 1],
+                            self.T_fluid[i - 1],
+                        )
+                        
+                        self.P[i] = P1
+                        self.T_fluid[i] = T1
+                        self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+
+                else:
+                    P1, T1, self.U_res[i] = self.UDproblem(
+                        U_end / self.mass_fluid[i],
+                        self.rho[i],
+                        self.P[i - 1],
+                        self.T_fluid[i - 1],
+                    )    
+                        
+                    self.P[i] = P1
+                    self.T_fluid[i] = T1
+                    self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
 
             else:
                 raise NameError("Unknown calculation method: " + self.method)
 
-            # Updating H,S,U states
             self.H_mass[i] = self.fluid.hmass()
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
 
-            # print("Progress", int(i/(self.time_tot / self.tstep)*100),"%",end="\r")
-
+            
             # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":
                 if "&" in self.species:
@@ -726,7 +789,8 @@ class HydDown:
 
             cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
 
-            # Finally updating the mass rate for the mass balance in the next time step
+            # Finally updating the mass rate for the mass balance in the next time step            
+            # Already done of the valve is "relief" (estimation)
             if input["valve"]["type"] == "orifice":
                 if input["valve"]["flow"] == "filling":
                     k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar() - 8.314)
@@ -789,6 +853,12 @@ class HydDown:
                 self.mass_rate[i] = 0
         self.isrun = True
 
+        if input["valve"]["type"] == "relief":
+            idx_max = self.mass_rate.argmax()
+            self.mass_rate[idx_max] = (self.mass_rate[idx_max-1] +  self.mass_rate[idx_max+1]) / 2
+            self.relief_area[idx_max] = (self.relief_area[idx_max-1] +  self.relief_area[idx_max+1]) / 2
+            #print("Relief area:", 2*math.sqrt(max(relief_area[1:])/math.pi), max(self.mass_rate))
+
     def get_dataframe(self):
         """
         Storing relevant results in pandas dataframe for e.g. export
@@ -849,6 +919,7 @@ class HydDown:
             plt.figure(1, figsize=(8, 6))
 
         plt.subplot(221)
+        
         plt.plot(self.time_array, self.T_fluid - 273.15, "b", label="Fluid")
         if "thermal_conductivity" not in self.input["vessel"].keys():
             plt.plot(self.time_array, self.T_vessel - 273.15, "g", label="Vessel")
@@ -960,6 +1031,7 @@ class HydDown:
 
         if verbose:
             plt.show()
+        return 
 
     def plot_envelope(self, filename=None, verbose=True):
         """
@@ -1107,6 +1179,7 @@ class HydDown:
 
         # Mass flows and inventory
         report["max_mass_rate"] = max(self.mass_rate)
+        report["time_max_mass_rate"] = self.time_array[self.mass_rate.argmax()]
         report["initial_mass"] = self.mass_fluid[0]
         report["final_mass"] = self.mass_fluid[-1]
         report["volume"] = self.vol

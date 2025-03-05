@@ -1,5 +1,5 @@
 # HydDown hydrogen/other gas depressurisation
-# Copyright (c) 2021 Anders Andreasen
+# Copyright (c) 2021-2025 Anders Andreasen
 # Published under an MIT license
 
 import math
