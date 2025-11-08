@@ -12,7 +12,7 @@ initial:
   fluid: "H2" 
 calculation:
   type: "energybalance"
-  time_step: .3
+  time_step: 1
   end_time: 690.
 valve:
   flow: "discharge"
@@ -21,12 +21,11 @@ valve:
   mdot: [0.0018, 0.0018, 0.0018, 0.0008, 0.00055]
   #time: [0, 300, 460,  560, 739, 813] 
   #mdot: [0.0018, 0.0018, 0.0018, 0.0018, 0.0012, 0.00044]
-  
   back_pressure: 101300.
 heat_transfer:
   type: "specified_h"
   temp_ambient: 298.15
-  h_outer: 2. 
+  h_outer: 8. 
   h_inner: "calc"
 validation:
 #  pressure:

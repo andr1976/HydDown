@@ -7,14 +7,15 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from scipy.optimize import minimize
-from scipy.optimize import root_scalar  
+from scipy.optimize import root_scalar
 from CoolProp.CoolProp import PropsSI
 import CoolProp.CoolProp as CP
 from hyddown import transport as tp
 from hyddown import validator
 from hyddown import fire
 from hyddown import thermesh as tm
-import fluids 
+import fluids
+
 
 class HydDown:
     """
@@ -59,8 +60,8 @@ class HydDown:
             self.vessel_type = self.input["vessel"]["type"]
         else:
             self.vessel_type = "Flat-end"
-        
-        if "orientation" in  self.input['vessel']:
+
+        if "orientation" in self.input["vessel"]:
             if self.input["vessel"]["orientation"] == "horizontal":
                 horizontal = True
             else:
@@ -68,17 +69,36 @@ class HydDown:
         else:
             horizontal = True
             # Orientation
-        
+
         if self.vessel_type == "Flat-end":
-            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length, horizontal=horizontal)
+            self.inner_vol = fluids.TANK(
+                D=self.diameter, L=self.length, horizontal=horizontal
+            )
         elif self.vessel_type == "ASME F&D":
-            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length, sideA='torispherical', sideB='torispherical', horizontal=horizontal)
+            self.inner_vol = fluids.TANK(
+                D=self.diameter,
+                L=self.length,
+                sideA="torispherical",
+                sideB="torispherical",
+                horizontal=horizontal,
+            )
         elif self.vessel_type == "DIN":
-            self.inner_vol = fluids.TANK(D = self.diameter, L=self.length,  sideA='torispherical', sideB='torispherical', sideA_f=1, sideA_k=0.1, sideB_f=1, sideB_k=0.1, horizontal=horizontal)
-    
-        
-        if "thickness" in self.input['vessel']:
-            self.outer_vol = self.inner_vol.add_thickness(self.input['vessel']['thickness'])
+            self.inner_vol = fluids.TANK(
+                D=self.diameter,
+                L=self.length,
+                sideA="torispherical",
+                sideB="torispherical",
+                sideA_f=1,
+                sideA_k=0.1,
+                sideB_f=1,
+                sideB_k=0.1,
+                horizontal=horizontal,
+            )
+
+        if "thickness" in self.input["vessel"]:
+            self.outer_vol = self.inner_vol.add_thickness(
+                self.input["vessel"]["thickness"]
+            )
         else:
             self.outer_vol = self.inner_vol.add_thickness(0.0)
 
@@ -123,7 +143,7 @@ class HydDown:
                 self.Pset = self.input["valve"]["set_pressure"]
                 self.blowdown = self.input["valve"]["blowdown"]
                 self.psv_state = "closed"
-        elif self.input['valve']['type'] == "relief":
+        elif self.input["valve"]["type"] == "relief":
             self.p_back = self.input["valve"]["back_pressure"]
             self.Pset = self.input["valve"]["set_pressure"]
         elif self.input["valve"]["type"] == "controlvalve":
@@ -241,11 +261,9 @@ class HydDown:
         self.time_array = np.zeros(data_len)
         self.relief_area = np.zeros(data_len)
         self.temp_profile = []
-        self.rho0 = (
-            self.fluid.rhomass()
-        ) 
+        self.rho0 = self.fluid.rhomass()
         self.m0 = self.rho0 * self.vol
-        self.MW = self.fluid.molar_mass()  
+        self.MW = self.fluid.molar_mass()
 
     def PHres(self, T, P, H):
         """
@@ -262,7 +280,7 @@ class HydDown:
         """
         self.vent_fluid.update(CP.PT_INPUTS, P, T)
         return ((H - self.vent_fluid.hmass()) / H) ** 2
-    
+
     def PHres_relief(self, T, P, H):
         """
         Residual enthalpy function to be minimised during a PH-problem
@@ -277,7 +295,7 @@ class HydDown:
             Updated estimate for the final temperature at P,H
         """
         self.fluid.update(CP.PT_INPUTS, P, T)
-        return ((H - self.fluid.hmass()) / H)
+        return (H - self.fluid.hmass()) / H
 
     def PHproblem(self, H, P, Tguess, relief=False):
         """
@@ -300,7 +318,7 @@ class HydDown:
         # Multicomponent case
         if "&" in self.species:
             x0 = Tguess
-            if relief == False: 
+            if relief == False:
                 res = minimize(
                     self.PHres,
                     x0,
@@ -313,7 +331,7 @@ class HydDown:
                 res = root_scalar(
                     self.PHres_relief,
                     args=(P, H),
-                    x0 = x0,
+                    x0=x0,
                     method="newton",
                 )
                 T1 = res.root
@@ -599,21 +617,41 @@ class HydDown:
                             mesh = tm.Mesh(
                                 z, tm.LinearElement
                             )  # Or `QuadraticElement` to
-                            bc = [
-                                {"q": self.Q_outer[i] / self.surf_area_outer},
-                                {"q": -self.Q_inner[i] / self.surf_area_inner},
-                            ]
+
                             cpeek = tm.isothermal_model(k, rho, cp)
-                            domain = tm.Domain(mesh, [cpeek], bc)
 
                             if type(T_profile) == type(int()) and T_profile == 0:
-                                domain.set_T(self.Tamb * np.ones(nn))
+                                bc = [
+                                    {"T": self.T0},
+                                    {"T": self.Tamb},
+                                ]
+                                domain = tm.Domain(mesh, [cpeek], bc)
+                                domain.set_T(
+                                    (self.Tamb + self.T0) / 2 * np.ones(len(mesh.nodes))
+                                )
+                                solver = {
+                                    "dt": 10,
+                                    "t_end": 1000,
+                                    "theta": theta,
+                                }
+                                t_bonded, T_profile = tm.solve_ht(domain, solver)
                             else:
+                                bc = [
+                                    {"q": self.Q_outer[i] / self.surf_area_outer},
+                                    {"q": -self.Q_inner[i] / self.surf_area_inner},
+                                ]
+                                domain = tm.Domain(mesh, [cpeek], bc)
                                 domain.set_T(T_profile[-1, :])
-
+                                solver = {
+                                    "dt": dt,
+                                    "t_end": self.tstep,
+                                    "theta": theta,
+                                }
+                                t_bonded, T_profile = tm.solve_ht(domain, solver)
                             solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
                             t, T_profile = tm.solve_ht(domain, solver)
 
+                            self.temp_profile.append(T_profile[-1, :])
                             self.T_outer_wall[i] = T_profile[-1, 0]
                             self.T_inner_wall[i] = T_profile[-1, -1]
                         else:
@@ -626,10 +664,8 @@ class HydDown:
                             thk = self.input["vessel"]["thickness"]  # thickness in m
                             nn = 11  # number of nodes
                             z_shell = np.linspace(0, thk, nn)  # node locations
-                            
-                            thk = self.input["vessel"][
-                                "liner_thickness"
-                            ]  
+
+                            thk = self.input["vessel"]["liner_thickness"]
                             z_liner = np.linspace(-thk, 0, nn)  # node locations
                             z2 = np.hstack((z_liner, z_shell[1:]))
                             self.z = z2
@@ -637,18 +673,37 @@ class HydDown:
                             for j, elem in enumerate(mesh2.elem):
                                 if elem.nodes.mean() > 0.0:
                                     mesh2.subdomain[j] = 1
-                            bc = [
-                                {"q": -self.Q_inner[i] / self.surf_area_inner},
-                                {"q": self.Q_outer[i] / self.surf_area_outer},
-                            ]
-                            domain2 = tm.Domain(mesh2, [liner, shell], bc)
 
                             if type(T_profile2) == type(int()) and T_profile2 == 0:
-                                domain2.set_T(self.Tamb * np.ones(len(mesh2.nodes)))
+                                bc = [
+                                    {"T": self.T0},
+                                    {"T": self.Tamb},
+                                ]
+                                domain2 = tm.Domain(mesh2, [liner, shell], bc)
+                                domain2.set_T(
+                                    (self.Tamb + self.T0)
+                                    / 2
+                                    * np.ones(len(mesh2.nodes))
+                                )
+                                solver2 = {
+                                    "dt": 10,
+                                    "t_end": 1000,
+                                    "theta": theta,
+                                }
+                                t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
                             else:
+                                bc = [
+                                    {"q": -self.Q_inner[i] / self.surf_area_inner},
+                                    {"q": self.Q_outer[i] / self.surf_area_outer},
+                                ]
+                                domain2 = tm.Domain(mesh2, [liner, shell], bc)
                                 domain2.set_T(T_profile2[-1, :])
-                            solver2 = {"dt": dt, "t_end": self.tstep, "theta": theta}
-                            t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
+                                solver2 = {
+                                    "dt": dt,
+                                    "t_end": self.tstep,
+                                    "theta": theta,
+                                }
+                                t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
 
                             self.T_outer_wall[i] = T_profile2[-1, -1]
                             self.T_inner_wall[i] = T_profile2[-1, 0]
@@ -687,7 +742,7 @@ class HydDown:
                     )
                     self.T_inner_wall[i] = self.T_vessel[i]
                     self.T_outer_wall[i] = self.T_vessel[i]
-                    
+
                 elif self.heat_method == "specified_U":
                     self.Q_inner[i] = (
                         self.surf_area_outer
@@ -713,7 +768,7 @@ class HydDown:
 
                 # Finding the inlet/outlet enthalpy rate for the energy balance
                 if input["valve"]["flow"] == "filling":
-                    #h_in = self.fluid.hmass()
+                    # h_in = self.fluid.hmass()
                     h_in = x * self.res_fluid.hmass() + (1 - x) * self.res_fluid.umass()
 
                 else:
@@ -731,18 +786,41 @@ class HydDown:
                 )
 
                 self.U_mass[i] = U_end / self.mass_fluid[i]
-                
+
                 # Not pretty if-statement and a hack for fire relief area estimation. Most cases go directly to the first ...else... clause
                 if input["valve"]["type"] == "relief":
-                    if self.Pset <=  self.P[i-1]:
-                        T1 = self.PHproblem(h_in +  self.tstep * self.Q_inner[i]/self.mass_fluid[i], self.Pset, Tguess = self.T_fluid[i-1]+5, relief=True)        
+                    if self.Pset <= self.P[i - 1]:
+                        T1 = self.PHproblem(
+                            h_in + self.tstep * self.Q_inner[i] / self.mass_fluid[i],
+                            self.Pset,
+                            Tguess=self.T_fluid[i - 1] + 5,
+                            relief=True,
+                        )
                         self.T_fluid[i] = T1
                         P1 = self.Pset
                         self.P[i] = P1
                         self.T_fluid[i] = T1
                         self.fluid.update(CP.PT_INPUTS, self.P[i], T1)
-                        self.mass_rate[i] = ((1/self.fluid.rhomass() - 1/self.rho[i]) * self.mass_fluid[i] ) * self.rho[i] / self.tstep
-                        self.relief_area[i] = fluids.API520_A_g(self.mass_rate[i],T1,self.fluid.compressibility_factor(),self.MW*1000,self.fluid.cp0molar()/(self.fluid.cp0molar() - 8.314),P1,self.p_back,0.975,1,1)
+                        self.mass_rate[i] = (
+                            (
+                                (1 / self.fluid.rhomass() - 1 / self.rho[i])
+                                * self.mass_fluid[i]
+                            )
+                            * self.rho[i]
+                            / self.tstep
+                        )
+                        self.relief_area[i] = fluids.API520_A_g(
+                            self.mass_rate[i],
+                            T1,
+                            self.fluid.compressibility_factor(),
+                            self.MW * 1000,
+                            self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314),
+                            P1,
+                            self.p_back,
+                            0.975,
+                            1,
+                            1,
+                        )
                     else:
                         self.mass_rate[i] = 0
                         P1, T1, self.U_res[i] = self.UDproblem(
@@ -751,7 +829,7 @@ class HydDown:
                             self.P[i - 1],
                             self.T_fluid[i - 1],
                         )
-                        
+
                         self.P[i] = P1
                         self.T_fluid[i] = T1
                         self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
@@ -762,8 +840,8 @@ class HydDown:
                         self.rho[i],
                         self.P[i - 1],
                         self.T_fluid[i - 1],
-                    )    
-                        
+                    )
+
                     self.P[i] = P1
                     self.T_fluid[i] = T1
                     self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
@@ -775,7 +853,6 @@ class HydDown:
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
 
-            
             # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":
                 if "&" in self.species:
@@ -789,7 +866,7 @@ class HydDown:
 
             cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
 
-            # Finally updating the mass rate for the mass balance in the next time step            
+            # Finally updating the mass rate for the mass balance in the next time step
             # Already done of the valve is "relief" (estimation)
             if input["valve"]["type"] == "orifice":
                 if input["valve"]["flow"] == "filling":
@@ -855,9 +932,13 @@ class HydDown:
 
         if input["valve"]["type"] == "relief":
             idx_max = self.mass_rate.argmax()
-            self.mass_rate[idx_max] = (self.mass_rate[idx_max-1] +  self.mass_rate[idx_max+1]) / 2
-            self.relief_area[idx_max] = (self.relief_area[idx_max-1] +  self.relief_area[idx_max+1]) / 2
-            #print("Relief area:", 2*math.sqrt(max(relief_area[1:])/math.pi), max(self.mass_rate))
+            self.mass_rate[idx_max] = (
+                self.mass_rate[idx_max - 1] + self.mass_rate[idx_max + 1]
+            ) / 2
+            self.relief_area[idx_max] = (
+                self.relief_area[idx_max - 1] + self.relief_area[idx_max + 1]
+            ) / 2
+            # print("Relief area:", 2*math.sqrt(max(relief_area[1:])/math.pi), max(self.mass_rate))
 
     def get_dataframe(self):
         """
@@ -919,7 +1000,7 @@ class HydDown:
             plt.figure(1, figsize=(8, 6))
 
         plt.subplot(221)
-        
+
         plt.plot(self.time_array, self.T_fluid - 273.15, "b", label="Fluid")
         if "thermal_conductivity" not in self.input["vessel"].keys():
             plt.plot(self.time_array, self.T_vessel - 273.15, "g", label="Vessel")
@@ -1031,7 +1112,7 @@ class HydDown:
 
         if verbose:
             plt.show()
-        return 
+        return
 
     def plot_envelope(self, filename=None, verbose=True):
         """
@@ -1091,34 +1172,36 @@ class HydDown:
         else:
             plt.figure(3, figsize=(8, 6))
 
-        X, Y = np.meshgrid(self.z*1e3 , self.time_array[:-1])
-        x0 = self.z[0]*1e3
-        x1 = self.z[-1]*1e3
+        X, Y = np.meshgrid(self.z * 1e3, self.time_array[:-1])
+        x0 = self.z[0] * 1e3
+        x1 = self.z[-1] * 1e3
         y0 = self.time_array[0]
         y1 = self.time_array[-1]
 
-        #plt.subplot(211)
-        plt.contourf(Y,X, np.asarray(self.temp_profile), origin ='lower', levels=20)
-        #plt.imshow(np.asarray(self.temp_profile).T, aspect = 'auto', extent=(y0,y1,x0,x1), origin='lower')
+        # plt.subplot(211)
+        plt.contourf(Y, X, np.asarray(self.temp_profile), origin="lower", levels=20)
+        # plt.imshow(np.asarray(self.temp_profile).T, aspect = 'auto', extent=(y0,y1,x0,x1), origin='lower')
 
         plt.colorbar(label="Temperature (K)")
         plt.xlabel("Time (s)")
         plt.ylabel("z (mm)")
         # add title with descriptive text for z axis
 
-
         if filename != None:
-                plt.savefig(filename + "_tprofile1.png", dpi=300)
+            plt.savefig(filename + "_tprofile1.png", dpi=300)
 
         if filename != None:
             plt.figure(4, figsize=(8, 6))
         else:
             plt.figure(4, figsize=(8, 6))
 
-
-        n = math.floor(len(self.time_array)/15)
+        n = math.floor(len(self.time_array) / 15)
         for i in range(len(self.time_array[::n])):
-            plt.plot(self.temp_profile[::n][i], self.z*1e3,label=f"t = {int(self.time_array[::n][i])} s.")
+            plt.plot(
+                self.temp_profile[::n][i],
+                self.z * 1e3,
+                label=f"t = {int(self.time_array[::n][i])} s.",
+            )
         plt.legend(loc="best")
         plt.ylabel("z (mm)")
         plt.xlabel("Temperature (K)")

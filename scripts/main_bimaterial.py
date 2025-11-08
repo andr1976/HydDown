@@ -29,15 +29,15 @@ if __name__ == "__main__":
 
     fig = plt.figure()
     ax = plt.subplot(111)
-    times = hdown.time_array[0::100]
-    profile = hdown.temp_profile[0::100]
+    times = hdown.time_array[0::10]
+    profile = hdown.temp_profile[0::10]
     z = hdown.z
     for i in range(len(times)):
         ax.plot(profile[i], z * 1e3, label=f"t = {round(times[i])} s.")
 
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
-    ax.set_xlabel("z, mm")
+    ax.set_ylabel("z, mm")
     ax.set_xlabel("temperature, C")
     ax.set_title("temperature distribution")
     ax.legend(loc="center left", bbox_to_anchor=(1, 0.5))

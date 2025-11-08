@@ -1,0 +1,27 @@
+vessel:
+  length: 100
+  diameter: 0.1143
+  thickness: 0.057
+  heat_capacity: 450
+  density: 7800.
+  thermal_conductivity: 0.033
+  orientation: "horizontal"
+initial:
+  temperature: 248.
+  pressure: 16.013
+  fluid: "CO2" 
+calculation:
+  type: "energybalance"
+  time_step: .2
+  end_time: 900.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter : 0.0
+  discharge_coef: 0.8
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 303.15
+  h_outer: 8. 
+  h_inner: "calc"
