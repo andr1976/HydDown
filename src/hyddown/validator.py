@@ -79,10 +79,15 @@ def validate_mandatory_ruleset(input):
                     "type": "string",
                     "allowed": ["vertical", "horizontal"],
                 },
-                "type" : {
-                    "required" : False,
-                    "type" : "string",
-                    "allowed" : {"Flat-end", "ASME F&D", "DIN"}
+                "type": {
+                    "required": False,
+                    "type": "string",
+                    "allowed": {"Flat-end", "ASME F&D", "DIN"},
+                },
+                "liquid_level": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0,
                 },
             },
         },
@@ -410,6 +415,11 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["Flat-end", "DIN", "ASME F&D"],
                         },
+                        "liquid_level": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0,
+                        },
                     },
                 },
                 "heat_transfer": {
@@ -458,7 +468,11 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["vertical", "horizontal"],
                         },
-                        "type" : {"required": False, "type" : "string", "allowed": ["Flat-end", "DIN", "ASME F&D"] }
+                        "type": {
+                            "required": False,
+                            "type": "string",
+                            "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                        },
                     },
                 },
                 "heat_transfer": {
@@ -498,7 +512,11 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["vertical", "horizontal"],
                         },
-                        "type" : {"required": False, "type" : "string", "allowed": ["Flat-end", "DIN", "ASME F&D"] }
+                        "type": {
+                            "required": False,
+                            "type": "string",
+                            "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                        },
                     },
                 },
                 "heat_transfer": {
@@ -535,7 +553,11 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["vertical", "horizontal"],
                         },
-                        "type" : {"required": False, "type" : "string", "allowed": ["Flat-end", "DIN", "ASME F&D"] }
+                        "type": {
+                            "required": False,
+                            "type": "string",
+                            "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                        },
                     },
                 },
                 "heat_transfer": {
@@ -752,7 +774,7 @@ def valve_validation(input):
         retval = v.validate(input)
         if v.errors:
             print(v.errors)
-    
+
     if input["valve"]["type"] == "psv":
         v = Validator(schema_psv)
         retval = v.validate(input)

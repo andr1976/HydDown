@@ -4,6 +4,7 @@
 
 import math
 from CoolProp.CoolProp import PropsSI
+from ht import Rohsenow
 
 
 def Gr(L, Tfluid, Tvessel, P, species):
@@ -31,8 +32,10 @@ def Gr(L, Tfluid, Tvessel, P, species):
     # Estimating the temperature at the fluid film interface
     T = (Tfluid + Tvessel) / 2
     beta = PropsSI("ISOBARIC_EXPANSION_COEFFICIENT", "T|gas", T, "P", P, species)
-    nu = PropsSI("V", "T|gas", T, "P", P, 'HEOS::'+species.split('::')[1]) / PropsSI("D", "T|gas", T, "P", P, species)
-    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
+    nu = PropsSI("V", "T|gas", T, "P", P, "HEOS::" + species.split("::")[1]) / PropsSI(
+        "D", "T|gas", T, "P", P, species
+    )
+    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L**3 / nu**2
     return Gr
 
 
@@ -55,8 +58,8 @@ def Pr(T, P, species):
         Prantdl number
     """
     C = PropsSI("C", "T|gas", T, "P", P, species)
-    V = PropsSI("V", "T|gas", T, "P", P, 'HEOS::'+species.split('::')[1])
-    L = PropsSI("L", "T|gas", T, "P", P, 'HEOS::'+species.split('::')[1])
+    V = PropsSI("V", "T|gas", T, "P", P, "HEOS::" + species.split("::")[1])
+    L = PropsSI("L", "T|gas", T, "P", P, "HEOS::" + species.split("::")[1])
     Pr = C * V / L
 
     return Pr
@@ -81,12 +84,13 @@ def Nu(Ra, Pr):
         Nusselt numebr
     """
     if Ra >= 1e9:
-        NNu = 0.13 * Ra ** 0.333
+        NNu = 0.13 * Ra**0.333
     elif Ra < 1e9 and Ra > 1e4:
-        NNu = 0.59 * Ra ** 0.25
+        NNu = 0.59 * Ra**0.25
     else:
-        NNu = 1.36 * Ra ** 0.20
+        NNu = 1.36 * Ra**0.20
     return NNu
+
 
 def h_inside(L, Tvessel, Tfluid, fluid):
     """
@@ -115,7 +119,7 @@ def h_inside(L, Tvessel, Tfluid, fluid):
     Pr = cp * visc / cond
     beta = fluid.isobaric_expansion_coefficient()
     nu = visc / fluid.rhomass()
-    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
+    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L**3 / nu**2
     Ra = Pr * Gr
     NNu = Nu(Ra, Pr)
     h_inner = NNu * cond / L
@@ -147,7 +151,18 @@ def h_inner(L, Tfluid, Tvessel, P, species):
     NGr = Gr(L, Tfluid, Tvessel, P, species)
     NRa = NPr * NGr
     NNu = Nu(NRa, NPr)
-    h_inner = NNu * PropsSI("L", "T|gas", (Tfluid + Tvessel) / 2, "P", P, 'HEOS::'+species.split('::')[1]) / L
+    h_inner = (
+        NNu
+        * PropsSI(
+            "L",
+            "T|gas",
+            (Tfluid + Tvessel) / 2,
+            "P",
+            P,
+            "HEOS::" + species.split("::")[1],
+        )
+        / L
+    )
     return h_inner
 
 
@@ -184,13 +199,13 @@ def h_inside_mixed(L, Tvessel, Tfluid, fluid, mdot, D):
     T = (Tfluid + Tvessel) / 2
     beta = fluid.isobaric_expansion_coefficient()
     nu = visc / fluid.rhomass()
-    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 / nu ** 2
+    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L**3 / nu**2
     Ra = Pr * Gr
 
-    NNu_free = Nu(Ra,Pr)  # 0.13 * NRa**0.333
+    NNu_free = Nu(Ra, Pr)  # 0.13 * NRa**0.333
     Re = 4 * abs(mdot) / (visc * math.pi * D)
-    NNu_forced = 0.56 * Re ** 0.67
-    return (NNu_free + NNu_forced) * cond  / L
+    NNu_forced = 0.56 * Re**0.67
+    return (NNu_free + NNu_forced) * cond / L
 
 
 def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
@@ -224,14 +239,114 @@ def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
     NPr = Pr((Tfluid + Tvessel) / 2, P, species)
     NGr = Gr(L, Tfluid, Tvessel, P, species)
     NRa = NPr * NGr
-    NNu_free = Nu(NRa,NPr)  # 0.13 * NRa**0.333
-    Re = 4 * abs(mdot) / (PropsSI("V", "T|gas", Tfluid, "P", P, 'HEOS::'+species.split('::')[1]) * math.pi * D)
-    NNu_forced = 0.56 * Re ** 0.67
+    NNu_free = Nu(NRa, NPr)  # 0.13 * NRa**0.333
+    Re = (
+        4
+        * abs(mdot)
+        / (
+            PropsSI("V", "T|gas", Tfluid, "P", P, "HEOS::" + species.split("::")[1])
+            * math.pi
+            * D
+        )
+    )
+    NNu_forced = 0.56 * Re**0.67
     return (
         (NNu_free + NNu_forced)
-        * PropsSI("L", "T|gas", (Tfluid + Tvessel) / 2, "P", P, 'HEOS::'+species.split('::')[1])
+        * PropsSI(
+            "L",
+            "T|gas",
+            (Tfluid + Tvessel) / 2,
+            "P",
+            P,
+            "HEOS::" + species.split("::")[1],
+        )
         / L
     )
+
+
+def h_inside_liquid(L, Tvessel, Tfluid, fluid, master_fluid):
+    """
+    Calculation of internal natural convective heat transfer coefficient from Nusselt number
+
+    Parameters
+    ----------
+    L : float
+        Vessel length
+    Tfluid : float
+        Temperature of the bulk fluid inventory
+    Tvessel : float
+        Temperature of the vessel wall (bulk)
+    fluid : obj
+            Liquid Fluid object equilibrated at film temperature
+    master_fluid : obj
+            Master Fluid object (used for surface tension etc.)
+
+    Returns
+    ----------
+    h_inner : float
+        Heat transfer coefficient (W/m2 K)
+    """
+    cond = fluid.conductivity()
+    visc = fluid.viscosity()
+    cp = fluid.cpmass()
+    nu = visc / fluid.rhomass()
+    Pr = cp * visc / cond
+    beta = fluid.isobaric_expansion_coefficient()
+
+    Pr = cp * visc / cond
+    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L**3 / nu**2
+    Ra = Pr * Gr
+    NNu = Nu(Ra, Pr)
+    h_inner = NNu * cond / L
+    return h_inner
+
+
+def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
+    """
+    Calculation of internal heat transfer coefficient for boiling liquid
+
+    Parameters
+    ----------
+    L : float
+        Vessel length
+    Tfluid : float
+        Temperature of the bulk fluid inventory
+    Tvessel : float
+        Temperature of the vessel wall (bulk)
+    fluid : obj
+            Gas object equilibrated at film temperature
+
+    Returns
+    ----------
+    h_inner : float
+        Heat transfer coefficient (W/m2 K)
+    """
+    kl = fluid.conductivity()
+    mul = fluid.viscosity()
+    sigma = master_fluid.surface_tension()
+
+    h_boil = Rohsenow(
+        rhol=master_fluid.saturated_liquid_keyed_output(CP.iDmass),
+        rhog=master_fluid.saturated_vapor_keyed_output(CP.iDmass),
+        mul=mul,
+        kl=kl,
+        Cpl=fluid.cpmass(),
+        Hvap=(master_fluid.saturated_vapor_keyed_output(CP.iHmass) - fluid.saturated_liquid_keyed_output(CP.iHmass),
+        sigma=sigma,
+        Te=min(max((Tvessel - Tfluid), 0), 30),
+        Csf=0.013,
+        # n=1.3,
+        # Csf=0.018,
+        n=1.7,
+    )
+
+    if math.isnan(h_boil):
+        h_boil = 0
+
+    h_conv = h_inside_liquid(L, Tvessel, Tfluid, fluid, master_fluid)
+    # return 3000
+    # return h_conv
+    return min(max(h_boil, h_conv, 1000), 3000)
 
 
 def gas_release_rate(P1, P2, rho, k, CD, area):
@@ -369,7 +484,6 @@ def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
         Relief rate / mass flow
     """
 
-
     P1 = P1 / 1000
     Pback = Pback / 1000
     area = area * 1e6
@@ -379,12 +493,13 @@ def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
         w = CD * area * C * P1 / math.sqrt(T1 * Z / MW)
     else:
         r = Pback / P1
-        f2 = ((k / (k - 1)) * r ** (2 / k) * (1 - r**((k - 1) / k)) / (1 - r))**0.5
+        f2 = ((k / (k - 1)) * r ** (2 / k) * (1 - r ** ((k - 1) / k)) / (1 - r)) ** 0.5
         print(f2)
-        w = CD * area * f2 / (T1 * Z / (MW * P1 * (P1 - Pback)))**0.5 / 17.9
-    return w/3600
+        w = CD * area * f2 / (T1 * Z / (MW * P1 * (P1 - Pback))) ** 0.5 / 17.9
+    return w / 3600
 
-def cv_vs_time(Cv_max,t,time_constant=0,characteristic="linear"):
+
+def cv_vs_time(Cv_max, t, time_constant=0, characteristic="linear"):
     """
     Control valve flow coefficient vs time / actuator postion
     assuming a linear rate of actuator for the three archetypes of
@@ -407,18 +522,19 @@ def cv_vs_time(Cv_max,t,time_constant=0,characteristic="linear"):
     if time_constant == 0:
         return Cv_max
     else:
-        if characteristic=="linear":
-            return Cv_max * min(t/time_constant,1)
-        elif characteristic=="eq":
+        if characteristic == "linear":
+            return Cv_max * min(t / time_constant, 1)
+        elif characteristic == "eq":
             # https://www.spiraxsarco.com/learn-about-steam/control-hardware-electric-pneumatic-actuation/control-valve-characteristics
-            tau=50
-            travel=min(t/time_constant,1)
-            return Cv_max * math.exp( travel * math.log(tau)) / tau
-        elif characteristic=="fast":
+            tau = 50
+            travel = min(t / time_constant, 1)
+            return Cv_max * math.exp(travel * math.log(tau)) / tau
+        elif characteristic == "fast":
             # square root function used
-            return Cv_max * min(t/time_constant,1)**(0.5)
+            return Cv_max * min(t / time_constant, 1) ** (0.5)
         else:
             return Cv_max
+
 
 def control_valve(P1, P2, T, Z, MW, gamma, Cv, xT=0.75, FP=1):
     """

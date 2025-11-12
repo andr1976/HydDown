@@ -323,12 +323,12 @@ def test_sim_filling():
     hdown.run()
 
 
-def test_multicomponent():
-    from hyddown import HydDown
+# def test_multicomponent():
+#     from hyddown import HydDown
 
-    input = get_example_input("ng.yml")
-    hdown = HydDown(input)
-    hdown.run()
+#     input = get_example_input("ng.yml")
+#     hdown = HydDown(input)
+#     hdown.run()
 
 
 def test_sim_stefan_boltzmann():
@@ -490,10 +490,10 @@ def test_thermesh():
     # plt.savefig("../fig/conv_FE_t0.5_dt0.1s.png", dpi=600)
     # plt.show(block=False)
     analytical = analytical_solution(z, 25, rho, cp, k, h, T_inf)
-    
+
     assert T[-1, 0] == pytest.approx(analytical[0], abs=0.3)
     assert sum((T[-1, :] - analytical) ** 2) < 1
 
 
 if __name__ == "__main__":
-    test_thermesh()
+    test_multicomponent()

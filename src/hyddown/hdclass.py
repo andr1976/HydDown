@@ -219,18 +219,46 @@ class HydDown:
         self.surf_area_inner = self.inner_vol.A
 
         self.fluid = CP.AbstractState("HEOS", self.comp)
-        self.fluid.specify_phase(CP.iphase_gas)
+        # self.fluid.specify_phase(CP.iphase_gas)
         self.fluid.set_mole_fractions(self.molefracs)
-        self.fluid.update(CP.PT_INPUTS, self.p0, self.T0)
 
         self.transport_fluid = CP.AbstractState("HEOS", self.compSRK)
         self.transport_fluid.specify_phase(CP.iphase_gas)
         self.transport_fluid.set_mole_fractions(self.molefracs)
 
+        self.transport_fluid_wet = CP.AbstractState("HEOS", self.compSRK)
+        self.transport_fluid_wet.specify_phase(CP.iphase_liquid)
+        self.transport_fluid_wet.set_mole_fractions(self.molefracs)
+
         self.vent_fluid = CP.AbstractState("HEOS", self.comp)
-        self.vent_fluid.specify_phase(CP.iphase_gas)
+        # self.vent_fluid.specify_phase(CP.iphase_gas)
         self.vent_fluid.set_mole_fractions(self.molefracs)
-        self.vent_fluid.update(CP.PT_INPUTS, self.p0, self.T0)
+
+        if "liquid_level" in self.input["vessel"]:
+            ll = self.input["vessel"]["liquid_level"]
+            V_liquid = self.inner_vol.V_from_h(ll)
+            self.fluid.update(CP.PQ_INPUTS, self.p0, 0)
+            liq_rho = self.fluid.rhomass()
+            m_liq = V_liquid * liq_rho
+
+            self.fluid.update(CP.PQ_INPUTS, self.p0, 1)
+            gas_rho = self.fluid.rhomass()
+            V_vapour = self.inner_vol.V_total - V_liquid
+            m_vap = V_vapour * gas_rho
+
+            m_tot = m_liq + m_vap
+            rho0 = m_tot / self.inner_vol.V_total
+            self.Q0 = m_vap / m_tot
+            self.fluid.update(CP.PQ_INPUTS, self.p0, self.Q0)
+            self.T0 = self.fluid.T()
+            self.liquid_level0 = ll
+            self.vent_fluid.update(CP.PQ_INPUTS, self.p0, 1.0)
+
+        else:
+            self.fluid.update(CP.PT_INPUTS, self.p0, self.T0)
+            self.liquid_level0 = 0.0
+            self.Q0 = self.fluid.Q()
+            self.vent_fluid.update(CP.PT_INPUTS, self.p0, self.T0)
 
         self.res_fluid = CP.AbstractState("HEOS", self.comp)
         self.res_fluid.set_mole_fractions(self.molefracs)
@@ -243,12 +271,16 @@ class HydDown:
         self.T_fluid = np.zeros(data_len)
         self.T_vent = np.zeros(data_len)
         self.T_vessel = np.zeros(data_len)
+        self.T_vessel_wetted = np.zeros(data_len)
         self.T_inner_wall = np.zeros(data_len)
+        self.T_inner_wall_wetted = np.zeros(data_len)
         self.T_outer_wall = np.zeros(data_len)
+        self.T_outer_wall_wetted = np.zeros(data_len)
         self.T_bonded_wall = np.zeros(data_len)
         self.Q_outer = np.zeros(data_len)
         self.Q_inner = np.zeros(data_len)
         self.h_inside = np.zeros(data_len)
+        self.h_inside_wetted = np.zeros(data_len)
         self.T_vent = np.zeros(data_len)
         self.H_mass = np.zeros(data_len)
         self.S_mass = np.zeros(data_len)
@@ -264,6 +296,29 @@ class HydDown:
         self.rho0 = self.fluid.rhomass()
         self.m0 = self.rho0 * self.vol
         self.MW = self.fluid.molar_mass()
+        self.vapour_mole_fraction = np.zeros(data_len)
+        self.vapour_mass_fraction = np.zeros(data_len)
+        self.vapour_volume_fraction = np.zeros(data_len)
+        self.liquid_level = np.zeros(data_len)
+
+    def calc_liquid_level(self):
+        """
+        Calculating liquid level based on current fluid state
+
+        Parameters
+        ----------
+        fluid : CoolProp AbstractState
+            Current fluid state
+        """
+        if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+            rho_liq = self.fluid.saturated_liquid_keyed_output(CP.iDmass)
+            rho_vap = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
+            m_liq = self.fluid.rhomass() * self.inner_vol.V_total * (1 - self.fluid.Q())
+            V_liq = m_liq / rho_liq
+            h_liq = self.inner_vol.h_from_V(V_liq)
+            return h_liq
+        else:
+            return 0.0
 
     def PHres(self, T, P, H):
         """
@@ -406,7 +461,11 @@ class HydDown:
         self.T_vessel[0] = self.T0
         self.T_inner_wall[0] = self.T0
         self.T_outer_wall[0] = self.T0
+        self.T_vessel_wetted[0] = self.T0
+        self.T_inner_wall_wetted[0] = self.T0
+        self.T_outer_wall_wetted[0] = self.T0
         self.T_bonded_wall[0] = self.T0
+        self.liquid_level[0] = self.liquid_level0
         if self.input["valve"]["flow"] == "discharge":
             self.T_vent[0] = self.T0
         self.H_mass[0] = self.fluid.hmass()
@@ -415,7 +474,20 @@ class HydDown:
         self.U_tot[0] = self.fluid.umass() * self.m0
         self.P[0] = self.p0
         self.mass_fluid[0] = self.m0
-        cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
+        if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+            self.vapour_mole_fraction[0] = self.fluid.Q()
+        else:
+            self.vapour_mole_fraction[0] = 1.0
+
+        if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+            cpcv = self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) / (
+                self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
+            )
+            rho0 = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
+        else:
+            cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
+            rho0 = self.rho0
+
         massflow_stop_switch = 0
 
         # Calculating initial mass rate for t=0 depending on mass flow device
@@ -435,7 +507,7 @@ class HydDown:
                 self.mass_rate[0] = tp.gas_release_rate(
                     self.p0,
                     self.p_back,
-                    self.rho0,
+                    rho0,
                     cpcv,
                     self.CD,
                     self.D_orifice**2 / 4 * math.pi,
@@ -569,12 +641,17 @@ class HydDown:
                             T_film = (
                                 self.T_fluid[i - 1] + self.T_inner_wall[i - 1]
                             ) / 2
-                            self.transport_fluid.update(
-                                CP.PT_INPUTS, self.P[i - 1], T_film
-                            )
+                            try:
+                                self.transport_fluid.update(
+                                    CP.PT_INPUTS, self.P[i - 1], T_film
+                                )
+                            except:
+                                self.transport_fluid.update(
+                                    CP.PQ_INPUTS, self.P[i - 1], 1.0
+                                )
                             hi = tp.h_inside(
                                 L,
-                                self.T_inner_wall[i - i],
+                                self.T_inner_wall[i - 1],
                                 self.T_fluid[i - 1],
                                 self.transport_fluid,
                             )
@@ -630,8 +707,8 @@ class HydDown:
                                     (self.Tamb + self.T0) / 2 * np.ones(len(mesh.nodes))
                                 )
                                 solver = {
-                                    "dt": 10,
-                                    "t_end": 1000,
+                                    "dt": 100,
+                                    "t_end": 10000,
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile = tm.solve_ht(domain, solver)
@@ -686,8 +763,8 @@ class HydDown:
                                     * np.ones(len(mesh2.nodes))
                                 )
                                 solver2 = {
-                                    "dt": 10,
-                                    "t_end": 1000,
+                                    "dt": 100,
+                                    "t_end": 10000,
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
@@ -772,7 +849,11 @@ class HydDown:
                     h_in = x * self.res_fluid.hmass() + (1 - x) * self.res_fluid.umass()
 
                 else:
-                    h_in = self.fluid.hmass()
+                    # h_in = self.fluid.hmass()
+                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                        h_in = self.fluid.saturated_vapor_keyed_output(CP.iHmass)
+                    else:
+                        h_in = self.fluid.hmass()
 
                 if i > 1:
                     P1 = self.P[i - 2]
@@ -844,14 +925,44 @@ class HydDown:
 
                     self.P[i] = P1
                     self.T_fluid[i] = T1
-                    self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+
+                    if len(self.molefracs) == 1 and self.molefracs[0] == 1.0:
+                        self.fluid.update(
+                            CP.DmassUmass_INPUTS,
+                            self.rho[i],
+                            self.U_mass[i],
+                        )
+                    else:
+                        try:
+                            self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+                        except:
+                            if self.fluid.Q() < 0:
+                                self.fluid.update(CP.PQ_INPUTS, self.P[i], 1)
+                            else:
+                                self.fluid.update(
+                                    CP.PQ_INPUTS, self.P[i], self.fluid.Q()
+                                )
+                    if (
+                        self.input["valve"]["flow"] == "discharge"
+                        and self.fluid.Q() < 1
+                        and self.fluid.Q() >= 0
+                    ):
+                        self.res_fluid.update(CP.PQ_INPUTS, self.P[i], 1.0)
 
             else:
                 raise NameError("Unknown calculation method: " + self.method)
 
+            Q = self.fluid.Q()
+            if Q >= 0 and Q <= 1:
+                self.vapour_mole_fraction[i] = Q
+            else:
+                self.vapour_mole_fraction[i] = 1
+
             self.H_mass[i] = self.fluid.hmass()
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
+
+            self.liquid_level[i] = self.calc_liquid_level()
 
             # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":
@@ -860,11 +971,19 @@ class HydDown:
                         self.H_mass[i], self.p_back, self.vent_fluid.T()
                     )
                 else:
-                    self.T_vent[i] = PropsSI(
-                        "T", "H", self.H_mass[i], "P", self.p_back, self.species
-                    )
+                    try:
+                        self.T_vent[i] = PropsSI(
+                            "T", "H", self.H_mass[i], "P", self.p_back, self.species
+                        )
+                    except:
+                        self.T_vent[i] = self.vent_fluid.T()
 
-            cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
+            if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                cpcv = self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) / (
+                    self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
+                )
+            else:
+                cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
 
             # Finally updating the mass rate for the mass balance in the next time step
             # Already done of the valve is "relief" (estimation)
@@ -880,10 +999,14 @@ class HydDown:
                         self.D_orifice**2 / 4 * math.pi,
                     )
                 else:
+                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                        rho = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
+                    else:
+                        rho = self.rho[i]
                     self.mass_rate[i] = tp.gas_release_rate(
                         self.P[i],
                         self.p_back,
-                        self.rho[i],
+                        rho,
                         cpcv,
                         self.CD,
                         self.D_orifice**2 / 4 * math.pi,
