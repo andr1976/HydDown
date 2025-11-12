@@ -628,6 +628,9 @@ class HydDown:
                             self.transport_fluid.update(
                                 CP.PT_INPUTS, self.P[i - 1], T_film
                             )
+                            self.transport_fluid_wet.update(
+                                CP.PT_INPUTS, self.P[i - 1], T_film
+                            )
                             hi = tp.h_inside_mixed(
                                 L,
                                 # self.T_vessel[i - 1],
@@ -643,6 +646,9 @@ class HydDown:
                             ) / 2
                             try:
                                 self.transport_fluid.update(
+                                    CP.PT_INPUTS, self.P[i - 1], T_film
+                                )
+                                self.transport_fluid_wet.update(
                                     CP.PT_INPUTS, self.P[i - 1], T_film
                                 )
                             except:
