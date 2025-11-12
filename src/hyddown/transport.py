@@ -4,6 +4,7 @@
 
 import math
 from CoolProp.CoolProp import PropsSI
+import CoolProp.CoolProp as CP
 from ht import Rohsenow
 
 
@@ -331,9 +332,12 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
         mul=mul,
         kl=kl,
         Cpl=fluid.cpmass(),
-        Hvap=(master_fluid.saturated_vapor_keyed_output(CP.iHmass) - fluid.saturated_liquid_keyed_output(CP.iHmass),
+        Hvap=(
+            master_fluid.saturated_vapor_keyed_output(CP.iHmass)
+            - master_fluid.saturated_liquid_keyed_output(CP.iHmass)
+        ),
         sigma=sigma,
-        Te=min(max((Tvessel - Tfluid), 0), 30),
+        Te=max((Tvessel - Tfluid), 0),
         Csf=0.013,
         # n=1.3,
         # Csf=0.018,
@@ -346,7 +350,8 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
     h_conv = h_inside_liquid(L, Tvessel, Tfluid, fluid, master_fluid)
     # return 3000
     # return h_conv
-    return min(max(h_boil, h_conv, 1000), 3000)
+    return max(h_boil, h_conv)
+    # return min(max(h_boil, h_conv, 1000), 3000)
 
 
 def gas_release_rate(P1, P2, rho, k, CD, area):

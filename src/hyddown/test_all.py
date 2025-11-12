@@ -495,5 +495,49 @@ def test_thermesh():
     assert sum((T[-1, :] - analytical) ** 2) < 1
 
 
+def test_boiling_heat_transfer():
+    sat_water = CP.AbstractState("HEOS", "water")
+    sat_water.set_mole_fractions([1.0])
+    sat_water.update(CP.PQ_INPUTS, 1e5, 0.01)
+    water = CP.AbstractState("HEOS", "water")
+    water.set_mole_fractions([1.0])
+    water.specify_phase(CP.iphase_liquid)
+    water.update(CP.PT_INPUTS, 1e5, 373.15)
+
+    h_inner = tp.h_inside_wetted(
+        L=0.01,
+        Tvessel=373.15 + 4.9,
+        Tfluid=water.T(),
+        fluid=water,
+        master_fluid=sat_water,
+    )
+
+    rhol = sat_water.saturated_liquid_keyed_output(CP.iDmass)
+    rhog = sat_water.saturated_vapor_keyed_output(CP.iDmass)
+    mul = water.viscosity()
+    kl = water.conductivity()
+    Cpl = water.cpmass()
+    Hvap = sat_water.saturated_vapor_keyed_output(
+        CP.iHmass
+    ) - sat_water.saturated_liquid_keyed_output(CP.iHmass)
+    sigma = sat_water.surface_tension()
+    from ht import Rohsenow
+
+    h = Rohsenow(
+        rhol=rhol,
+        rhog=rhog,
+        mul=mul,
+        kl=kl,
+        Cpl=Cpl,
+        Hvap=Hvap,
+        sigma=sigma,
+        Te=4.9,
+        Csf=0.011,
+        n=1.26,
+    )
+    print(h)
+    assert h == pytest.approx(3571, rel=0.01)
+
+
 if __name__ == "__main__":
-    test_multicomponent()
+    test_boiling_heat_transfer()
