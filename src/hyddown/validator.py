@@ -473,6 +473,11 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["Flat-end", "DIN", "ASME F&D"],
                         },
+                        "liquid_level": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0,
+                        },
                     },
                 },
                 "heat_transfer": {
@@ -517,6 +522,11 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": ["Flat-end", "DIN", "ASME F&D"],
                         },
+                        "liquid_level": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0,
+                        },
                     },
                 },
                 "heat_transfer": {
@@ -557,6 +567,11 @@ def heat_transfer_validation(input):
                             "required": False,
                             "type": "string",
                             "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                        },
+                        "liquid_level": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0,
                         },
                     },
                 },

@@ -249,6 +249,7 @@ class HydDown:
             m_tot = m_liq + m_vap
             rho0 = m_tot / self.inner_vol.V_total
             self.Q0 = m_vap / m_tot
+            print(rho0, self.Q0)
             self.fluid.update(CP.PQ_INPUTS, self.p0, self.Q0)
             self.T0 = self.fluid.T()
             self.liquid_level0 = ll
@@ -484,9 +485,11 @@ class HydDown:
                 self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
             )
             rho0 = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
+            Z = self.fluid.saturated_vapor_keyed_output(CP.iZ)
         else:
             cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
             rho0 = self.rho0
+            Z = self.fluid.compressibility_factor()
 
         massflow_stop_switch = 0
 
@@ -545,7 +548,6 @@ class HydDown:
                     self.p_back, self.p0, self.T0, Z, MW, k, Cv
                 )
             else:
-                Z = self.fluid.compressibility_factor()
                 MW = self.MW
                 k = cpcv
                 self.mass_rate[0] = tp.control_valve(
@@ -566,7 +568,7 @@ class HydDown:
                 cpcv,
                 self.CD,
                 self.T0,
-                self.fluid.compressibility_factor(),
+                Z,
                 self.MW,
                 self.D_orifice**2 / 4 * math.pi,
             )
@@ -988,9 +990,10 @@ class HydDown:
                 cpcv = self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) / (
                     self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
                 )
+                Z = self.fluid.saturated_vapor_keyed_output(CP.iZ)
             else:
                 cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
-
+                Z = self.fluid.compressibility_factor()
             # Finally updating the mass rate for the mass balance in the next time step
             # Already done of the valve is "relief" (estimation)
             if input["valve"]["type"] == "orifice":
@@ -1032,7 +1035,7 @@ class HydDown:
                         self.p_back, self.P[i], self.T0, Z, MW, k, Cv
                     )
                 else:
-                    Z = self.fluid.compressibility_factor()
+                    Z = Z
                     MW = self.MW
                     self.mass_rate[i] = tp.control_valve(
                         self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, Cv
@@ -1046,7 +1049,7 @@ class HydDown:
                     cpcv,
                     self.CD,
                     self.T_fluid[i],
-                    self.fluid.compressibility_factor(),
+                    Z,
                     self.MW,
                     self.D_orifice**2 / 4 * math.pi,
                 )
