@@ -280,6 +280,8 @@ class HydDown:
         self.T_bonded_wall = np.zeros(data_len)
         self.Q_outer = np.zeros(data_len)
         self.Q_inner = np.zeros(data_len)
+        self.Q_outer_wetted = np.zeros(data_len)
+        self.Q_inner_wetted = np.zeros(data_len)
         self.h_inside = np.zeros(data_len)
         self.h_inside_wetted = np.zeros(data_len)
         self.T_vent = np.zeros(data_len)
@@ -651,7 +653,7 @@ class HydDown:
                                     CP.PT_INPUTS, self.P[i - 1], T_film
                                 )
                                 self.transport_fluid_wet.update(
-                                    CP.PT_INPUTS, self.P[i - 1], T_film
+                                    CP.PT_INPUTS, self.P[i - 1], self.T_fluid[i - 1]
                                 )
                             except:
                                 self.transport_fluid.update(
@@ -663,27 +665,78 @@ class HydDown:
                                 self.T_fluid[i - 1],
                                 self.transport_fluid,
                             )
+                            if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                                hiw = tp.h_inside_wetted(
+                                    L,
+                                    self.T_inner_wall_wetted[i - 1],
+                                    self.T_fluid[i - 1],
+                                    self.transport_fluid_wet,
+                                    self.fluid,
+                                )
+                            else:
+                                hiw = hi
                     else:
                         hi = self.h_in
 
                     self.h_inside[i] = hi
+                    self.h_inside_wetted[i] = hiw
 
                     self.Q_inner[i] = (
-                        self.surf_area_inner
+                        (
+                            self.surf_area_inner
+                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        )
                         * hi
                         * (self.T_inner_wall[i - 1] - self.T_fluid[i - 1])
                     )
+                    self.Q_inner_wetted[i] = (
+                        self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        * hiw
+                        * (self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1])
+                    )
 
                     self.Q_outer[i] = (
-                        self.surf_area_outer
+                        (
+                            self.surf_area_inner
+                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        )
+                        * self.surf_area_outer
+                        / self.surf_area_inner
                         * self.h_out
                         * (self.Tamb - self.T_outer_wall[i - 1])
                     )
+
+                    self.Q_outer_wetted[i] = (
+                        self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        * self.surf_area_outer
+                        / self.surf_area_inner
+                        * self.h_out
+                        * (self.Tamb - self.T_outer_wall_wetted[i - 1])
+                    )
+
                     self.T_vessel[i] = self.T_vessel[i - 1] + (
                         self.Q_outer[i] - self.Q_inner[i]
                     ) * self.tstep / (
-                        self.vessel_cp * self.vessel_density * self.vol_solid
+                        self.vessel_cp
+                        * self.vessel_density
+                        * self.vol_solid
+                        * (
+                            self.inner_vol.A
+                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        )
+                        / self.inner_vol.A
                     )
+
+                    self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
+                        self.Q_outer_wetted[i] - self.Q_inner_wetted[i]
+                    ) * self.tstep / (
+                        self.vessel_cp
+                        * self.vessel_density
+                        * self.vol_solid
+                        * self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        / self.inner_vol.A
+                    )
+
                     if "thermal_conductivity" in self.input["vessel"].keys():
                         theta = 0.5  # Crank-Nicholson scheme
                         dt = self.tstep / 10
@@ -797,6 +850,8 @@ class HydDown:
                     else:
                         self.T_inner_wall[i] = self.T_vessel[i]
                         self.T_outer_wall[i] = self.T_vessel[i]
+                        self.T_inner_wall_wetted[i] = self.T_vessel_wetted[i]
+                        self.T_outer_wall_wetted[i] = self.T_vessel_wetted[i]
 
                 elif self.heat_method == "s-b":
                     if self.vessel_orientation == "horizontal":
@@ -811,23 +866,73 @@ class HydDown:
                         self.species,
                     )
                     self.h_inside[i] = hi
+                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                        self.transport_fluid_wet.update(
+                            CP.PT_INPUTS, self.P[i - 1], self.T_fluid[i - 1]
+                        )
+                        hiw = tp.h_inside_wetted(
+                            L,
+                            self.T_inner_wall_wetted[i - 1],
+                            self.T_fluid[i - 1],
+                            self.transport_fluid_wet,
+                            self.fluid,
+                        )
+                    else:
+                        hiw = hi
                     self.Q_inner[i] = (
-                        self.surf_area_inner
+                        (
+                            self.surf_area_inner
+                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        )
                         * hi
                         * (self.T_vessel[i - 1] - self.T_fluid[i - 1])
                     )
+                    self.Q_inner_wetted[i] = (
+                        self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        * hiw
+                        * (self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1])
+                    )
                     self.Q_outer[i] = (
                         fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
+                        * (
+                            self.surf_area_inner
+                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        )
                         * self.surf_area_outer
+                        / self.surf_area_inner
+                    )
+                    self.Q_outer_wetted[i] = (
+                        fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
+                        * self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        * self.surf_area_outer
+                        / self.surf_area_inner
                     )
                     self.T_vessel[i] = self.T_vessel[i - 1] + (
                         self.Q_outer[i] - self.Q_inner[i]
                     ) * self.tstep / (
-                        self.vessel_cp * self.vessel_density * self.vol_solid
+                        self.vessel_cp
+                        * self.vessel_density
+                        * self.vol_solid
+                        * (
+                            self.inner_vol.A
+                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        )
+                        / self.inner_vol.A
                     )
+                    self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
+                        self.Q_outer_wetted[i] - self.Q_inner_wetted[i]
+                    ) * self.tstep / (
+                        self.vessel_cp
+                        * self.vessel_density
+                        * self.vol_solid
+                        * self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        / self.inner_vol.A
+                    )
+
                     self.T_inner_wall[i] = self.T_vessel[i]
                     self.T_outer_wall[i] = self.T_vessel[i]
-
+                    self.T_inner_wall_wetted[i] = self.T_vessel_wetted[i]
+                    self.T_outer_wall_wetted[i] = self.T_vessel_wetted[i]
                 elif self.heat_method == "specified_U":
                     self.Q_inner[i] = (
                         self.surf_area_outer
@@ -872,6 +977,7 @@ class HydDown:
                     U_start
                     - self.tstep * self.mass_rate[i - 1] * h_in
                     + self.tstep * self.Q_inner[i]
+                    + self.tstep * self.Q_inner_wetted[i]
                 )
 
                 self.U_mass[i] = U_end / self.mass_fluid[i]
@@ -1146,6 +1252,18 @@ class HydDown:
 
         plt.plot(self.time_array, self.T_inner_wall - 273.15, "g--", label="Inner wall")
         plt.plot(self.time_array, self.T_outer_wall - 273.15, "g-.", label="Outer wall")
+        plt.plot(
+            self.time_array,
+            self.T_inner_wall_wetted - 273.15,
+            "g--",
+            label="Inner wall wetted",
+        )
+        plt.plot(
+            self.time_array,
+            self.T_outer_wall_wetted - 273.15,
+            "g-.",
+            label="Outer wall wetted",
+        )
         if self.input["valve"]["flow"] == "discharge":
             plt.plot(self.time_array, self.T_vent - 273.15, "r", label="Vent")
         if "validation" in self.input:
@@ -1236,8 +1354,10 @@ class HydDown:
 
         plt.subplot(224)
         plt.plot(self.time_array, self.mass_rate, "b", label="m_dot")
+        plt.plot(self.time_array, self.liquid_level, "g", label="Liquid level (m)")
+        plt.legend(loc="best")
         plt.xlabel("Time (seconds)")
-        plt.ylabel("Vent rate (kg/s)")
+        plt.ylabel("Vent rate (kg/s) / Liquid level (m)")
 
         if filename != None:
             plt.savefig(filename + "_main.png")

@@ -26,14 +26,15 @@ valve:
   flow: "discharge"
   type: "psv"
   diameter : 0.023
+  #diameter : 0.013
   discharge_coef: 0.975
   back_pressure: 101300.
   set_pressure: 2600000
   blowdown: 0.1
 heat_transfer:
-  type: "specified_Q"
-  #temp_ambient: 303.15
-  #h_outer: 0
-  #h_inner: "calc"
-  Q_fix: 156000
+  type: "specified_h"
+  temp_ambient: 803.15
+  h_outer: 30
+  h_inner: "calc"
+  #Q_fix: 156000
   

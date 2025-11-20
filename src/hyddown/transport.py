@@ -265,7 +265,7 @@ def h_inner_mixed(L, Tfluid, Tvessel, P, species, mdot, D):
     )
 
 
-def h_inside_liquid(L, Tvessel, Tfluid, fluid, master_fluid):
+def h_inside_liquid(L, Tvessel, Tfluid, fluid):
     """
     Calculation of internal natural convective heat transfer coefficient from Nusselt number
 
@@ -347,9 +347,7 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
     if math.isnan(h_boil):
         h_boil = 0
 
-    h_conv = h_inside_liquid(L, Tvessel, Tfluid, fluid, master_fluid)
-    # return 3000
-    # return h_conv
+    h_conv = h_inside_liquid(L, Tvessel, Tfluid, fluid)
     return max(h_boil, h_conv)
     # return min(max(h_boil, h_conv, 1000), 3000)
 
