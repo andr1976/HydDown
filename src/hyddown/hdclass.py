@@ -259,7 +259,6 @@ class HydDown:
             m_tot = m_liq + m_vap
             rho0 = m_tot / self.inner_vol.V_total
             self.Q0 = m_vap / m_tot
-            print(rho0, self.Q0)
             self.fluid.update(CP.PQ_INPUTS, self.p0, self.Q0)
             self.T0 = self.fluid.T()
             self.liquid_level0 = ll
