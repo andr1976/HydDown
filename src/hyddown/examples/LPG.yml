@@ -5,7 +5,7 @@ vessel:
   heat_capacity: 500
   density: 7700
   thickness: 0.010
-  liquid_level: 0.2 
+  liquid_level: 0.22 
 initial:
   temperature: 298.15
   pressure: 610000
@@ -14,7 +14,7 @@ initial:
 calculation:
   type: "energybalance"
   time_step: 1
-  end_time: 350.
+  end_time: 480.
 valve:
   flow: "discharge"
   type: "psv"
@@ -25,4 +25,4 @@ valve:
   back_pressure: 101300.
 heat_transfer:
   type: "s-b"
-  fire: "api_pool"
+  fire: "scandpower_pool"

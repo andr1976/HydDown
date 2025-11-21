@@ -82,7 +82,7 @@ def validate_mandatory_ruleset(input):
                 "type": {
                     "required": False,
                     "type": "string",
-                    "allowed": {"Flat-end", "ASME F&D", "DIN"},
+                    "allowed": {"Flat-end", "ASME F&D", "DIN", "Hemispherical"},
                 },
                 "liquid_level": {
                     "required": False,
@@ -413,7 +413,7 @@ def heat_transfer_validation(input):
                         "type": {
                             "required": False,
                             "type": "string",
-                            "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                            "allowed": ["Flat-end", "DIN", "ASME F&D", "Hemispherical"],
                         },
                         "liquid_level": {
                             "required": False,
@@ -471,7 +471,7 @@ def heat_transfer_validation(input):
                         "type": {
                             "required": False,
                             "type": "string",
-                            "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                            "allowed": ["Flat-end", "DIN", "ASME F&D", "Hemispherical"],
                         },
                         "liquid_level": {
                             "required": False,
@@ -520,7 +520,7 @@ def heat_transfer_validation(input):
                         "type": {
                             "required": False,
                             "type": "string",
-                            "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                            "allowed": ["Flat-end", "DIN", "ASME F&D", "Hemispherical"],
                         },
                         "liquid_level": {
                             "required": False,
@@ -566,7 +566,7 @@ def heat_transfer_validation(input):
                         "type": {
                             "required": False,
                             "type": "string",
-                            "allowed": ["Flat-end", "DIN", "ASME F&D"],
+                            "allowed": ["Flat-end", "DIN", "ASME F&D", "Hemispherical"],
                         },
                         "liquid_level": {
                             "required": False,

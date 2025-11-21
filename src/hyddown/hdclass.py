@@ -94,6 +94,16 @@ class HydDown:
                 sideB_k=0.1,
                 horizontal=horizontal,
             )
+        elif self.vessel_type == "Hemispherical":
+            self.inner_vol = fluids.TANK(
+                D=self.diameter,
+                L=self.length,
+                sideA="spherical",
+                sideB="spherical",
+                sideA_a=0.5 * self.diameter,
+                sideB_a=0.5 * self.diameter,
+                horizontal=horizontal,
+            )
 
         if "thickness" in self.input["vessel"]:
             self.outer_vol = self.inner_vol.add_thickness(
@@ -681,25 +691,26 @@ class HydDown:
                     self.h_inside[i] = hi
                     self.h_inside_wetted[i] = hiw
 
+                    wetted_area = self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                    if np.isnan(wetted_area):
+                        wetted_area = 0
+
                     self.Q_inner[i] = (
-                        (
-                            self.surf_area_inner
-                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
-                        )
+                        (self.surf_area_inner - wetted_area)
                         * hi
                         * (self.T_inner_wall[i - 1] - self.T_fluid[i - 1])
                     )
                     self.Q_inner_wetted[i] = (
-                        self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        wetted_area
                         * hiw
                         * (self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1])
                     )
 
+                    if np.isnan(self.Q_inner_wetted[i]):
+                        self.Q_inner_wetted[i] = 0
+
                     self.Q_outer[i] = (
-                        (
-                            self.surf_area_inner
-                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
-                        )
+                        (self.surf_area_inner - wetted_area)
                         * self.surf_area_outer
                         / self.surf_area_inner
                         * self.h_out
@@ -707,12 +718,15 @@ class HydDown:
                     )
 
                     self.Q_outer_wetted[i] = (
-                        self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        wetted_area
                         * self.surf_area_outer
                         / self.surf_area_inner
                         * self.h_out
                         * (self.Tamb - self.T_outer_wall_wetted[i - 1])
                     )
+
+                    if np.isnan(self.Q_outer_wetted[i]):
+                        self.Q_outer_wetted[i] = 0
 
                     self.T_vessel[i] = self.T_vessel[i - 1] + (
                         self.Q_outer[i] - self.Q_inner[i]
@@ -720,10 +734,7 @@ class HydDown:
                         self.vessel_cp
                         * self.vessel_density
                         * self.vol_solid
-                        * (
-                            self.inner_vol.A
-                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
-                        )
+                        * (self.inner_vol.A - wetted_area)
                         / self.inner_vol.A
                     )
 
@@ -733,7 +744,7 @@ class HydDown:
                         self.vessel_cp
                         * self.vessel_density
                         * self.vol_solid
-                        * self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        * wetted_area
                         / self.inner_vol.A
                     )
 
@@ -858,6 +869,8 @@ class HydDown:
                         L = self.diameter
                     else:
                         L = self.length
+
+                    wetted_area = self.inner_vol.SA_from_h(self.liquid_level[i - 1])
                     hi = tp.h_inner(
                         L,
                         self.T_fluid[i - 1],
@@ -879,60 +892,80 @@ class HydDown:
                         )
                     else:
                         hiw = hi
+
                     self.Q_inner[i] = (
-                        (
-                            self.surf_area_inner
-                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
-                        )
+                        (self.surf_area_inner - wetted_area)
                         * hi
                         * (self.T_vessel[i - 1] - self.T_fluid[i - 1])
                     )
                     self.Q_inner_wetted[i] = (
-                        self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        wetted_area
                         * hiw
                         * (self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1])
                     )
+                    if np.isnan(self.Q_inner_wetted[i]):
+                        self.Q_inner_wetted[i] = 0
+
                     self.Q_outer[i] = (
                         fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
-                        * (
-                            self.surf_area_inner
-                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
-                        )
+                        * (self.surf_area_inner - wetted_area)
                         * self.surf_area_outer
                         / self.surf_area_inner
                     )
                     self.Q_outer_wetted[i] = (
                         fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
-                        * self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        * wetted_area
                         * self.surf_area_outer
                         / self.surf_area_inner
                     )
+                    if np.isnan(self.Q_outer_wetted[i]):
+                        self.Q_outer_wetted[i] = 0
+
                     self.T_vessel[i] = self.T_vessel[i - 1] + (
                         self.Q_outer[i] - self.Q_inner[i]
                     ) * self.tstep / (
                         self.vessel_cp
                         * self.vessel_density
                         * self.vol_solid
-                        * (
-                            self.inner_vol.A
-                            - self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                        * (self.inner_vol.A - wetted_area)
+                        / self.inner_vol.A
+                    )
+                    if self.liquid_level[i - 1] > 0:
+                        self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
+                            self.Q_outer_wetted[i] - self.Q_inner_wetted[i]
+                        ) * self.tstep / (
+                            self.vessel_cp
+                            * self.vessel_density
+                            * self.vol_solid
+                            * wetted_area
+                            / self.inner_vol.A
                         )
-                        / self.inner_vol.A
-                    )
-                    self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
-                        self.Q_outer_wetted[i] - self.Q_inner_wetted[i]
-                    ) * self.tstep / (
-                        self.vessel_cp
-                        * self.vessel_density
-                        * self.vol_solid
-                        * self.inner_vol.SA_from_h(self.liquid_level[i - 1])
-                        / self.inner_vol.A
-                    )
+                    else:
+                        # Hack to heat up previous liquid wetted surface
+                        self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
+                            fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
+                            * (self.surf_area_inner - wetted_area)
+                            * self.surf_area_outer
+                            / self.surf_area_inner
+                            - (self.surf_area_inner - wetted_area)
+                            * hi
+                            * (self.T_vessel_wetted[i - 1] - self.T_fluid[i - 1])
+                        ) * self.tstep / (
+                            self.vessel_cp
+                            * self.vessel_density
+                            * self.vol_solid
+                            * (self.inner_vol.A - wetted_area)
+                            / self.inner_vol.A
+                        )
+
+                    if np.isnan(self.T_vessel_wetted[i]):
+                        self.T_vessel_wetted[i] = self.T_vessel[i]
 
                     self.T_inner_wall[i] = self.T_vessel[i]
                     self.T_outer_wall[i] = self.T_vessel[i]
                     self.T_inner_wall_wetted[i] = self.T_vessel_wetted[i]
                     self.T_outer_wall_wetted[i] = self.T_vessel_wetted[i]
+
                 elif self.heat_method == "specified_U":
                     self.Q_inner[i] = (
                         self.surf_area_outer

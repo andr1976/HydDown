@@ -1,0 +1,32 @@
+vessel:
+  length: 1000
+  diameter: 0.2604
+  thickness: 0.125
+  heat_capacity: 1500
+  density: 30
+  thermal_conductivity: 0.026  
+  liner_thickness: 0.0063
+  liner_heat_capacity: 490
+  liner_density: 7800.
+  liner_thermal_conductivity: 45
+  orientation: "horizontal"
+  liquid_level: 0
+initial:
+  temperature: 253.
+  pressure: 1901300
+  fluid: "CO2" 
+calculation:
+  type: "energybalance"
+  time_step: 30
+  end_time: 80000.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter : 0.0
+  discharge_coef: 0.8
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 303.15
+  h_outer: 8
+  h_inner: "calc"
