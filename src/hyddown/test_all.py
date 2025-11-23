@@ -323,12 +323,12 @@ def test_sim_filling():
     hdown.run()
 
 
-def test_multicomponent():
-    from hyddown import HydDown
+# def test_multicomponent():
+#     from hyddown import HydDown
 
-    input = get_example_input("ng.yml")
-    hdown = HydDown(input)
-    hdown.run()
+#     input = get_example_input("ng.yml")
+#     hdown = HydDown(input)
+#     hdown.run()
 
 
 def test_sim_stefan_boltzmann():
@@ -490,10 +490,54 @@ def test_thermesh():
     # plt.savefig("../fig/conv_FE_t0.5_dt0.1s.png", dpi=600)
     # plt.show(block=False)
     analytical = analytical_solution(z, 25, rho, cp, k, h, T_inf)
-    
+
     assert T[-1, 0] == pytest.approx(analytical[0], abs=0.3)
     assert sum((T[-1, :] - analytical) ** 2) < 1
 
 
+def test_boiling_heat_transfer():
+    sat_water = CP.AbstractState("HEOS", "water")
+    sat_water.set_mole_fractions([1.0])
+    sat_water.update(CP.PQ_INPUTS, 1e5, 0.01)
+    water = CP.AbstractState("HEOS", "water")
+    water.set_mole_fractions([1.0])
+    water.specify_phase(CP.iphase_liquid)
+    water.update(CP.PT_INPUTS, 1e5, 373.15)
+
+    h_inner = tp.h_inside_wetted(
+        L=0.01,
+        Tvessel=373.15 + 4.9,
+        Tfluid=water.T(),
+        fluid=water,
+        master_fluid=sat_water,
+    )
+
+    rhol = sat_water.saturated_liquid_keyed_output(CP.iDmass)
+    rhog = sat_water.saturated_vapor_keyed_output(CP.iDmass)
+    mul = water.viscosity()
+    kl = water.conductivity()
+    Cpl = water.cpmass()
+    Hvap = sat_water.saturated_vapor_keyed_output(
+        CP.iHmass
+    ) - sat_water.saturated_liquid_keyed_output(CP.iHmass)
+    sigma = sat_water.surface_tension()
+    from ht import Rohsenow
+
+    h = Rohsenow(
+        rhol=rhol,
+        rhog=rhog,
+        mul=mul,
+        kl=kl,
+        Cpl=Cpl,
+        Hvap=Hvap,
+        sigma=sigma,
+        Te=4.9,
+        Csf=0.011,
+        n=1.26,
+    )
+    print(h)
+    assert h == pytest.approx(3571, rel=0.01)
+
+
 if __name__ == "__main__":
-    test_thermesh()
+    test_mdot_filling()

@@ -11,9 +11,9 @@ def stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel):
     """
     sigma = 5.67e-8  # Stefan-Botlzmann constant W/m^2 K^4
     return (
-        alpha * e_flame * sigma * Tradiative ** 4
+        alpha * e_flame * sigma * Tradiative**4
         + h * (Tflame - Tvessel)
-        - e_surface * sigma * Tvessel ** 4
+        - e_surface * sigma * Tvessel**4
     )
 
 
@@ -71,14 +71,13 @@ def jet_fire_scandpower(Tvessel):
 
 def sb_fire(T_vessel, fire_type):
     if fire_type == "api_jet":
-        Q=jet_fire_api521(T_vessel)
+        Q = jet_fire_api521(T_vessel)
     elif fire_type == "api_pool":
-        Q=pool_fire_api521(T_vessel)
+        Q = pool_fire_api521(T_vessel)
     elif fire_type == "scandpower_pool":
-        Q=pool_fire_scandpower(T_vessel)
+        Q = pool_fire_scandpower(T_vessel)
     elif fire_type == "scandpower_jet":
-        Q=jet_fire_scandpower(T_vessel)
+        Q = jet_fire_scandpower(T_vessel)
     else:
         raise ValueError("Unknown Stefan-Bolzmann fire heat load")
     return Q
-

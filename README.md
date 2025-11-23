@@ -10,23 +10,7 @@ This code is published under an MIT license.
 Install as simple as:
 
     pip install hyddown
-    
-In the case of an error in installing relation to python2, for example:
-```
-DEPRECATION: Python 2.7 reached the end of its life on January 1st, 2020. Please upgrade your Python as Python 2.7 is no longer maintained. pip 21.0 will drop support for Python 2.7 in January 2021. More details about Python 2 support in pip can be found at https://pip.pypa.io/en/latest/development/release-process/#python-2-support pip 21.0 will remove support for this functionality.
-Defaulting to user installation because normal site-packages is not writeable
-ERROR: Could not find a version that satisfies the requirement hyddown (from versions: none)
-ERROR: No matching distribution found for hyddown
-```
-please instead install with
-
-    python3 -m pip install hyddown
-
-or try
-    
-    pip3 install hyddown
-
-
+  
 Run the code as simple as: 
 
     python main.py input.yml

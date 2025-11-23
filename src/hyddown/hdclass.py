@@ -94,6 +94,16 @@ class HydDown:
                 sideB_k=0.1,
                 horizontal=horizontal,
             )
+        elif self.vessel_type == "Hemispherical":
+            self.inner_vol = fluids.TANK(
+                D=self.diameter,
+                L=self.length,
+                sideA="spherical",
+                sideB="spherical",
+                sideA_a=0.5 * self.diameter,
+                sideB_a=0.5 * self.diameter,
+                horizontal=horizontal,
+            )
 
         if "thickness" in self.input["vessel"]:
             self.outer_vol = self.inner_vol.add_thickness(
@@ -219,18 +229,46 @@ class HydDown:
         self.surf_area_inner = self.inner_vol.A
 
         self.fluid = CP.AbstractState("HEOS", self.comp)
-        self.fluid.specify_phase(CP.iphase_gas)
+        # self.fluid.specify_phase(CP.iphase_gas)
         self.fluid.set_mole_fractions(self.molefracs)
-        self.fluid.update(CP.PT_INPUTS, self.p0, self.T0)
 
         self.transport_fluid = CP.AbstractState("HEOS", self.compSRK)
         self.transport_fluid.specify_phase(CP.iphase_gas)
         self.transport_fluid.set_mole_fractions(self.molefracs)
 
+        self.transport_fluid_wet = CP.AbstractState("HEOS", self.compSRK)
+        self.transport_fluid_wet.specify_phase(CP.iphase_liquid)
+        self.transport_fluid_wet.set_mole_fractions(self.molefracs)
+
         self.vent_fluid = CP.AbstractState("HEOS", self.comp)
-        self.vent_fluid.specify_phase(CP.iphase_gas)
+        # self.vent_fluid.specify_phase(CP.iphase_gas)
         self.vent_fluid.set_mole_fractions(self.molefracs)
-        self.vent_fluid.update(CP.PT_INPUTS, self.p0, self.T0)
+
+        if "liquid_level" in self.input["vessel"]:
+            ll = self.input["vessel"]["liquid_level"]
+            V_liquid = self.inner_vol.V_from_h(ll)
+            self.fluid.update(CP.PQ_INPUTS, self.p0, 0)
+            liq_rho = self.fluid.rhomass()
+            m_liq = V_liquid * liq_rho
+
+            self.fluid.update(CP.PQ_INPUTS, self.p0, 1)
+            gas_rho = self.fluid.rhomass()
+            V_vapour = self.inner_vol.V_total - V_liquid
+            m_vap = V_vapour * gas_rho
+
+            m_tot = m_liq + m_vap
+            rho0 = m_tot / self.inner_vol.V_total
+            self.Q0 = m_vap / m_tot
+            self.fluid.update(CP.PQ_INPUTS, self.p0, self.Q0)
+            self.T0 = self.fluid.T()
+            self.liquid_level0 = ll
+            self.vent_fluid.update(CP.PQ_INPUTS, self.p0, 1.0)
+
+        else:
+            self.fluid.update(CP.PT_INPUTS, self.p0, self.T0)
+            self.liquid_level0 = 0.0
+            self.Q0 = self.fluid.Q()
+            self.vent_fluid.update(CP.PT_INPUTS, self.p0, self.T0)
 
         self.res_fluid = CP.AbstractState("HEOS", self.comp)
         self.res_fluid.set_mole_fractions(self.molefracs)
@@ -243,12 +281,22 @@ class HydDown:
         self.T_fluid = np.zeros(data_len)
         self.T_vent = np.zeros(data_len)
         self.T_vessel = np.zeros(data_len)
+        self.T_vessel_wetted = np.zeros(data_len)
         self.T_inner_wall = np.zeros(data_len)
+        self.T_inner_wall_wetted = np.zeros(data_len)
         self.T_outer_wall = np.zeros(data_len)
+        self.T_outer_wall_wetted = np.zeros(data_len)
         self.T_bonded_wall = np.zeros(data_len)
         self.Q_outer = np.zeros(data_len)
         self.Q_inner = np.zeros(data_len)
+        self.Q_outer_wetted = np.zeros(data_len)
+        self.Q_inner_wetted = np.zeros(data_len)
+        self.q_outer = np.zeros(data_len)
+        self.q_inner = np.zeros(data_len)
+        self.q_outer_wetted = np.zeros(data_len)
+        self.q_inner_wetted = np.zeros(data_len)
         self.h_inside = np.zeros(data_len)
+        self.h_inside_wetted = np.zeros(data_len)
         self.T_vent = np.zeros(data_len)
         self.H_mass = np.zeros(data_len)
         self.S_mass = np.zeros(data_len)
@@ -264,6 +312,29 @@ class HydDown:
         self.rho0 = self.fluid.rhomass()
         self.m0 = self.rho0 * self.vol
         self.MW = self.fluid.molar_mass()
+        self.vapour_mole_fraction = np.zeros(data_len)
+        self.vapour_mass_fraction = np.zeros(data_len)
+        self.vapour_volume_fraction = np.zeros(data_len)
+        self.liquid_level = np.zeros(data_len)
+
+    def calc_liquid_level(self):
+        """
+        Calculating liquid level based on current fluid state
+
+        Parameters
+        ----------
+        fluid : CoolProp AbstractState
+            Current fluid state
+        """
+        if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+            rho_liq = self.fluid.saturated_liquid_keyed_output(CP.iDmass)
+            rho_vap = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
+            m_liq = self.fluid.rhomass() * self.inner_vol.V_total * (1 - self.fluid.Q())
+            V_liq = m_liq / rho_liq
+            h_liq = self.inner_vol.h_from_V(V_liq)
+            return h_liq
+        else:
+            return 0.0
 
     def PHres(self, T, P, H):
         """
@@ -406,7 +477,11 @@ class HydDown:
         self.T_vessel[0] = self.T0
         self.T_inner_wall[0] = self.T0
         self.T_outer_wall[0] = self.T0
+        self.T_vessel_wetted[0] = self.T0
+        self.T_inner_wall_wetted[0] = self.T0
+        self.T_outer_wall_wetted[0] = self.T0
         self.T_bonded_wall[0] = self.T0
+        self.liquid_level[0] = self.liquid_level0
         if self.input["valve"]["flow"] == "discharge":
             self.T_vent[0] = self.T0
         self.H_mass[0] = self.fluid.hmass()
@@ -415,7 +490,22 @@ class HydDown:
         self.U_tot[0] = self.fluid.umass() * self.m0
         self.P[0] = self.p0
         self.mass_fluid[0] = self.m0
-        cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
+        if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+            self.vapour_mole_fraction[0] = self.fluid.Q()
+        else:
+            self.vapour_mole_fraction[0] = 1.0
+
+        if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+            cpcv = self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) / (
+                self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
+            )
+            rho0 = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
+            Z = self.fluid.saturated_vapor_keyed_output(CP.iZ)
+        else:
+            cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
+            rho0 = self.rho0
+            Z = self.fluid.compressibility_factor()
+
         massflow_stop_switch = 0
 
         # Calculating initial mass rate for t=0 depending on mass flow device
@@ -435,7 +525,7 @@ class HydDown:
                 self.mass_rate[0] = tp.gas_release_rate(
                     self.p0,
                     self.p_back,
-                    self.rho0,
+                    rho0,
                     cpcv,
                     self.CD,
                     self.D_orifice**2 / 4 * math.pi,
@@ -473,7 +563,6 @@ class HydDown:
                     self.p_back, self.p0, self.T0, Z, MW, k, Cv
                 )
             else:
-                Z = self.fluid.compressibility_factor()
                 MW = self.MW
                 k = cpcv
                 self.mass_rate[0] = tp.control_valve(
@@ -494,7 +583,7 @@ class HydDown:
                 cpcv,
                 self.CD,
                 self.T0,
-                self.fluid.compressibility_factor(),
+                Z,
                 self.MW,
                 self.D_orifice**2 / 4 * math.pi,
             )
@@ -556,6 +645,7 @@ class HydDown:
                             self.transport_fluid.update(
                                 CP.PT_INPUTS, self.P[i - 1], T_film
                             )
+
                             hi = tp.h_inside_mixed(
                                 L,
                                 # self.T_vessel[i - 1],
@@ -565,40 +655,128 @@ class HydDown:
                                 self.mass_rate[i - 1],
                                 self.diameter,
                             )
+                            if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                                self.transport_fluid_wet.update(
+                                    CP.PT_INPUTS, self.P[i - 1], T_film
+                                )
+                                hiw = tp.h_inside_wetted(
+                                    L,
+                                    self.T_inner_wall_wetted[i - 1],
+                                    self.T_fluid[i - 1],
+                                    self.transport_fluid_wet,
+                                    self.fluid,
+                                )
+                            else:
+                                hiw = hi
                         else:
                             T_film = (
                                 self.T_fluid[i - 1] + self.T_inner_wall[i - 1]
                             ) / 2
-                            self.transport_fluid.update(
-                                CP.PT_INPUTS, self.P[i - 1], T_film
-                            )
+                            try:
+                                self.transport_fluid.update(
+                                    CP.PT_INPUTS, self.P[i - 1], T_film
+                                )
+                                if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                                    self.transport_fluid_wet.update(
+                                        CP.PT_INPUTS, self.P[i - 1], self.T_fluid[i - 1]
+                                    )
+                            except:
+                                self.transport_fluid.update(
+                                    CP.PQ_INPUTS, self.P[i - 1], 1.0
+                                )
                             hi = tp.h_inside(
                                 L,
-                                self.T_inner_wall[i - i],
+                                self.T_inner_wall[i - 1],
                                 self.T_fluid[i - 1],
                                 self.transport_fluid,
                             )
+                            if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                                hiw = tp.h_inside_wetted(
+                                    L,
+                                    self.T_inner_wall_wetted[i - 1],
+                                    self.T_fluid[i - 1],
+                                    self.transport_fluid_wet,
+                                    self.fluid,
+                                )
+                            else:
+                                hiw = hi
                     else:
                         hi = self.h_in
 
                     self.h_inside[i] = hi
+                    self.h_inside_wetted[i] = hiw
+
+                    wetted_area = self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                    if np.isnan(wetted_area):
+                        wetted_area = 0
 
                     self.Q_inner[i] = (
-                        self.surf_area_inner
+                        (self.surf_area_inner - wetted_area)
                         * hi
                         * (self.T_inner_wall[i - 1] - self.T_fluid[i - 1])
                     )
+                    self.q_inner[i] = hi * (
+                        self.T_inner_wall[i - 1] - self.T_fluid[i - 1]
+                    )
+
+                    self.Q_inner_wetted[i] = (
+                        wetted_area
+                        * hiw
+                        * (self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1])
+                    )
+                    self.q_inner_wetted[i] = self.Q_inner_wetted[i] / wetted_area
+
+                    if np.isnan(self.Q_inner_wetted[i]):
+                        self.Q_inner_wetted[i] = 0
 
                     self.Q_outer[i] = (
-                        self.surf_area_outer
+                        (self.surf_area_inner - wetted_area)
+                        * self.surf_area_outer
+                        / self.surf_area_inner
                         * self.h_out
                         * (self.Tamb - self.T_outer_wall[i - 1])
                     )
+                    self.q_outer[i] = self.h_out * (
+                        self.Tamb - self.T_outer_wall[i - 1]
+                    )
+
+                    self.Q_outer_wetted[i] = (
+                        wetted_area
+                        * self.surf_area_outer
+                        / self.surf_area_inner
+                        * self.h_out
+                        * (self.Tamb - self.T_outer_wall_wetted[i - 1])
+                    )
+
+                    self.q_outer_wetted[i] = self.h_out * (
+                        self.Tamb - self.T_outer_wall_wetted[i - 1]
+                    )
+                    if np.isnan(self.Q_outer_wetted[i]):
+                        self.Q_outer_wetted[i] = 0
+
                     self.T_vessel[i] = self.T_vessel[i - 1] + (
                         self.Q_outer[i] - self.Q_inner[i]
                     ) * self.tstep / (
-                        self.vessel_cp * self.vessel_density * self.vol_solid
+                        self.vessel_cp
+                        * self.vessel_density
+                        * self.vol_solid
+                        * (self.inner_vol.A - wetted_area)
+                        / self.inner_vol.A
                     )
+
+                    if self.Q_outer_wetted[i] == 0 and self.Q_inner_wetted[i] == 0:
+                        self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1]
+                    else:
+                        self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
+                            self.Q_outer_wetted[i] - self.Q_inner_wetted[i]
+                        ) * self.tstep / (
+                            self.vessel_cp
+                            * self.vessel_density
+                            * self.vol_solid
+                            * wetted_area
+                            / self.inner_vol.A
+                        )
+
                     if "thermal_conductivity" in self.input["vessel"].keys():
                         theta = 0.5  # Crank-Nicholson scheme
                         dt = self.tstep / 10
@@ -630,8 +808,8 @@ class HydDown:
                                     (self.Tamb + self.T0) / 2 * np.ones(len(mesh.nodes))
                                 )
                                 solver = {
-                                    "dt": 10,
-                                    "t_end": 1000,
+                                    "dt": 100,
+                                    "t_end": 10000,
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile = tm.solve_ht(domain, solver)
@@ -686,8 +864,8 @@ class HydDown:
                                     * np.ones(len(mesh2.nodes))
                                 )
                                 solver2 = {
-                                    "dt": 10,
-                                    "t_end": 1000,
+                                    "dt": 100,
+                                    "t_end": 10000,
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
@@ -712,12 +890,16 @@ class HydDown:
                     else:
                         self.T_inner_wall[i] = self.T_vessel[i]
                         self.T_outer_wall[i] = self.T_vessel[i]
+                        self.T_inner_wall_wetted[i] = self.T_vessel_wetted[i]
+                        self.T_outer_wall_wetted[i] = self.T_vessel_wetted[i]
 
                 elif self.heat_method == "s-b":
                     if self.vessel_orientation == "horizontal":
                         L = self.diameter
                     else:
                         L = self.length
+
+                    wetted_area = self.inner_vol.SA_from_h(self.liquid_level[i - 1])
                     hi = tp.h_inner(
                         L,
                         self.T_fluid[i - 1],
@@ -726,22 +908,103 @@ class HydDown:
                         self.species,
                     )
                     self.h_inside[i] = hi
+                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                        self.transport_fluid_wet.update(
+                            CP.PT_INPUTS, self.P[i - 1], self.T_fluid[i - 1]
+                        )
+                        hiw = tp.h_inside_wetted(
+                            L,
+                            self.T_inner_wall_wetted[i - 1],
+                            self.T_fluid[i - 1],
+                            self.transport_fluid_wet,
+                            self.fluid,
+                        )
+                    else:
+                        hiw = hi
+
                     self.Q_inner[i] = (
-                        self.surf_area_inner
+                        (self.surf_area_inner - wetted_area)
                         * hi
                         * (self.T_vessel[i - 1] - self.T_fluid[i - 1])
                     )
+
+                    self.q_inner[i] = hi * (self.T_vessel[i - 1] - self.T_fluid[i - 1])
+                    self.Q_inner_wetted[i] = (
+                        wetted_area
+                        * hiw
+                        * (self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1])
+                    )
+                    self.q_inner_wetted[i] = hiw * (
+                        self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1]
+                    )
+                    if np.isnan(self.Q_inner_wetted[i]):
+                        self.Q_inner_wetted[i] = 0
+
                     self.Q_outer[i] = (
                         fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
+                        * (self.surf_area_inner - wetted_area)
                         * self.surf_area_outer
+                        / self.surf_area_inner
                     )
+                    self.q_outer[i] = fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
+
+                    self.Q_outer_wetted[i] = (
+                        fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
+                        * wetted_area
+                        * self.surf_area_outer
+                        / self.surf_area_inner
+                    )
+                    self.q_outer_wetted[i] = fire.sb_fire(
+                        self.T_vessel_wetted[i - 1], self.fire_type
+                    )
+
+                    if np.isnan(self.Q_outer_wetted[i]):
+                        self.Q_outer_wetted[i] = 0
+
                     self.T_vessel[i] = self.T_vessel[i - 1] + (
                         self.Q_outer[i] - self.Q_inner[i]
                     ) * self.tstep / (
-                        self.vessel_cp * self.vessel_density * self.vol_solid
+                        self.vessel_cp
+                        * self.vessel_density
+                        * self.vol_solid
+                        * (self.inner_vol.A - wetted_area)
+                        / self.inner_vol.A
                     )
+                    if self.liquid_level[i - 1] > 0:
+                        self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
+                            self.Q_outer_wetted[i] - self.Q_inner_wetted[i]
+                        ) * self.tstep / (
+                            self.vessel_cp
+                            * self.vessel_density
+                            * self.vol_solid
+                            * wetted_area
+                            / self.inner_vol.A
+                        )
+                    else:
+                        # Hack to heat up previous liquid wetted surface
+                        self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
+                            fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
+                            * (self.surf_area_inner - wetted_area)
+                            * self.surf_area_outer
+                            / self.surf_area_inner
+                            - (self.surf_area_inner - wetted_area)
+                            * hi
+                            * (self.T_vessel_wetted[i - 1] - self.T_fluid[i - 1])
+                        ) * self.tstep / (
+                            self.vessel_cp
+                            * self.vessel_density
+                            * self.vol_solid
+                            * (self.inner_vol.A - wetted_area)
+                            / self.inner_vol.A
+                        )
+
+                    if np.isnan(self.T_vessel_wetted[i]):
+                        self.T_vessel_wetted[i] = self.T_vessel[i]
+
                     self.T_inner_wall[i] = self.T_vessel[i]
                     self.T_outer_wall[i] = self.T_vessel[i]
+                    self.T_inner_wall_wetted[i] = self.T_vessel_wetted[i]
+                    self.T_outer_wall_wetted[i] = self.T_vessel_wetted[i]
 
                 elif self.heat_method == "specified_U":
                     self.Q_inner[i] = (
@@ -772,7 +1035,11 @@ class HydDown:
                     h_in = x * self.res_fluid.hmass() + (1 - x) * self.res_fluid.umass()
 
                 else:
-                    h_in = self.fluid.hmass()
+                    # h_in = self.fluid.hmass()
+                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                        h_in = self.fluid.saturated_vapor_keyed_output(CP.iHmass)
+                    else:
+                        h_in = self.fluid.hmass()
 
                 if i > 1:
                     P1 = self.P[i - 2]
@@ -783,6 +1050,7 @@ class HydDown:
                     U_start
                     - self.tstep * self.mass_rate[i - 1] * h_in
                     + self.tstep * self.Q_inner[i]
+                    + self.tstep * self.Q_inner_wetted[i]
                 )
 
                 self.U_mass[i] = U_end / self.mass_fluid[i]
@@ -844,14 +1112,44 @@ class HydDown:
 
                     self.P[i] = P1
                     self.T_fluid[i] = T1
-                    self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+
+                    if len(self.molefracs) == 1 and self.molefracs[0] == 1.0:
+                        self.fluid.update(
+                            CP.DmassUmass_INPUTS,
+                            self.rho[i],
+                            self.U_mass[i],
+                        )
+                    else:
+                        try:
+                            self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+                        except:
+                            if self.fluid.Q() < 0:
+                                self.fluid.update(CP.PQ_INPUTS, self.P[i], 1)
+                            else:
+                                self.fluid.update(
+                                    CP.PQ_INPUTS, self.P[i], self.fluid.Q()
+                                )
+                    if (
+                        self.input["valve"]["flow"] == "discharge"
+                        and self.fluid.Q() < 1
+                        and self.fluid.Q() >= 0
+                    ):
+                        self.res_fluid.update(CP.PQ_INPUTS, self.P[i], 1.0)
 
             else:
                 raise NameError("Unknown calculation method: " + self.method)
 
+            Q = self.fluid.Q()
+            if Q >= 0 and Q <= 1:
+                self.vapour_mole_fraction[i] = Q
+            else:
+                self.vapour_mole_fraction[i] = 1
+
             self.H_mass[i] = self.fluid.hmass()
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
+
+            self.liquid_level[i] = self.calc_liquid_level()
 
             # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":
@@ -860,12 +1158,21 @@ class HydDown:
                         self.H_mass[i], self.p_back, self.vent_fluid.T()
                     )
                 else:
-                    self.T_vent[i] = PropsSI(
-                        "T", "H", self.H_mass[i], "P", self.p_back, self.species
-                    )
+                    try:
+                        self.T_vent[i] = PropsSI(
+                            "T", "H", self.H_mass[i], "P", self.p_back, self.species
+                        )
+                    except:
+                        self.T_vent[i] = self.vent_fluid.T()
 
-            cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
-
+            if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                cpcv = self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) / (
+                    self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
+                )
+                Z = self.fluid.saturated_vapor_keyed_output(CP.iZ)
+            else:
+                cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
+                Z = self.fluid.compressibility_factor()
             # Finally updating the mass rate for the mass balance in the next time step
             # Already done of the valve is "relief" (estimation)
             if input["valve"]["type"] == "orifice":
@@ -880,10 +1187,14 @@ class HydDown:
                         self.D_orifice**2 / 4 * math.pi,
                     )
                 else:
+                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                        rho = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
+                    else:
+                        rho = self.rho[i]
                     self.mass_rate[i] = tp.gas_release_rate(
                         self.P[i],
                         self.p_back,
-                        self.rho[i],
+                        rho,
                         cpcv,
                         self.CD,
                         self.D_orifice**2 / 4 * math.pi,
@@ -903,7 +1214,7 @@ class HydDown:
                         self.p_back, self.P[i], self.T0, Z, MW, k, Cv
                     )
                 else:
-                    Z = self.fluid.compressibility_factor()
+                    Z = Z
                     MW = self.MW
                     self.mass_rate[i] = tp.control_valve(
                         self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, Cv
@@ -917,7 +1228,7 @@ class HydDown:
                     cpcv,
                     self.CD,
                     self.T_fluid[i],
-                    self.fluid.compressibility_factor(),
+                    Z,
                     self.MW,
                     self.D_orifice**2 / 4 * math.pi,
                 )
@@ -1003,7 +1314,17 @@ class HydDown:
 
         plt.plot(self.time_array, self.T_fluid - 273.15, "b", label="Fluid")
         if "thermal_conductivity" not in self.input["vessel"].keys():
-            plt.plot(self.time_array, self.T_vessel - 273.15, "g", label="Vessel")
+            plt.plot(
+                self.time_array, self.T_vessel - 273.15, "g", label="Vessel wall dry"
+            )
+            if self.liquid_level.any() != 0:
+                plt.plot(
+                    self.time_array,
+                    self.T_vessel_wetted - 273.15,
+                    # marker="o",
+                    color="darkorange",
+                    label="Vessel wall wetted",
+                )
         if "liner_thermal_conductivity" in self.input["vessel"].keys():
             plt.plot(
                 self.time_array,
@@ -1012,8 +1333,28 @@ class HydDown:
                 label="Liner/composite",
             )
 
-        plt.plot(self.time_array, self.T_inner_wall - 273.15, "g--", label="Inner wall")
-        plt.plot(self.time_array, self.T_outer_wall - 273.15, "g-.", label="Outer wall")
+            plt.plot(
+                self.time_array, self.T_inner_wall - 273.15, "g--", label="Inner wall"
+            )
+            plt.plot(
+                self.time_array, self.T_outer_wall - 273.15, "g-.", label="Outer wall"
+            )
+
+            plt.plot(
+                self.time_array,
+                self.T_inner_wall_wetted - 273.15,
+                color="darkorange",
+                linestyle="--",
+                label="Inner wall wetted",
+            )
+            plt.plot(
+                self.time_array,
+                self.T_outer_wall_wetted - 273.15,
+                color="darkorange",
+                linestyle="-.",
+                label="Outer wall wetted",
+            )
+
         if self.input["valve"]["flow"] == "discharge":
             plt.plot(self.time_array, self.T_vent - 273.15, "r", label="Vent")
         if "validation" in self.input:
@@ -1081,7 +1422,7 @@ class HydDown:
         plt.ylabel("Temperature ($^\circ$C)")
 
         plt.subplot(222)
-        plt.plot(self.time_array, self.P / 1e5, "b", label="Calculated")
+        plt.plot(self.time_array, self.P / 1e5, "b")
         if "validation" in self.input:
             if "pressure" in self.input["validation"]:
                 plt.plot(
@@ -1090,23 +1431,48 @@ class HydDown:
                     "ko",
                     label="Experimental",
                 )
-        plt.legend(loc="best")
+            plt.legend(loc="best")
         plt.xlabel("Time (seconds)")
         plt.ylabel("Pressure (bar)")
 
         plt.subplot(223)
-        plt.plot(self.time_array, self.H_mass, "b", label="H (J/kg)")
-        plt.plot(self.time_array, self.U_mass, "g", label="U (J/kg)")
-        plt.plot(self.time_array, self.S_mass * 100, "r", label="S*100 (J/kg K)")
+        plt.plot(
+            self.time_array, self.q_outer / 1000, "r", label="External heat flux (dry)"
+        )
+        plt.plot(
+            self.time_array,
+            self.q_inner / 1000,
+            color="darkorange",
+            label="Internal heat flux (dry)",
+        )
+
+        if self.liquid_level.any() != 0:
+            plt.plot(
+                self.time_array,
+                self.q_outer_wetted / 1000,
+                "r--",
+                label="External heat flux (wetted)",
+            )
+            plt.plot(
+                self.time_array,
+                self.q_inner_wetted / 1000,
+                color="darkorange",
+                linestyle="--",
+                label="Internal heat flux (wetted)",
+            )
+
         plt.legend(loc="best")
         plt.xlabel("Time (seconds)")
-        plt.ylabel("Enthalpy/Internal Energy/Entropy")
+        plt.ylabel("Heat flux (kW/m$^2$)")
 
         plt.subplot(224)
-        plt.plot(self.time_array, self.mass_rate, "b", label="m_dot")
+        plt.plot(self.time_array, self.mass_rate, "b", label="Mass flow (kg/s)")
+        plt.plot(self.time_array, self.liquid_level, "g", label="Liquid level (m)")
+        plt.legend(loc="best")
         plt.xlabel("Time (seconds)")
-        plt.ylabel("Vent rate (kg/s)")
+        plt.ylabel("Vent rate (kg/s) / Liquid level (m)")
 
+        plt.tight_layout()
         if filename != None:
             plt.savefig(filename + "_main.png")
 

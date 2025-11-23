@@ -1,0 +1,28 @@
+vessel:
+  length: 2.26
+  diameter: 0.51
+  orientation: "horizontal"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.010
+  liquid_level: 0.22 
+initial:
+  temperature: 298.15
+  pressure: 610000
+  fluid: "propane" 
+  #fluid: "N2[0.99]&O2[0.01]" 
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 480.
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.012
+  discharge_coef: 0.975
+  set_pressure: 1790000
+  blowdown: 0.1
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"
