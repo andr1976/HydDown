@@ -9,3 +9,4 @@ CoolProp
 PyYAML>=5.4.1
 scipy>=1.6.0
 fluids
+ht
