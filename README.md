@@ -3,7 +3,9 @@
 [![status](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25/status.svg)](https://joss.theoj.org/papers/0eed2a25a99589ed8dcdc785c890fb25)
  
 # HydDown
-Hydrogen (or other pure gas phase species as well as mixtures) depressurization/pressurisation calculations incorporating heat transfer effetcs. It also models vessel response (pressure/temperature) to external heat loads e.g. external fire (pool/jet) incorporating the Stefan-Boltzmann approach.
+Hydrogen (or other pure components) depressurization/pressurisation calculations incorporating heat transfer effects. The software also models vessel response (pressure/temperature) to external heat loads e.g. external fire (pool/jet) incorporating the Stefan-Boltzmann approach.
+
+NEW: HydDown now supports single component two-phase modelling, including heat transfer to both gas and liquid phase allowing different temperatures to be estimated for the vessel wall in contact with gas and liquid, respectively.  
 
 This code is published under an MIT license.
 
@@ -52,12 +54,11 @@ This is a small spare time project for calculation of vessel filling/depressuris
 A few choices is made to keep things simple to begin with:
 
 - [Coolprop](http://www.coolprop.org/) is used as thermodynamic backend
-- Mainly pure substances are considered (mixtures can be handled - but calculations can be slow)
-- Gas phase only 
-- No temperture stratification in the gas phase
-- Default option of no temperture gradient through vessel wall (now extended with a 1-D transient heat conduction model to allow modelling of vessels with low thermal conductivety e.g. type III/IV vessels).
+- Mainly pure substances are considered (mixtures can be handled - but calculations can be very slow) 
+- No temperature stratification
+- Default option of no temperature gradient through vessel wall (now extended with a 1-D transient heat conduction model to allow modelling of vessels with low thermal conductivity e.g. type III/IV vessels).
 
-The code is as simple as possible. The above choices makes the problem a lot more simple to solve, First of all the pure substance Helmholtz energy based equation of state (HEOS) in coolprop offers a lot of convenience in terms of the property pairs/state variables that can be set independently. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
+The code is as simple as possible. The above choices makes the problem a lot more simple to solve, First of all the pure substance Helmholtz energy based equation of state (HEOS) in CoolProp offers a lot of convenience in terms of the property pairs/state variables that can be set independently. Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required. That being said the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
 ## Description
 The following methods are implemented:
@@ -67,6 +68,7 @@ The following methods are implemented:
 - Isentropic (no heat transfer with surroundings, PV work performed by the expanding fluid)
 - Constant internal energy
 - Energy balance. This is the most general case and includes the ability to transfer heat with surroundings
+- Relief: Relief valve dimensioning for gas filled vessels subject to fire. This method provides a dynamic approach to relief valve dimensioning providing realistic orifice size, compared to the very conservative API521 approach. 
 
 Various mass flow equations are enabled: 
 
@@ -75,21 +77,21 @@ Various mass flow equations are enabled:
 - Relief valve (discharge only)
 - Constant mass flow
 
-A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. For the simple methods (isentropic,isenthalpic,isenergetic etc), Coolprop allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. Coolprop is very convenient for this, however for a cubic EOS and for multicomponent Helmholtz energy EOS coolprop only supports a subset of state variables to be specified directly (T,P,quality). For this reason single component HEOS is the main target of this small project.  In case the "Energy balance" method is applied, the heat added from convection and work is accounted for. 
+A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation. For each step, the mass relief/ left in the vessel is known. Since the volume is fixed the mass density is directly given. For the simple methods (isentropic, isenthalpic, isenergetic etc), CoolProp allows specifying density and either H,S or U directly - this is very handy and normally only TP, PH, TS property pairs are implemented, and you would need to code a second loop to make it into am UV, VH or SV calculation. CoolProp is very convenient for this, however for a cubic EOS and for multicomponent Helmholtz energy EOS CoolProp only supports a subset of state variables to be specified directly (T,P,quality). For this reason single component HEOS is the main target of this small project.  In case the "Energy balance" method is applied, the heat added from convection and work is accounted for. 
 
 ## Basic usage
 The Yaml input file is edited to reflect the system of interest. For isothermal/isenthalpic/isentropic/isenergetic calculations the minimal input required are:
 
 - Initial conditions (pressure, temperature)
 - vessel dimensions (ID/length)
-- valve parameters (Cd, diameter, backpressure)
+- valve parameters (Cd, diameter, back-pressure)
 - Calculation setup (time step, end time)
-- Type of gas
+- Type of component
 
 If heat transfer is to be considered the calculation type "energybalance" is required. A few options are possible:
 
 - Fixed U (U-value required, and ambient temperature)
-- Fixed Q (Q to be applied to the fluid is requried)
+- Fixed Q (requires Q to be applied to the fluid)
 - Specified h, the external heat transfer coefficient is provided and either the internal is provided or calculated from assumption of natural convection from a vertical cylinder at high Gr number. Ambient temperature is required.
 - Detailed 
 - Fire with heat load calculated from the Stefan-Boltzmann equation
