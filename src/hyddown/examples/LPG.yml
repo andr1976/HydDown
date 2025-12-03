@@ -5,7 +5,7 @@ vessel:
   heat_capacity: 500
   density: 7700
   thickness: 0.01185
-  liquid_level: 0.4668 
+  liquid_level: 1.15 #0.4668 
 initial:
   temperature: 298.15
   pressure: 550000
@@ -17,7 +17,7 @@ calculation:
 valve:
   flow: "discharge"
   type: "psv"
-  diameter: 0.040
+  diameter: 0.05
   discharge_coef: 0.975
   set_pressure: 1430000
   blowdown: 0.20
