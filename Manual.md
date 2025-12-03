@@ -11,7 +11,7 @@ listings: True
 ---
 
 # Introduction
-HydDown is an open source python3 tool for calculation of hydrogen (or other pure gas phase species) vessel/container depressurization and filling.
+HydDown is an open source python3 tool for calculation of hydrogen (or other pure component) vessel/container depressurization and filling.
 The HydDown logo shown in [@Fig:logo] visualizes the key parameters and transport phenomena during gas vessel filling or discharging.
 The thermodynamic state inside the vessel changes over time as seen from immediately observable variables temperature (T) and pressure (P).
 This is caused by change in fluid inventory (density) due to flow of gas either in or out of the vessel.
@@ -64,7 +64,6 @@ A few choices has been made to keep things simple:
 
 - [Coolprop](http://www.coolprop.org/) is used as thermodynamic backend
 - Only pure substances are considered (limited multi-component capabilities are included)
-- Gas phase only
 - No temperature stratification in the gas phase
 - A default of of no temperature gradient through vessel wall. 
 - Heat transfer is modelled as constant or simplified using empirical
@@ -75,7 +74,7 @@ First of all, the the pure substance Helmholtz energy based equation of state (H
 Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required.
 That being said, the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
-In the latest revision 1-D transient heat conduction through the vessel wall is now an option if required for low thermal conductivity materials and e.g. type III/IV vessels. 
+In the latest revision 1-D transient heat conduction through the vessel wall is now an option if required for low thermal conductivity materials and e.g. type III/IV vessels (1-D heat transfer not yet implemented for fire heat load). Further, rigorous two-phase calculations are now possible by specifying a liquid level in the vessel (1-D heat transfer not yet implemented, only 0-D). 
 
 ## Getting the software
 The source code can be obtained either from GitHub (via `git` or via the latest tar-ball release) or via **pip** . No packaged releases have currently been planned for **conda**.  
@@ -228,12 +227,13 @@ The following methods are implemented:
 - Isentropic: constant entropy of the fluid, no heat transfer with surroundings, PV work performed by the expanding fluid
 - Isenergetic: constant internal energy of the fluid
 - Energy balance: this is the most general case and is based on the first law of thermodynamics applied to a flow process.
+- Relief: Relief valve dimensioning for gas filled vessels subject to fire. This method provides a dynamic approach to relief valve dimensioning providing realistic orifice size, compared to the very conservative API521 approach. 
 
 For `isothermal`/`isenthalpic`/`isentropic`/`isenergetic` calculations the minimal input required are:
 
 - Initial conditions (pressure, temperature)
 - vessel dimensions (ID, length)
-- valve parameters (Cd, diameter, backpressure)
+- valve parameters (Cd, diameter, back-pressure)
 - Calculation setup (time step, end time)
 - Type of gas
 
@@ -406,6 +406,8 @@ vessel:
   liner_density: number, required only for bi-material 1-D transient heat transfer
   liner_thermal_conductivity: number, required only for bi-material 1-D transient heat transfer  
   orientation: string, required when heat transfer is calculated
+  liquid_level: number, optional for two-phase 
+  type: string, optional for heads other than flat-end, "DIN", "ASME F&D", or "Hemispherical"
 ~~~
 
 ### Initial
