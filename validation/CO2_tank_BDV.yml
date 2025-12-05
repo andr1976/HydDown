@@ -21,12 +21,12 @@ initial:
   fluid: "CO2" 
 calculation:
   type: "energybalance"
-  time_step: 1
-  end_time: 4000
+  time_step: 10
+  end_time: 80000
 valve:
   flow: "discharge"
   type: "orifice"
-  diameter : 0.070
+  diameter : 0.020
   #diameter : 0.013
   discharge_coef: 0.975
   back_pressure: 101300.

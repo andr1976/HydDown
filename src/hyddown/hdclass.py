@@ -229,7 +229,8 @@ class HydDown:
         self.surf_area_inner = self.inner_vol.A
 
         self.fluid = CP.AbstractState("HEOS", self.comp)
-        # self.fluid.specify_phase(CP.iphase_gas)
+        if "&" in self.comp:
+            self.fluid.specify_phase(CP.iphase_gas)
         self.fluid.set_mole_fractions(self.molefracs)
 
         self.transport_fluid = CP.AbstractState("HEOS", self.compSRK)
@@ -241,7 +242,7 @@ class HydDown:
         self.transport_fluid_wet.set_mole_fractions(self.molefracs)
 
         self.vent_fluid = CP.AbstractState("HEOS", self.comp)
-        # self.vent_fluid.specify_phase(CP.iphase_gas)
+        self.vent_fluid.specify_phase(CP.iphase_gas)
         self.vent_fluid.set_mole_fractions(self.molefracs)
 
         if "liquid_level" in self.input["vessel"]:
