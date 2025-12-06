@@ -861,6 +861,30 @@ The following formula was found to provide a good fit (n=1):
 
 $$ Nu = Nu_{forced} +  Nu_{natural} = 0.56Re_d^{0.67} + 0.104Ra_H^{0.352} $$
 
+
+### Nucleate boiling heat transfer
+For heat transfer between vessel wall and liquid, this is treated as nucleate boiling and estimated via the Rohsenow correlation [@rohsenow_method_1951] as implemented in the *ht* python library [@bell_calebbellht_2024].
+
+$$
+  h = {{\mu }_{L}} \Delta H_{vap} \left[ \frac{g( \rho_L-\rho_v)}
+        {\sigma } \right]^{0.5}\left[\frac{C_{p,L}\Delta T_e^{2/3}}{C_{sf}
+        \Delta H_{vap} Pr_L^n}\right]^3
+$$
+
+
+  - $\rho_L$ is the density of the liquid [kg/m$^3$]
+  - $\rho_v$ is the density of the produced gas [kg/m$^3$]
+  - $\mu_l$ is the viscosity of liquid [Pa s]
+  - $k_l$ is the thermal conductivity of liquid [W/m K]
+  - $C_{p, l}$ is the heat capacity of liquid [J/kg K]
+  - $H_{vap}$ is the heat of vaporization of the fluid [J/kg]
+  - $\sigma$  is the surface tension of liquid [N/m]
+  - $T_e$ is the excess wall temperature, [K]
+  - $C_{sf}$ is Rohsenow coefficient specific to fluid and metal [-]
+  - $n$ constant, 1 for water, 1.7 (default) for other fluids usually [-]
+
+In the present study a value of the Rohsenow coefficient of 0.013 is applied and the exponent $n$ is set to 1.7. See also [@pioro_experimental_1999;@jabardo_evaluation_2004].
+
 ### Conduction
 For accurate prediction of the outer and especially the inner wall temperature for correct estimation of internal convective heat transfer and the average material temperature, the general equation of 1-D unsteady heat transfer shall be solved:
 
@@ -937,6 +961,31 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 | Background heat load   |   0             |   100           |  100         
 
 : Incident heat fluxes for various fire scenarios given by Scandpower [@scandpower] {#tbl:heatfluxes1}
+
+
+## Vessel geometry
+
+All vessels modelled are assumed of cylindrical shape. The following shapes are available in *openthermo* all provided by the Python *fluids* library [@fluids]. 
+
+- Flat-end vessel
+- ASME F&D
+- DIN (28011)
+- 2:1 Semi-elliptical
+- Hemisperical
+
+Both ASME F&D, DIN and 2:1 semielliptical are variants of a torispherical vessel. See also the document [Calculating Tank Volume](http://www.webcalc.com.br/blog/Tank_Volume.PDF). The hemisperical ends are half-speres extending one radius out. 
+
+
+
+| Vessel geometry      | f   | k     |
+| ----                 |---- | ----  |
+|  2:1 semi-elliptical | 0.9 | 0.17  |
+|  ASME F&D            | 1   | 0.06  |
+|  DIN 28011           | 1   | 0.1   |
+
+: Vessel geometry details. For torispherical tank heads, the following *f* and *k* parameters are used in standards [@fluids]. *f* is the dish-radius parameter for tanks with torispherical heads or bottoms, *k* is the knuckle-radius parameter for tanks with torispherical heads or bottoms {#tbl:vessel_geometry}
+
+Using the *fluids* library partial volumes, surface area (full and partial) and liquid level (from partial volume) can be calculated and used internally in *openthermo*.
 
 
 ## Model implementation
@@ -1018,7 +1067,7 @@ $$ T(i+1) = EOS(D(i+1),U(i+1)) $$
 Although not an initial requirement, the code can handle multi-component gas mixtures. When calculations are done for multicomponent mixtures, the code runs significantly slower.
 Please note, that in case that liquid condensate is formed during discharge calculations and even if the calculations does not stop, the results cannot be considered reliable.
 This is because component balances are not made and it is always assumed that the discharge composition is the same as the global composition inside the vessel.
-When liquid condensate is formed the composition of the vapour phase will differ from the global composition.
+When liquid condensate is formed the composition of the vapour phase will differ from the global composition. Further, the only gas properties are estimated during multicomponent calculations, and no liquid heat transfer is considered, although a liquid phase may be present. This will make the estimation of wall temperature non-conservative if low temperature excursion is investigated. 
 
 There are a few examples of multicomponent mixtures included with HydDown.
 In order to specify multicomponent mixtures the below example can be used as guidance:
@@ -1332,7 +1381,6 @@ Simulation results from HydDown is compared to the experimental data of Dicken a
 ![Calculations of vessel pressure, gas temperature and wall temperature (inner/outer) with 1D transient heat conduction model during hydrogen filling. Comparison is made against experimental results from Dicken and Mérida [@Dicken] for pressure and gas temperature. Inner wall (liner) temperature is compared to CFD simulations [@Dicken] ](docs/img/dicken_typeIII.png){#fig:Dicken_typeIII}
 
 In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric average of all seven positions from front to back of the cylinder. As seen from Figure [@fig:Dicken_typeIII] the average value from HydDown (52.5$^\circ$C)compares very well with the  average CFD results at the end of filling (52.1$^\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $^\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
-
 
 # Similar software
 To be written
