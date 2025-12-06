@@ -35,6 +35,12 @@ class HydDown:
         self.validate_input()
         self.read_input()
         self.initialize()
+        # sb_heat_load = np.loadtxt(
+        #    "C:\\Users\\AndersAndreasen\\Documents\\GitHub\\HydDown\\src\\hyddown\\examples\\LPG-heat_load.txt"
+        # )
+        # self.sb_heat_load = lambda x: np.interp(
+        #    x, sb_heat_load[:, 0], sb_heat_load[:, 1]
+        # )
 
     def validate_input(self):
         """
@@ -229,7 +235,8 @@ class HydDown:
         self.surf_area_inner = self.inner_vol.A
 
         self.fluid = CP.AbstractState("HEOS", self.comp)
-        # self.fluid.specify_phase(CP.iphase_gas)
+        if "&" in self.comp:
+            self.fluid.specify_phase(CP.iphase_gas)
         self.fluid.set_mole_fractions(self.molefracs)
 
         self.transport_fluid = CP.AbstractState("HEOS", self.compSRK)
@@ -241,7 +248,7 @@ class HydDown:
         self.transport_fluid_wet.set_mole_fractions(self.molefracs)
 
         self.vent_fluid = CP.AbstractState("HEOS", self.comp)
-        # self.vent_fluid.specify_phase(CP.iphase_gas)
+        self.vent_fluid.specify_phase(CP.iphase_gas)
         self.vent_fluid.set_mole_fractions(self.molefracs)
 
         if "liquid_level" in self.input["vessel"]:
@@ -287,6 +294,7 @@ class HydDown:
         self.T_outer_wall = np.zeros(data_len)
         self.T_outer_wall_wetted = np.zeros(data_len)
         self.T_bonded_wall = np.zeros(data_len)
+        self.T_bonded_wall_wetted = np.zeros(data_len)
         self.Q_outer = np.zeros(data_len)
         self.Q_inner = np.zeros(data_len)
         self.Q_outer_wetted = np.zeros(data_len)
@@ -481,6 +489,7 @@ class HydDown:
         self.T_inner_wall_wetted[0] = self.T0
         self.T_outer_wall_wetted[0] = self.T0
         self.T_bonded_wall[0] = self.T0
+        self.T_bonded_wall_wetted[0] = self.T0
         self.liquid_level[0] = self.liquid_level0
         if self.input["valve"]["flow"] == "discharge":
             self.T_vent[0] = self.T0
@@ -795,8 +804,11 @@ class HydDown:
                             mesh = tm.Mesh(
                                 z, tm.LinearElement
                             )  # Or `QuadraticElement` to
-
+                            mesh_w = tm.Mesh(
+                                z, tm.LinearElement
+                            )  # Or `QuadraticElement` to
                             cpeek = tm.isothermal_model(k, rho, cp)
+                            cpeek_w = tm.isothermal_model(k, rho, cp)
 
                             if type(T_profile) == type(int()) and T_profile == 0:
                                 bc = [
@@ -813,10 +825,36 @@ class HydDown:
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile = tm.solve_ht(domain, solver)
+
+                                bc_w = [
+                                    {"T": self.T0},
+                                    {"T": self.Tamb},
+                                ]
+                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
+                                domain_w.set_T(
+                                    (self.Tamb + self.T0)
+                                    / 2
+                                    * np.ones(len(mesh_w.nodes))
+                                )
+                                solver_w = {
+                                    "dt": 100,
+                                    "t_end": 10000,
+                                    "theta": theta,
+                                }
+                                t_bonded, T_profile = tm.solve_ht(domain, solver)
+                                t_bonded_w, T_profile_w = tm.solve_ht(
+                                    domain_w, solver_w
+                                )
                             else:
                                 bc = [
-                                    {"q": self.Q_outer[i] / self.surf_area_outer},
-                                    {"q": -self.Q_inner[i] / self.surf_area_inner},
+                                    {
+                                        "q": self.Q_outer[i]
+                                        / (self.surf_area_inner - wetted_area)
+                                    },
+                                    {
+                                        "q": -self.Q_inner[i]
+                                        / (self.surf_area_inner - wetted_area)
+                                    },
                                 ]
                                 domain = tm.Domain(mesh, [cpeek], bc)
                                 domain.set_T(T_profile[-1, :])
@@ -826,18 +864,38 @@ class HydDown:
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile = tm.solve_ht(domain, solver)
+                                bc_w = [
+                                    {"q": self.Q_outer_wetted[i] / wetted_area},
+                                    {"q": -self.Q_inner_wetted[i] / wetted_area},
+                                ]
+                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
+                                domain_w.set_T(T_profile_w[-1, :])
+                                solver = {
+                                    "dt": dt,
+                                    "t_end": self.tstep,
+                                    "theta": theta,
+                                }
+                                t_bonded_w, T_profile_w = tm.solve_ht(
+                                    domain_w, solver_w
+                                )
                             solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
                             t, T_profile = tm.solve_ht(domain, solver)
+                            solver_w = {"dt": dt, "t_end": self.tstep, "theta": theta}
+                            t_w, T_profile_w = tm.solve_ht(domain_w, solver_w)
 
                             self.temp_profile.append(T_profile[-1, :])
                             self.T_outer_wall[i] = T_profile[-1, 0]
                             self.T_inner_wall[i] = T_profile[-1, -1]
+                            self.T_outer_wall_wetted[i] = T_profile_w[-1, 0]
+                            self.T_inner_wall_wetted[i] = T_profile_w[-1, -1]
                         else:
                             k_liner = self.input["vessel"]["liner_thermal_conductivity"]
                             rho_liner = self.input["vessel"]["liner_density"]
                             cp_liner = self.input["vessel"]["liner_heat_capacity"]
                             liner = tm.isothermal_model(k_liner, rho_liner, cp_liner)
                             shell = tm.isothermal_model(k, rho, cp)
+                            liner_w = tm.isothermal_model(k_liner, rho_liner, cp_liner)
+                            shell_w = tm.isothermal_model(k, rho, cp)
 
                             thk = self.input["vessel"]["thickness"]  # thickness in m
                             nn = 11  # number of nodes
@@ -848,9 +906,11 @@ class HydDown:
                             z2 = np.hstack((z_liner, z_shell[1:]))
                             self.z = z2
                             mesh2 = tm.Mesh(z2, tm.LinearElement)
+                            mesh2_w = tm.Mesh(z2, tm.LinearElement)
                             for j, elem in enumerate(mesh2.elem):
                                 if elem.nodes.mean() > 0.0:
                                     mesh2.subdomain[j] = 1
+                                    mesh2_w.subdomain[j] = 1
 
                             if type(T_profile2) == type(int()) and T_profile2 == 0:
                                 bc = [
@@ -869,10 +929,34 @@ class HydDown:
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
+                                bc_w = [
+                                    {"T": self.T0},
+                                    {"T": self.Tamb},
+                                ]
+                                domain2_w = tm.Domain(mesh2_w, [liner_w, shell_w], bc_w)
+                                domain2_w.set_T(
+                                    (self.Tamb + self.T0)
+                                    / 2
+                                    * np.ones(len(mesh2.nodes))
+                                )
+                                solver2_w = {
+                                    "dt": 100,
+                                    "t_end": 10000,
+                                    "theta": theta,
+                                }
+                                t_bonded_w, T_profile2_w = tm.solve_ht(
+                                    domain2_w, solver2_w
+                                )
                             else:
                                 bc = [
-                                    {"q": -self.Q_inner[i] / self.surf_area_inner},
-                                    {"q": self.Q_outer[i] / self.surf_area_outer},
+                                    {
+                                        "q": -self.Q_inner[i]
+                                        / (self.surf_area_inner - wetted_area)
+                                    },
+                                    {
+                                        "q": self.Q_outer[i]
+                                        / (self.surf_area_outer - wetted_area)
+                                    },
                                 ]
                                 domain2 = tm.Domain(mesh2, [liner, shell], bc)
                                 domain2.set_T(T_profile2[-1, :])
@@ -882,10 +966,26 @@ class HydDown:
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
-
+                                bc_w = [
+                                    {"q": -self.Q_inner_wetted[i] / (wetted_area)},
+                                    {"q": self.Q_outer_wetted[i] / wetted_area},
+                                ]
+                                domain2_w = tm.Domain(mesh2_w, [liner_w, shell_w], bc_w)
+                                domain2_w.set_T(T_profile2_w[-1, :])
+                                solver2_w = {
+                                    "dt": dt,
+                                    "t_end": self.tstep,
+                                    "theta": theta,
+                                }
+                                t_bonded_w, T_profile2_w = tm.solve_ht(
+                                    domain2_w, solver2_w
+                                )
                             self.T_outer_wall[i] = T_profile2[-1, -1]
                             self.T_inner_wall[i] = T_profile2[-1, 0]
                             self.T_bonded_wall[i] = T_profile2[-1, (nn - 1)]
+                            self.T_outer_wall_wetted[i] = T_profile2_w[-1, -1]
+                            self.T_inner_wall_wetted[i] = T_profile2_w[-1, 0]
+                            self.T_bonded_wall_wetted[i] = T_profile2_w[-1, (nn - 1)]
                             self.temp_profile.append(T_profile2[-1, :])
                     else:
                         self.T_inner_wall[i] = self.T_vessel[i]
@@ -942,14 +1042,27 @@ class HydDown:
 
                     self.Q_outer[i] = (
                         fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
+                        # (
+                        #     self.sb_heat_load(self.time_array[i])
+                        #     - 0.85 * 5.67e-8 * self.T_vessel[i - 1] ** 4
+                        # )
                         * (self.surf_area_inner - wetted_area)
                         * self.surf_area_outer
                         / self.surf_area_inner
                     )
+
                     self.q_outer[i] = fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
+                    # (
+                    #     self.sb_heat_load(self.time_array[i])
+                    #     - 0.85 * 5.67e-8 * self.T_vessel[i - 1] ** 4
+                    # )
 
                     self.Q_outer_wetted[i] = (
                         fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
+                        # (
+                        #     self.sb_heat_load(self.time_array[i])
+                        #     - 0.85 * 5.67e-8 * self.T_vessel_wetted[i - 1] ** 4
+                        # )
                         * wetted_area
                         * self.surf_area_outer
                         / self.surf_area_inner
@@ -957,6 +1070,10 @@ class HydDown:
                     self.q_outer_wetted[i] = fire.sb_fire(
                         self.T_vessel_wetted[i - 1], self.fire_type
                     )
+                    # (
+                    #     self.sb_heat_load(self.time_array[i])
+                    #     - 0.85 * 5.67e-8 * self.T_vessel_wetted[i - 1] ** 4
+                    # )
 
                     if np.isnan(self.Q_outer_wetted[i]):
                         self.Q_outer_wetted[i] = 0
@@ -1325,14 +1442,20 @@ class HydDown:
                     color="darkorange",
                     label="Vessel wall wetted",
                 )
-        if "liner_thermal_conductivity" in self.input["vessel"].keys():
-            plt.plot(
-                self.time_array,
-                self.T_bonded_wall - 273.15,
-                "g",
-                label="Liner/composite",
-            )
-
+        if "thermal_conductivity" in self.input["vessel"].keys():
+            if "liner_thermal_conductivity" in self.input["vessel"].keys():
+                plt.plot(
+                    self.time_array,
+                    self.T_bonded_wall - 273.15,
+                    "g",
+                    label="Liner/composite",
+                )
+                plt.plot(
+                    self.time_array,
+                    self.T_bonded_wall_wetted - 273.15,
+                    color="darkorange",
+                    label="Liner/composite wetted",
+                )
             plt.plot(
                 self.time_array, self.T_inner_wall - 273.15, "g--", label="Inner wall"
             )

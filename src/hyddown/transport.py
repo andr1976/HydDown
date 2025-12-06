@@ -348,8 +348,9 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
         h_boil = 0
 
     h_conv = h_inside_liquid(L, Tvessel, Tfluid, fluid)
-    return max(h_boil, h_conv)
-    # return min(max(h_boil, h_conv, 1000), 3000)
+    # return min(h_boil, h_conv)
+    # return h_conv
+    return min(max(h_boil, h_conv), 3000)
 
 
 def gas_release_rate(P1, P2, rho, k, CD, area):
