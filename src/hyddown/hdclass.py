@@ -35,6 +35,12 @@ class HydDown:
         self.validate_input()
         self.read_input()
         self.initialize()
+        # sb_heat_load = np.loadtxt(
+        #    "C:\\Users\\AndersAndreasen\\Documents\\GitHub\\HydDown\\src\\hyddown\\examples\\LPG-heat_load.txt"
+        # )
+        # self.sb_heat_load = lambda x: np.interp(
+        #    x, sb_heat_load[:, 0], sb_heat_load[:, 1]
+        # )
 
     def validate_input(self):
         """
@@ -1036,14 +1042,27 @@ class HydDown:
 
                     self.Q_outer[i] = (
                         fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
+                        # (
+                        #     self.sb_heat_load(self.time_array[i])
+                        #     - 0.85 * 5.67e-8 * self.T_vessel[i - 1] ** 4
+                        # )
                         * (self.surf_area_inner - wetted_area)
                         * self.surf_area_outer
                         / self.surf_area_inner
                     )
+
                     self.q_outer[i] = fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
+                    # (
+                    #     self.sb_heat_load(self.time_array[i])
+                    #     - 0.85 * 5.67e-8 * self.T_vessel[i - 1] ** 4
+                    # )
 
                     self.Q_outer_wetted[i] = (
                         fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
+                        # (
+                        #     self.sb_heat_load(self.time_array[i])
+                        #     - 0.85 * 5.67e-8 * self.T_vessel_wetted[i - 1] ** 4
+                        # )
                         * wetted_area
                         * self.surf_area_outer
                         / self.surf_area_inner
@@ -1051,6 +1070,10 @@ class HydDown:
                     self.q_outer_wetted[i] = fire.sb_fire(
                         self.T_vessel_wetted[i - 1], self.fire_type
                     )
+                    # (
+                    #     self.sb_heat_load(self.time_array[i])
+                    #     - 0.85 * 5.67e-8 * self.T_vessel_wetted[i - 1] ** 4
+                    # )
 
                     if np.isnan(self.Q_outer_wetted[i]):
                         self.Q_outer_wetted[i] = 0

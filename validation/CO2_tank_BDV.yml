@@ -22,7 +22,7 @@ initial:
 calculation:
   type: "energybalance"
   time_step: 10
-  end_time: 80000
+  end_time: 40000
 valve:
   flow: "discharge"
   type: "orifice"
