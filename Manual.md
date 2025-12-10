@@ -55,6 +55,7 @@ Anders Andreasen. HydDown - User guide and technical reference. 2024. ⟨hal-048
       title = {HydDown -- user guide and technical reference},
     }
 
+
 ## Background
 HydDown started as a small spare-time project for calculation of vessel filling and depressurization behaviour.
 This was mainly to demonstrate that although perceived as a very tedious and difficult task to write your own code for such an apparently complex problem, actually only a fairly limited amount of code is necessary if you have a good thermodynamic backend.
@@ -74,7 +75,18 @@ First of all, the the pure substance Helmholtz energy based equation of state (H
 Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required.
 That being said, the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
-In the latest revision 1-D transient heat conduction through the vessel wall is now an option if required for low thermal conductivity materials and e.g. type III/IV vessels (1-D heat transfer not yet implemented for fire heat load). Further, rigorous two-phase calculations are now possible by specifying a liquid level in the vessel (1-D heat transfer not yet implemented, only 0-D). 
+In the latest revision 1-D transient heat conduction through the vessel wall is now an option if required for low thermal conductivity materials and e.g. type III/IV vessels (1-D heat transfer not yet implemented for fire heat load). Further, rigorous two-phase calculations are now possible by specifying a liquid level in the vessel (1-D heat transfer not yet implemented, only 0-D). Rigorous two-phase single component calculations is also supported in the latest release implementing an equilibrium assumption i.e. gas and liquid phase is in thermal equilibrium, although the vessel wall in contact with gas and liquid, respectively, is allowed to differ. 
+
+In case multi-component two-phase behaviour is required, the HydDown sibling ORS [*openthermo*](https://github.com/ORS-Consulting/ORS-openthermo) is recommended. This software package also implements a partial/non-equilibrium assumption for the gas and liquid phase [@Andreasen2025]. 
+
+    @article{https://doi.org/10.1002/prs.70035,
+      author = {Andreasen, Anders and Stegelmann, Carsten},
+      title = {Open source pressure vessel blowdown modeling under partial phase equilibrium},
+      journal = {Process Safety Progress},
+      doi = {https://doi.org/10.1002/prs.70035},
+    }
+
+A [preprint](https://doi.org/10.26434/chemrxiv-2025-00xzc-v2) of the paper is also available. 
 
 ## Getting the software
 The source code can be obtained either from GitHub (via `git` or via the latest tar-ball release) or via **pip** . No packaged releases have currently been planned for **conda**.  
