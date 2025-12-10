@@ -13,10 +13,14 @@ src/HydDown.egg-info/top_level.txt
 src/hyddown/__init__.py
 src/hyddown/fire.py
 src/hyddown/hdclass.py
+src/hyddown/materials.py
 src/hyddown/test_all.py
 src/hyddown/thermesh.py
 src/hyddown/transport.py
 src/hyddown/validator.py
+src/hyddown/examples/LPG.yml
+src/hyddown/examples/LPG_small.yml
+src/hyddown/examples/bdv_sb.yml
 src/hyddown/examples/controlvalve.yml
 src/hyddown/examples/cv_filling.yml
 src/hyddown/examples/filling.yml
