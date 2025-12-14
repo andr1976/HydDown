@@ -95,3 +95,9 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 - Specified h, the external heat transfer coefficient is provided and either the internal is provided or calculated from assumption of natural convection from a vertical cylinder at high Gr number. Ambient temperature is required.
 - Detailed 
 - Fire with heat load calculated from the Stefan-Boltzmann equation
+
+# Validation and uses 
+- HydDown has been extensively validated as can be seen in the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf).
+- HydDown has been benchmarked against external code by [Ruiz and Moscardelli](https://doi.org/10.1016/j.ijhydene.2023.03.293) , who compared their GeoH2 app against HydDown and found excellent agreement for both pressure, mass flow rate and gas temperature for three different cases of discharge and filling
+- HydDown code has been adopted for the Underground Hydrogen Salt Cavern Simulation Tool [*uh2sc*](https://github.com/sandialabs/uh2sc) tool from [Sandia Labs](https://www.sandia.gov/).
+- HydDown has been utilised for a number of commercial client projects including blowdown of hydrocarbon containing vessels, emptying of hydrogen storage cylinders (gas turbine fuel supply) incl. cold temperature analysis, heat-up/boil-off of CO2 containing vessels and piping, fire heat input to pressurised liquid gas storage.  
