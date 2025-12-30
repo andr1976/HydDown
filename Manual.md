@@ -1040,12 +1040,12 @@ Where:
 
 This oridinary differential equation is solved using a simple explicit Euler scheme. 
 
-The temperature dependent material properties has been sourced from the Scandpower guideline [@scandpower] and visualised in [@Fig:heat_capacity] and [@Fig:UTS] for heat capacity and Ultimate Tensile Strength, respectively. The materials implemented in *openthermo* are summarised in [@Tbl:materials].  
+The temperature dependent material properties has been sourced from the Scandpower guideline [@scandpower] and visualised in [@Fig:heat_capacity] and [@Fig:UTS] for heat capacity and Ultimate Tensile Strength, respectively. The materials implemented in *hyddown* are summarised in [@Tbl:materials].  
 
-![Steel heat capacities as a finction of temperature for the materials implemented in *openthermo*. The values have been sourced from [@scandpower] and missing values extrapolated to cover the same temperature range.](docs/img/heat_capacity.png){#fig:heat_capacity}
+![Steel heat capacities as a finction of temperature for the materials implemented in *hyddown*. The values have been sourced from [@scandpower] and missing values extrapolated to cover the same temperature range.](docs/img/heat_capacity.png){#fig:heat_capacity}
 
 
-![Steel Ultimate Tensile Strengt as a finction of temperature for the materials implemented in *openthermo*. The values have been sourced from [@scandpower] and missing values extrapolated to cover the same temperature range.](docs/img/UTS.png){#fig:UTS}
+![Steel Ultimate Tensile Strengt as a finction of temperature for the materials implemented in *hyddown*. The values have been sourced from [@scandpower] and missing values extrapolated to cover the same temperature range.](docs/img/UTS.png){#fig:UTS}
 
 
 | Steel type   | Type / alloy | ASME | DIN | ASTM |
