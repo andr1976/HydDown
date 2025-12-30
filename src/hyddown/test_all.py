@@ -339,6 +339,88 @@ def test_sim_stefan_boltzmann():
     hdown.run()
 
 
+def test_sim_rupture():
+    import os
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from hyddown import HydDown
+    import scienceplots
+
+    plt.style.use(["science", "nature"])
+
+    input = get_example_input("rupture.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+    fname = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)),
+        "..",
+        "..",
+        "validation",
+        "rupture_history.csv",
+    )
+    df_ref = pd.read_csv(fname)
+    plt.figure(1)
+    plt.plot(hdown.time_array, hdown.P, label="Hyddown", linestyle="-", color="#125A56")
+    plt.plot(
+        df_ref["Time"],
+        df_ref["Vapour - Pressure"] * 1e5 + 1.013e5,
+        label="Unisim",
+        linestyle="--",
+        color="#125A56",
+    )
+    plt.xlabel("Time (s)")
+    plt.ylabel("Pressure (Pa)")
+    plt.legend()
+
+    plt.figure(2)
+    plt.plot(
+        hdown.time_array,
+        hdown.T_fluid - 273.15,
+        label="Hyddown - Gas",
+        linestyle="-",
+        color="#FF6F61",
+    )
+    plt.plot(
+        df_ref["Time"],
+        df_ref["Vapour - Temperature"],
+        label="Unisim - Gas",
+        linestyle="--",
+        color="#FF6F61",
+    )
+    plt.plot(
+        hdown.time_array,
+        hdown.T_vessel - 273.15,
+        label="Hyddown - Wall",
+        linestyle="-",
+        color="#00767B",
+    )
+    plt.plot(
+        df_ref["Time"],
+        df_ref[
+            "Vessel - Heat Loss: Inner Wall Temperatures (Heat Loss: Inner Wall Temperatures_1)"
+        ],
+        label="Unisim - Wall",
+        linestyle="--",
+        color="#00767B",
+    )
+    plt.xlabel("Time (s)")
+    plt.ylabel("Temperature (°C)")
+    plt.legend()
+    # plt.show()
+
+    assert hdown.T_vessel[-1] == pytest.approx(
+        df_ref[
+            "Vessel - Heat Loss: Inner Wall Temperatures (Heat Loss: Inner Wall Temperatures_1)"
+        ][-1:]
+        + 273.15,
+        abs=10,
+    )
+    assert hdown.T_fluid[-1] == pytest.approx(
+        df_ref["Vapour - Temperature"][-1:] + 273.15, rel=0.01
+    )
+
+
 def test_dataframe():
     from hyddown import HydDown
 
@@ -540,4 +622,4 @@ def test_boiling_heat_transfer():
 
 
 if __name__ == "__main__":
-    test_mdot_filling()
+    test_sim_rupture()

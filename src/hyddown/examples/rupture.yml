@@ -13,20 +13,12 @@ initial:
 calculation:
   type: "energybalance"
   time_step: 1
-  end_time: 3000.
+  end_time: 900.
 valve:
   flow: "discharge"
-  type: "psv"
-  diameter: 0.013
-  discharge_coef: 0.975
+  type: "relief"
   set_pressure: 13500000
-  blowdown: 0.1
   back_pressure: 101300.
-#valve:
-#  flow: "discharge"
-#  type: "relief"
-#  set_pressure: 13500000
-#  back_pressure: 101300.
 heat_transfer:
   type: "s-b"
   fire: "scandpower_pool"
