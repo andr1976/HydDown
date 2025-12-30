@@ -117,7 +117,7 @@ def sb_fire(T_vessel, fire_type):
         Q = pool_fire_scandpower(T_vessel)
     elif fire_type == "scandpower_jet":
         Q = jet_fire_scandpower(T_vessel)
-        elif fire_type == "scandpower_jet_peak_large":
+    elif fire_type == "scandpower_jet_peak_large":
         Q = jet_fire_peak_large_scandpower(T_vessel)
     elif fire_type == "scandpower_jet_peak_small":
         Q = jet_fire_peak_small_scandpower(T_vessel)

@@ -1,0 +1,35 @@
+vessel:
+  length: 9
+  diameter: 3
+  orientation: "vertical"
+  type: "Flat-end"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.136 
+initial:
+  temperature: 298.15
+  pressure: 11500000
+  fluid: "CH4" 
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 3000.
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.013
+  discharge_coef: 0.975
+  set_pressure: 13500000
+  blowdown: 0.1
+  back_pressure: 101300.
+#valve:
+#  flow: "discharge"
+#  type: "relief"
+#  set_pressure: 13500000
+#  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"
+rupture:
+  material: "CS_360LT" 
+  fire: "scandpower_jet_peak_large"

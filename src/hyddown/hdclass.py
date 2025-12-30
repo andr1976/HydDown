@@ -191,6 +191,13 @@ class HydDown:
         # - functional mass flow
         self.thickness = 0
 
+        if "rupture" in self.input:
+            self.rupture_material = self.input["rupture"]["material"]
+            if "fire" in self.input["rupture"]:
+                self.rupture_fire = self.input["rupture"]["fire"]
+            else:
+                self.rupture_fire = "api_jet"
+
         # Reading heat transfer related data/information
         if "heat_transfer" in self.input:
             self.heat_method = self.input["heat_transfer"]["type"]
@@ -1713,17 +1720,19 @@ class HydDown:
 
         for i in range(tsteps):
             peak_times[i + 1] = peak_times[i] + dt
-            q_fire_wetted = fire.sb_fire(T_wetted_wall[i], self.sb_peak_fire_type)
-            q_fire_unwetted = fire.sb_fire(T_unwetted_wall[i], self.sb_peak_fire_type)
+            q_fire_wetted = fire.sb_fire(T_wetted_wall[i], self.rupture_fire)
+            q_fire_unwetted = fire.sb_fire(T_unwetted_wall[i], self.rupture_fire)
             T_wetted_wall[i + 1] = T_wetted_wall[i] + (
                 q_fire_wetted - q_wetted(peak_times[i])
-            ) * dt / (thk * rho * steel_Cp(T_wetted_wall[i], self.material))
+            ) * dt / (thk * rho * steel_Cp(T_wetted_wall[i], self.rupture_material))
             T_unwetted_wall[i + 1] = T_unwetted_wall[i] + (
                 q_fire_unwetted - q_unwetted(peak_times[i])
-            ) * dt / (thk * rho * steel_Cp(T_unwetted_wall[i], self.material))
+            ) * dt / (thk * rho * steel_Cp(T_unwetted_wall[i], self.rupture_material))
 
-        ATS_wetted = np.array([ATS(T, self.material) for T in T_wetted_wall])
-        ATS_unwetted = np.array([ATS(T, self.material) for T in T_unwetted_wall])
+        ATS_wetted = np.array([ATS(T, self.rupture_material) for T in T_wetted_wall])
+        ATS_unwetted = np.array(
+            [ATS(T, self.rupture_material) for T in T_unwetted_wall]
+        )
         von_mises_wetted = von_mises_unwetted = np.array(
             [von_mises(pres(time), inner_diameter, thk) for time in peak_times]
         )
@@ -1755,7 +1764,7 @@ class HydDown:
         plt.plot(peak_times, von_mises_wetted / 1e6, label="von Mises stress")
 
         plt.plot(peak_times, ATS_unwetted / 1e6, label="ATS unwetted wall")
-        if sum(self.liquid_dyn_level) > 0:
+        if self.liquid_level.all() != 0:
             plt.plot(peak_times, ATS_wetted / 1e6, label="ATS wetted wall")
         plt.xlabel("Time (s)")
         plt.ylabel("Allowable Tensile Strength / von Mises Stress (MPa)")
@@ -1765,7 +1774,7 @@ class HydDown:
                 filename + "_ATS_vonmises.png",
             )
         plt.figure(2)
-        if sum(self.liquid_dyn_level) > 0:
+        if self.liquid_level.all() != 0:
             plt.plot(peak_times, T_wetted_wall - 273.15, label="T wetted wall")
         plt.plot(peak_times, T_unwetted_wall - 273.15, label="T unwetted wall")
         plt.xlabel("Time (s)")

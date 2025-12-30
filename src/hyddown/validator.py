@@ -91,6 +91,19 @@ def validate_mandatory_ruleset(input):
                 },
             },
         },
+        "rupture": {
+            "required": False,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "material": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["CS_235LT", "CS_360LT", "SS316", "Duplex", "6Mo"],
+                },
+                "fire": {"required": False, "type": "string"},
+            },
+        },
         "valve": {
             "required": True,
             "type": "dict",
@@ -369,6 +382,7 @@ def heat_transfer_validation(input):
                 "initial": {"required": True},
                 "calculation": {"required": True},
                 "validation": {"required": False},
+                "rupyture": {"required": False},
                 "valve": {"required": True},
                 "vessel": {
                     "required": True,
@@ -448,6 +462,7 @@ def heat_transfer_validation(input):
                 "initial": {"required": True},
                 "calculation": {"required": True},
                 "validation": {"required": False},
+                "rupture": {"required": False},
                 "valve": {"required": True},
                 "vessel": {
                     "required": True,
@@ -498,6 +513,7 @@ def heat_transfer_validation(input):
                 "calculation": {"required": True},
                 "validation": {"required": False},
                 "valve": {"required": True},
+                "rupture": {"required": False},
                 "vessel": {
                     "required": True,
                     "type": "dict",
@@ -548,6 +564,7 @@ def heat_transfer_validation(input):
                 "calculation": {"required": True},
                 "validation": {"required": False},
                 "valve": {"required": True},
+                "rupture": {"required": False},
                 "vessel": {
                     "required": True,
                     "type": "dict",
@@ -627,6 +644,7 @@ def valve_validation(input):
         "calculation": {"required": True},
         "validation": {"required": False},
         "vessel": {"required": True},
+        "rupture": {"required": False},
         "heat_transfer": {"required": True},
         "valve": {
             "required": True,
@@ -661,6 +679,7 @@ def valve_validation(input):
         "calculation": {"required": True},
         "validation": {"required": False},
         "vessel": {"required": True},
+        "rupture": {"required": False},
         "heat_transfer": {"required": False},
         "valve": {
             "required": True,
@@ -695,6 +714,7 @@ def valve_validation(input):
         "calculation": {"required": True},
         "validation": {"required": False},
         "vessel": {"required": True},
+        "rupture": {"required": False},
         "heat_transfer": {"required": False},
         "valve": {
             "required": True,
@@ -726,6 +746,7 @@ def valve_validation(input):
 
     schema_control_valve = {
         "initial": {"required": True},
+        "rupture": {"required": False},
         "calculation": {"required": True},
         "validation": {"required": False},
         "vessel": {"required": True},
@@ -761,6 +782,7 @@ def valve_validation(input):
         "calculation": {"required": True},
         "validation": {"required": False},
         "vessel": {"required": True},
+        "rupture": {"required": False},
         "heat_transfer": {"required": False},
         "valve": {
             "required": True,
