@@ -69,6 +69,45 @@ def jet_fire_scandpower(Tvessel):
     return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
 
 
+def jet_fire_peak_large_scandpower(Tvessel):
+    """
+    Incident heat flux of 350 kW/m2
+    """
+    alpha = 0.85
+    e_flame = 1
+    e_surface = 0.85
+    h = 100
+    Tflame = 1429.61
+    Tradiative = 1429.61
+    return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
+
+
+def jet_fire_peak_small_scandpower(Tvessel):
+    """
+    Incident heat flux of 250 kW/m2
+    """
+    alpha = 0.85
+    e_flame = 1
+    e_surface = 0.85
+    h = 100
+    Tflame = 1279.29
+    Tradiative = 1279.29
+    return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
+
+
+def pool_fire_peak_scandpower(Tvessel):
+    """
+    Incident heat flux of 150 kW/m2
+    """
+    alpha = 0.85
+    e_flame = 1
+    e_surface = 0.85
+    h = 30
+    Tflame = 1212.54
+    Tradiative = 1212.54
+    return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
+
+
 def sb_fire(T_vessel, fire_type):
     if fire_type == "api_jet":
         Q = jet_fire_api521(T_vessel)
@@ -78,6 +117,12 @@ def sb_fire(T_vessel, fire_type):
         Q = pool_fire_scandpower(T_vessel)
     elif fire_type == "scandpower_jet":
         Q = jet_fire_scandpower(T_vessel)
+    elif fire_type == "scandpower_jet_peak_large":
+        Q = jet_fire_peak_large_scandpower(T_vessel)
+    elif fire_type == "scandpower_jet_peak_small":
+        Q = jet_fire_peak_small_scandpower(T_vessel)
+    elif fire_type == "scandpower_pool_peak":
+        Q = pool_fire_peak_scandpower(T_vessel)
     else:
         raise ValueError("Unknown Stefan-Bolzmann fire heat load")
     return Q

@@ -191,6 +191,13 @@ class HydDown:
         # - functional mass flow
         self.thickness = 0
 
+        if "rupture" in self.input:
+            self.rupture_material = self.input["rupture"]["material"]
+            if "fire" in self.input["rupture"]:
+                self.rupture_fire = self.input["rupture"]["fire"]
+            else:
+                self.rupture_fire = "api_jet"
+
         # Reading heat transfer related data/information
         if "heat_transfer" in self.input:
             self.heat_method = self.input["heat_transfer"]["type"]
@@ -1042,27 +1049,15 @@ class HydDown:
 
                     self.Q_outer[i] = (
                         fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
-                        # (
-                        #     self.sb_heat_load(self.time_array[i])
-                        #     - 0.85 * 5.67e-8 * self.T_vessel[i - 1] ** 4
-                        # )
                         * (self.surf_area_inner - wetted_area)
                         * self.surf_area_outer
                         / self.surf_area_inner
                     )
 
                     self.q_outer[i] = fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
-                    # (
-                    #     self.sb_heat_load(self.time_array[i])
-                    #     - 0.85 * 5.67e-8 * self.T_vessel[i - 1] ** 4
-                    # )
 
                     self.Q_outer_wetted[i] = (
                         fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
-                        # (
-                        #     self.sb_heat_load(self.time_array[i])
-                        #     - 0.85 * 5.67e-8 * self.T_vessel_wetted[i - 1] ** 4
-                        # )
                         * wetted_area
                         * self.surf_area_outer
                         / self.surf_area_inner
@@ -1070,10 +1065,6 @@ class HydDown:
                     self.q_outer_wetted[i] = fire.sb_fire(
                         self.T_vessel_wetted[i - 1], self.fire_type
                     )
-                    # (
-                    #     self.sb_heat_load(self.time_array[i])
-                    #     - 0.85 * 5.67e-8 * self.T_vessel_wetted[i - 1] ** 4
-                    # )
 
                     if np.isnan(self.Q_outer_wetted[i]):
                         self.Q_outer_wetted[i] = 0
@@ -1699,6 +1690,112 @@ class HydDown:
         if filename != None:
             plt.savefig(filename + "_tprofile2.png", dpi=300)
         if verbose:
+            plt.show()
+
+    def analyze_rupture(self, filename=None):
+        from hyddown.materials import steel_Cp, ATS, von_mises
+        from hyddown import fire
+
+        pres = lambda x: np.interp(x, self.time_array, self.P)
+        q_unwetted = lambda x: np.interp(x, self.time_array, self.q_inner)
+        q_wetted = lambda x: np.interp(x, self.time_array, self.q_inner_wetted)
+
+        T0_unwetted = self.T_vessel[0]
+        T0_wetted = self.T_vessel_wetted[0]
+
+        thk = self.thickness
+        rho = self.vessel_density
+        inner_diameter = self.diameter
+
+        dt = 10
+        max_time = self.time_array[-1]
+        tsteps = int(max_time / dt)
+
+        T_wetted_wall = np.zeros(tsteps + 1)
+        T_unwetted_wall = np.zeros(tsteps + 1)
+        T_wetted_wall[0] = T0_wetted
+        T_unwetted_wall[0] = T0_unwetted
+        peak_times = np.zeros(tsteps + 1)
+        peak_times[0] = 0
+
+        for i in range(tsteps):
+            peak_times[i + 1] = peak_times[i] + dt
+            q_fire_wetted = fire.sb_fire(T_wetted_wall[i], self.rupture_fire)
+            q_fire_unwetted = fire.sb_fire(T_unwetted_wall[i], self.rupture_fire)
+            T_wetted_wall[i + 1] = T_wetted_wall[i] + (
+                q_fire_wetted - q_wetted(peak_times[i])
+            ) * dt / (thk * rho * steel_Cp(T_wetted_wall[i], self.rupture_material))
+            T_unwetted_wall[i + 1] = T_unwetted_wall[i] + (
+                q_fire_unwetted - q_unwetted(peak_times[i])
+            ) * dt / (thk * rho * steel_Cp(T_unwetted_wall[i], self.rupture_material))
+
+        ATS_wetted = np.array([ATS(T, self.rupture_material) for T in T_wetted_wall])
+        ATS_unwetted = np.array(
+            [ATS(T, self.rupture_material) for T in T_unwetted_wall]
+        )
+        von_mises_wetted = von_mises_unwetted = np.array(
+            [von_mises(pres(time), inner_diameter, thk) for time in peak_times]
+        )
+
+        self.peak_times = peak_times
+        self.von_mises = von_mises_unwetted
+        self.ATS_unwetted = ATS_unwetted
+        self.ATS_wetted = ATS_wetted
+        self.peak_T_wetted = T_wetted_wall
+        self.peak_T_unwetted = T_unwetted_wall
+
+        if np.all(ATS_unwetted > von_mises_unwetted) == True:
+            self.rupture_time = None
+            # print("No rupture")
+        elif np.all(ATS_unwetted < von_mises_unwetted) == True:
+            self.rupture_time = 0
+            # print("Rupture at time=0")
+        else:
+            rupture_idx = np.where(ATS_unwetted < von_mises_unwetted)[0][0]
+            self.rupture_time = (
+                peak_times[rupture_idx - 1] + peak_times[rupture_idx]
+            ) / 2
+            # print("Rupture time +/- 5 s:", self.rupture_time)
+            # print("Rupture pressure (bar)", pres(peak_times[rupture_idx - 1]))
+
+        from matplotlib import pyplot as plt
+
+        plt.figure(1)
+        plt.plot(peak_times, von_mises_wetted / 1e6, label="von Mises stress")
+
+        plt.plot(peak_times, ATS_unwetted / 1e6, label="ATS unwetted wall")
+        if self.liquid_level.all() != 0:
+            plt.plot(peak_times, ATS_wetted / 1e6, label="ATS wetted wall")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Allowable Tensile Strength / von Mises Stress (MPa)")
+        plt.legend(loc="best")
+        if filename is not None:
+            plt.savefig(
+                filename + "_ATS_vonmises.png",
+            )
+        plt.figure(2)
+        if self.liquid_level.all() != 0:
+            plt.plot(peak_times, T_wetted_wall - 273.15, label="T wetted wall")
+        plt.plot(peak_times, T_unwetted_wall - 273.15, label="T unwetted wall")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Wall temperature (C)")
+        plt.legend(loc="best")
+        if filename is not None:
+            plt.savefig(
+                filename + "_peak_wall_temp.png",
+            )
+
+        plt.figure(3)
+        plt.plot(
+            peak_times,
+            np.array([pres(time) for time in peak_times]) / 1e5,
+            label="Pressure",
+        )
+        plt.xlabel("Time (s)")
+        plt.ylabel("Pressure (bar)")
+        plt.legend(loc="best")
+
+        if filename is None:
             plt.show()
 
     def __str__(self):
