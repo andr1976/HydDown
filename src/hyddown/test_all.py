@@ -344,9 +344,10 @@ def test_sim_rupture():
     import pandas as pd
     import matplotlib.pyplot as plt
     from hyddown import HydDown
-    import scienceplots
 
-    plt.style.use(["science", "nature"])
+    # import scienceplots
+
+    # plt.style.use(["science", "nature"])
 
     input = get_example_input("rupture.yml")
     hdown = HydDown(input)
