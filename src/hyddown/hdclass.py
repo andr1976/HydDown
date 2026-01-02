@@ -1674,7 +1674,8 @@ class HydDown:
             plt.figure(4, figsize=(8, 6))
         else:
             plt.figure(4, figsize=(8, 6))
-
+        if verbose:
+            plt.show()
         n = math.floor(len(self.time_array) / 15)
         for i in range(len(self.time_array[::n])):
             plt.plot(
