@@ -35,4 +35,5 @@ src/hyddown/examples/ng_outlet.yml
 src/hyddown/examples/psv.yml
 src/hyddown/examples/psv_sb.yml
 src/hyddown/examples/relief.yml
+src/hyddown/examples/rupture.yml
 src/hyddown/examples/scema_check.yml
