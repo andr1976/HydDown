@@ -17,11 +17,11 @@ calculation:
 valve:
   flow: "discharge"
   type: "relief"
-  set_pressure: 13500000
+  set_pressure: 13550000
   back_pressure: 101300.
 heat_transfer:
   type: "s-b"
-  fire: "scandpower_pool"
+  fire: "scandpower_jet"
 rupture:
   material: "CS_360LT" 
   fire: "scandpower_jet_peak_large"
