@@ -975,7 +975,7 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 : Incident heat fluxes for various fire scenarios given by Scandpower [@scandpower] {#tbl:heatfluxes1}
 
 
-## Vessel geometry
+## Vessel geometry 
 
 All vessels modelled are assumed of cylindrical shape. The following shapes are available in *openthermo* all provided by the Python *fluids* library [@fluids]. 
 
@@ -1001,7 +1001,7 @@ Using the *fluids* library partial volumes, surface area (full and partial) and 
 
 
 
-## Rupture evaluation 
+## Rupture evaluation {#sec:vonmises}
 It is assumed that when the von Mises stress, $\sigma_e$ (MPa), exceeds the allowable tensile strength of the material, (ATS) (MPa), rupture will occur, i.e., when $\sigma_e$ > ATS.
 
 The ATS is calculated as [@scandpower]:
@@ -1453,11 +1453,162 @@ Simulation results from HydDown is compared to the experimental data of Dicken a
 
 In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric average of all seven positions from front to back of the cylinder. As seen from Figure [@fig:Dicken_typeIII] the average value from HydDown (52.5$^\circ$C)compares very well with the  average CFD results at the end of filling (52.1$^\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $^\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
 
-# Similar software
-To be written
+## Validation of fire heat load
+A simulation with a steel vessel subject to fire heat load is compared against calculations performed with Honeywell Unisim Design using the built-in dynamic depressuring utility and applying a Stefan-Boltzmann heat load. In Unisim the convective part of the Stefan-Boltzmann fire heat load is set by manually specifying the external heat transfer coefficient to 100 W/m$^2$ K and setting the ambient temperature equal to the falme temperature. The simulation in put is summarised in [@tbl:heatload_unisim]. 
 
-# Future developmet of HydDown
-To be written 
+| Parameter           |                |
+|---------------------|----------------|
+| External length     | 9 m         |
+| ID                  | 3 m         |
+| **Shell**      |                |
+| Thickness           | 136 mm           |
+| Density             | 7700 kg/m$^3$   |
+| Heat capacity       | 500 J/(kg K)   |
+| **Initial conditions** |             |
+| Initial pressure    | 115 bar       |
+| Initial temperature | 25 $^\circ$C   |
+| Gas                 | Methane         |
+| **Heat load** |             |
+| Fire type         | Jet fire  |
+| Incident heat flux    |  100 kW/m$^2$       |
+
+: Data for validation of fire heat load calulations.  {#tbl:heatload_unisim}
+
+The results are displayed in [@fig:Unisim_jet_pres] and [@fig:Unisim_jet_temp]. As seen the agreement between the two simulation codes is indeed adequate. The main difference is the intitial temperature of the steel vessel wall which is higher in Unisim. In Hyddown the vessel wall temperature is initialised at the fluid temperature, whereas in Unisim it is likely based on a steady-heat balance using the applied ambient temperature (set to equal the flame temperature for calculation purpose).
+
+![Calculation of vessel pressure as a function of time for a steel vessel jubject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/unisin_jet_fire_1.png){#fig:Unisim_jet_pres}
+
+![Calculation of vessel temperature as a function of time for a steel vessel jubject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/unisin_jet_fire_2.png){#fig:Unisim_jet_temp}
 
 # Example use cases 
-To be written
+
+## LPG vessel subject to fire heat load
+A vessel containing LPG (propane liquified by pressure) is subject to a back-gorund pool fire heat load. The input data are shown below and the results are shown in [@fig:LPG].
+Vessel data and initial conditions have been sourced from  Moodie et al. [@moodie], where a 5 tonne horizontal cylindrical Liquefied Petroleum Gas (LPG) tank was exposed to
+an engulfing kerosene pool fire.
+
+
+~~~ {.Yaml}
+vessel:
+  length: 4.64
+  diameter: 1.7
+  orientation: "horizontal"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.01185
+  liquid_level: 0.4668 
+initial:
+  temperature: 279
+  pressure: 550000
+  fluid: "propane" 
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 660.
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.040
+  discharge_coef: 0.975
+  set_pressure: 1430000
+  blowdown: 0.20
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"
+~~~
+
+![LPG vessel subject to pool fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/LPG_fire.png){#fig:LPG}
+
+## Rupture estimation 
+The below example is a calculation where a methane filled cylindrical flat-end vessel is subject to a back-ground heat load from a jet fire. The backgorund heat load is given by the general Stefan-Boltzmann fire equation and heat load according to the Scandpower guideline [@scandpower]. In addition to this for the post calculation of rupture according to the von Mises stress criterion as outlined in [@sec:vonmises]. The discharge model is specified as **relief**, in this case the pressure is allowed to increase, until the relief valve set pressure is reached. From this point the pressure is kept constant and the required relief rate in order to keep the pressure constant is calculated. This method only works in case a heat load is applied. 
+
+~~~ {.Yaml}
+vessel:
+  length: 9
+  diameter: 3
+  orientation: "vertical"
+  type: "Flat-end"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.136 
+initial:
+  temperature: 298.15
+  pressure: 11500000
+  fluid: "CH4" 
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 900.
+valve:
+  flow: "discharge"
+  type: "relief"
+  set_pressure: 13550000
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"
+rupture:
+  material: "CS_360LT" 
+  fire: "scandpower_jet_peak_large"
+~~~
+
+The rupture evaluation is run as a post-processing step by running the class method **analyze_rupture()**. 
+
+~~~ {.Python}
+import yaml
+import sys
+from hyddown import HydDown
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        input_filename = sys.argv[1]
+    else:
+        input_filename = "input.yml"
+
+    with open(input_filename) as infile:
+        input = yaml.load(infile, Loader=yaml.FullLoader)
+
+
+    hdown=HydDown(input)
+    hdown.run()
+    hdown.verbose=1
+    hdown.plot()
+    hddown.analyze_rupture()
+~~~
+
+## Composite cylinder subject to blowdown
+
+~~~ {.Yaml}
+vessel:
+  length: 0.7466
+  diameter: 0.18
+  thickness: 0.017
+  heat_capacity: 1020
+  density: 1360.
+  thermal_conductivity: 0.5 
+  liner_thickness: 0.007
+  liner_heat_capacity: 1584
+  liner_density: 945.
+  liner_thermal_conductivity: 0.385 
+  orientation: "horizontal"
+initial:
+  temperature: 293.
+  pressure: 70000000.
+  fluid: "He" 
+calculation:
+  type: "energybalance"
+  time_step: .2
+  end_time: 300.
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter : 0.001
+  discharge_coef: 0.9
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 293.15
+  h_outer: 8. 
+  h_inner: "calc"
+~~~

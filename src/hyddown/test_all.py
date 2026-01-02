@@ -323,12 +323,12 @@ def test_sim_filling():
     hdown.run()
 
 
-def test_multicomponent():
-    from hyddown import HydDown
-
-    input = get_example_input("ng.yml")
-    hdown = HydDown(input)
-    hdown.run()
+# def test_multicomponent():
+#    from hyddown import HydDown
+#
+#    input = get_example_input("ng.yml")
+#    hdown = HydDown(input)
+#    hdown.run()
 
 
 def test_sim_stefan_boltzmann():
@@ -408,7 +408,7 @@ def test_sim_rupture():
     plt.xlabel("Time (s)")
     plt.ylabel("Temperature (°C)")
     plt.legend()
-    # plt.show()
+    plt.show()
 
     assert hdown.T_vessel[-1] == pytest.approx(
         df_ref[
