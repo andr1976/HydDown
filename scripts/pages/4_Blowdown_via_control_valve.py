@@ -16,7 +16,9 @@ except:
     import sys
     import os
 
-    hyddown_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "src")
+    hyddown_path = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)), "..", "..", "src"
+    )
     sys.path.append(os.path.abspath(hyddown_path))
     from hyddown import HydDown
 
