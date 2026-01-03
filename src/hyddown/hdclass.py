@@ -1166,49 +1166,151 @@ class HydDown:
                 # Not pretty if-statement and a hack for fire relief area estimation. Most cases go directly to the first ...else... clause
                 if input["valve"]["type"] == "relief":
                     if self.Pset <= self.P[i - 1]:
-                        T1 = self.PHproblem(
-                            h_in + self.tstep * self.Q_inner[i] / self.mass_fluid[i],
-                            self.Pset,
-                            Tguess=self.T_fluid[i - 1] + 5,
-                            relief=True,
-                        )
-                        self.T_fluid[i] = T1
-                        P1 = self.Pset
-                        self.P[i] = P1
-                        self.T_fluid[i] = T1
-                        self.fluid.update(CP.PT_INPUTS, self.P[i], T1)
-                        self.mass_rate[i] = (
-                            (
-                                (1 / self.fluid.rhomass() - 1 / self.rho[i])
-                                * self.mass_fluid[i]
+                        if self.liquid_level[i - 1] > 0:
+                            Q = PropsSI(
+                                "Q",
+                                "U",
+                                U_end / self.mass_fluid[i],
+                                "P",
+                                self.Pset,
+                                self.species,
                             )
-                            * self.rho[i]
-                            / self.tstep
-                        )
-                        self.relief_area[i] = fluids.API520_A_g(
-                            self.mass_rate[i],
-                            T1,
-                            self.fluid.compressibility_factor(),
-                            self.MW * 1000,
-                            self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314),
-                            P1,
-                            self.p_back,
-                            0.975,
-                            1,
-                            1,
-                        )
-                    else:
-                        self.mass_rate[i] = 0
-                        P1, T1, self.U_res[i] = self.UDproblem(
-                            U_end / self.mass_fluid[i],
-                            self.rho[i],
-                            self.P[i - 1],
-                            self.T_fluid[i - 1],
-                        )
+                            rho = PropsSI(
+                                "D",
+                                "U",
+                                U_end / self.mass_fluid[i],
+                                "P",
+                                self.Pset,
+                                self.species,
+                            )
 
-                        self.P[i] = P1
-                        self.T_fluid[i] = T1
-                        self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
+                            # self.fluid.update(
+                            #    CP.HmassP_INPUTS,
+                            #    self.fluid.hmass()
+                            #    + self.tstep
+                            #    * (self.Q_inner[i] + self.Q_inner_wetted[i])
+                            #    / self.mass_fluid[i],
+                            #    self.Pset,
+                            # )
+
+                            Hvap = self.fluid.saturated_vapor_keyed_output(
+                                CP.iHmass
+                            ) - self.fluid.saturated_liquid_keyed_output(CP.iHmass)
+                            BOG = (
+                                (self.Q_inner_wetted[i] + self.Q_inner[i])
+                                / (Hvap)
+                                * 3600
+                                * 24
+                                / self.mass_fluid[i]
+                                * 100
+                            )
+                            # print("BOG rate at relief (%%/day): ", BOG)
+
+                            P1 = self.Pset
+                            self.P[i] = P1
+                            self.fluid.update(CP.PQ_INPUTS, self.P[i], Q)
+                            self.T_fluid[i] = self.fluid.T()
+                            self.mass_rate[i] = (
+                                ((1 / rho - 1 / self.rho[i]) * self.mass_fluid[i])
+                                * self.fluid.saturated_vapor_keyed_output(CP.iDmass)
+                                / self.tstep
+                            )
+                            Z = self.fluid.saturated_vapor_keyed_output(CP.iZ)
+                            cp0molar = self.fluid.saturated_vapor_keyed_output(
+                                CP.iCp0molar
+                            )
+
+                            self.relief_area[i] = fluids.API520_A_g(
+                                self.mass_rate[i],
+                                self.fluid.T(),
+                                Z,
+                                self.MW * 1000,
+                                cp0molar / (cp0molar - 8.314),
+                                P1,
+                                self.p_back,
+                                0.975,
+                                1,
+                                1,
+                            )
+                        else:
+                            T1 = self.PHproblem(
+                                h_in
+                                + self.tstep * self.Q_inner[i] / self.mass_fluid[i],
+                                self.Pset,
+                                Tguess=self.T_fluid[i - 1] + 5,
+                                relief=True,
+                            )
+                            self.T_fluid[i] = T1
+                            P1 = self.Pset
+                            self.P[i] = P1
+                            self.T_fluid[i] = T1
+                            self.fluid.update(CP.PT_INPUTS, self.P[i], T1)
+                            self.mass_rate[i] = (
+                                (
+                                    (1 / self.fluid.rhomass() - 1 / self.rho[i])
+                                    * self.mass_fluid[i]
+                                )
+                                * self.rho[i]
+                                / self.tstep
+                            )
+                            self.relief_area[i] = fluids.API520_A_g(
+                                self.mass_rate[i],
+                                T1,
+                                self.fluid.compressibility_factor(),
+                                self.MW * 1000,
+                                self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314),
+                                P1,
+                                self.p_back,
+                                0.975,
+                                1,
+                                1,
+                            )
+                    else:
+                        if self.liquid_level[i - 1] > 0:
+                            self.P[i] = PropsSI(
+                                "P",
+                                "U",
+                                U_end / self.mass_fluid[i],
+                                "D",
+                                self.rho[i],
+                                self.species,
+                            )
+                            self.T_fluid[i] = PropsSI(
+                                "T",
+                                "U",
+                                U_end / self.mass_fluid[i],
+                                "D",
+                                self.rho[i],
+                                self.species,
+                            )
+                            Q = PropsSI(
+                                "Q",
+                                "U",
+                                U_end / self.mass_fluid[i],
+                                "D",
+                                self.rho[i],
+                                self.species,
+                            )
+                            self.mass_rate[i] = 0
+                            self.fluid.update(CP.PQ_INPUTS, self.P[i], Q)
+                            # self.fluid.update(
+                            #    CP.DmassUmass_INPUTS,
+                            #    self.rho[i],
+                            #   U_end / self.mass_fluid[i],
+                            # )
+
+                        else:
+                            self.mass_rate[i] = 0
+                            P1, T1, self.U_res[i] = self.UDproblem(
+                                U_end / self.mass_fluid[i],
+                                self.rho[i],
+                                self.P[i - 1],
+                                self.T_fluid[i - 1],
+                            )
+
+                            self.P[i] = P1
+                            self.T_fluid[i] = T1
+                            self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
 
                 else:
                     P1, T1, self.U_res[i] = self.UDproblem(
