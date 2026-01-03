@@ -438,7 +438,6 @@ def relief_valve(P1, Pback, Pset, blowdown, k, CD, T1, Z, MW, area):
     """
 
     global psv_state
-    psv_state = "open"
     if P1 > Pset:
         eff_area = area
         psv_state = "open"

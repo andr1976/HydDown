@@ -44,7 +44,7 @@ def validate_mandatory_ruleset(input):
                         "isenthalpic",
                         "isentropic",
                         "isothermal",
-                        "constant_U",
+                        "specified_U",
                     ],
                 },
                 "time_step": {"required": True, "type": "number", "min": 0.000001},
@@ -141,6 +141,7 @@ def validate_mandatory_ruleset(input):
             "allow_unknown": False,
             "allowed": [
                 "Q_fix",
+                "U_fix",
                 "h_inner",
                 "h_outer",
                 "temp_ambient",
@@ -551,7 +552,7 @@ def heat_transfer_validation(input):
                     "allow_unknown": False,
                     "allowed": ["U_fix", "type", "temp_ambient"],
                     "schema": {
-                        "type": {"type": "string", "allowed": ["U_fix"]},
+                        "type": {"type": "string", "allowed": ["specified_U"]},
                         "U_fix": {"required": False, "type": "number", "min": 0.0},
                         "temp_ambient": {"required": True, "type": "number", "min": 0},
                     },

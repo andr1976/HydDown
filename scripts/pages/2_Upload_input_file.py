@@ -38,23 +38,19 @@ def run_calculation(hdown):
     hdown.run()
 
 
-def read_input():
+sideb = st.sidebar
 
-    sideb = st.sidebar
+with sideb:
 
-    with sideb:
-
-        with st.form(key="my_form"):
-            # Upload input yaml file
-            infile = st.file_uploader(
-                "Upload your input YAML file", type=["yml", "yaml"]
-            )
-            input = yaml.load(infile, Loader=yaml.FullLoader)
-
-            submit_button = st.form_submit_button(label="Run calculation")
-        hdown = HydDown(input)
+    with st.form(key="my_form"):
+        # Upload input yaml file
+        infile = st.file_uploader("Upload your input YAML file", type=["yml", "yaml"])
+        submit_button = st.form_submit_button(label="Run calculation")
 
         if submit_button:
+            if infile is not None:
+                input = yaml.load(infile, Loader=yaml.FullLoader)
+                hdown = HydDown(input)
             run_calculation(hdown)
             # submit_button = st.form_submit_button(label="Run calculation")
 
@@ -62,16 +58,14 @@ def read_input():
             st.markdown("### Download results:")
             df = pd.DataFrame(hdown.get_dataframe())
             st.markdown(
-                get_table_download_link(df, "hyddown_results"), unsafe_allow_html=True
+                get_table_download_link(df, "hyddown_results"),
+                unsafe_allow_html=True,
             )
-    if submit_button:
-        hdown.plot(verbose=False)
+if submit_button:
+    hdown.plot(verbose=False)
+    st.pyplot(plt.gcf())
+
+    plt.tight_layout()
+    if "thermal_conductivity" in input["vessel"].keys():
+        hdown.plot_tprofile(verbose=False)
         st.pyplot(plt.gcf())
-
-        plt.tight_layout()
-        if "thermal_conductivity" in input["vessel"].keys():
-            hdown.plot_tprofile(verbose=False)
-            st.pyplot(plt.gcf())
-
-
-read_input()

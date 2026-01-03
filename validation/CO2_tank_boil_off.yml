@@ -23,14 +23,17 @@ calculation:
 valve:
   flow: "discharge"
   type: "relief"
-  #diameter: 0.002
+  #type: "orifice"
+  #diameter: 0.0024
   discharge_coef: 0.975
   back_pressure: 101300.
   set_pressure: 1602300
   #blowdown: 0.1
 heat_transfer:
+  #type: "specified_U"
   type: "specified_h"
   temp_ambient: 303.15
+  #U_fix: 0.13
   h_outer: 8
   h_inner: "calc"
   

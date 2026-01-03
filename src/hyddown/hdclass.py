@@ -1167,31 +1167,17 @@ class HydDown:
                 if input["valve"]["type"] == "relief":
                     if self.Pset <= self.P[i - 1]:
                         if self.liquid_level[i - 1] > 0:
-                            Q = PropsSI(
-                                "Q",
-                                "U",
-                                U_end / self.mass_fluid[i],
-                                "P",
+
+                            self.fluid.update(
+                                CP.HmassP_INPUTS,
+                                self.fluid.hmass()
+                                + self.tstep
+                                * (self.Q_inner[i] + self.Q_inner_wetted[i])
+                                / self.mass_fluid[i],
                                 self.Pset,
-                                self.species,
-                            )
-                            rho = PropsSI(
-                                "D",
-                                "U",
-                                U_end / self.mass_fluid[i],
-                                "P",
-                                self.Pset,
-                                self.species,
                             )
 
-                            # self.fluid.update(
-                            #    CP.HmassP_INPUTS,
-                            #    self.fluid.hmass()
-                            #    + self.tstep
-                            #    * (self.Q_inner[i] + self.Q_inner_wetted[i])
-                            #    / self.mass_fluid[i],
-                            #    self.Pset,
-                            # )
+                            total_mass = self.fluid.rhomass() * self.vol
 
                             Hvap = self.fluid.saturated_vapor_keyed_output(
                                 CP.iHmass
@@ -1206,15 +1192,15 @@ class HydDown:
                             )
                             # print("BOG rate at relief (%%/day): ", BOG)
 
+                            self.mass_rate[i] = (
+                                self.Q_inner_wetted[i] + self.Q_inner[i]
+                            ) / Hvap
+
                             P1 = self.Pset
                             self.P[i] = P1
-                            self.fluid.update(CP.PQ_INPUTS, self.P[i], Q)
+
                             self.T_fluid[i] = self.fluid.T()
-                            self.mass_rate[i] = (
-                                ((1 / rho - 1 / self.rho[i]) * self.mass_fluid[i])
-                                * self.fluid.saturated_vapor_keyed_output(CP.iDmass)
-                                / self.tstep
-                            )
+
                             Z = self.fluid.saturated_vapor_keyed_output(CP.iZ)
                             cp0molar = self.fluid.saturated_vapor_keyed_output(
                                 CP.iCp0molar
@@ -1267,37 +1253,15 @@ class HydDown:
                             )
                     else:
                         if self.liquid_level[i - 1] > 0:
-                            self.P[i] = PropsSI(
-                                "P",
-                                "U",
-                                U_end / self.mass_fluid[i],
-                                "D",
-                                self.rho[i],
-                                self.species,
-                            )
-                            self.T_fluid[i] = PropsSI(
-                                "T",
-                                "U",
-                                U_end / self.mass_fluid[i],
-                                "D",
-                                self.rho[i],
-                                self.species,
-                            )
-                            Q = PropsSI(
-                                "Q",
-                                "U",
-                                U_end / self.mass_fluid[i],
-                                "D",
-                                self.rho[i],
-                                self.species,
-                            )
                             self.mass_rate[i] = 0
-                            self.fluid.update(CP.PQ_INPUTS, self.P[i], Q)
-                            # self.fluid.update(
-                            #    CP.DmassUmass_INPUTS,
-                            #    self.rho[i],
-                            #   U_end / self.mass_fluid[i],
-                            # )
+                            # self.fluid.update(CP.PQ_INPUTS, self.P[i], Q)
+                            self.fluid.update(
+                                CP.DmassUmass_INPUTS,
+                                self.rho[i],
+                                U_end / self.mass_fluid[i],
+                            )
+                            self.T_fluid[i] = self.fluid.T()
+                            self.P[i] = self.fluid.p()
 
                         else:
                             self.mass_rate[i] = 0
@@ -1864,6 +1828,28 @@ class HydDown:
         from matplotlib import pyplot as plt
 
         plt.figure(1)
+        if self.liquid_level.all() != 0:
+            plt.plot(peak_times, T_wetted_wall - 273.15, label="T wetted wall")
+        plt.plot(peak_times, T_unwetted_wall - 273.15, label="T unwetted wall")
+        plt.xlabel("Time (s)")
+        plt.ylabel("Wall temperature (C)")
+        plt.legend(loc="best")
+        if filename is not None:
+            plt.savefig(
+                filename + "_peak_wall_temp.png",
+            )
+
+        plt.figure(2)
+        plt.plot(
+            peak_times,
+            np.array([pres(time) for time in peak_times]) / 1e5,
+            label="Pressure",
+        )
+        plt.xlabel("Time (s)")
+        plt.ylabel("Pressure (bar)")
+        plt.legend(loc="best")
+
+        plt.figure(3)
         plt.plot(peak_times, von_mises_wetted / 1e6, label="von Mises stress")
 
         plt.plot(peak_times, ATS_unwetted / 1e6, label="ATS unwetted wall")
@@ -1876,27 +1862,6 @@ class HydDown:
             plt.savefig(
                 filename + "_ATS_vonmises.png",
             )
-        plt.figure(2)
-        if self.liquid_level.all() != 0:
-            plt.plot(peak_times, T_wetted_wall - 273.15, label="T wetted wall")
-        plt.plot(peak_times, T_unwetted_wall - 273.15, label="T unwetted wall")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Wall temperature (C)")
-        plt.legend(loc="best")
-        if filename is not None:
-            plt.savefig(
-                filename + "_peak_wall_temp.png",
-            )
-
-        plt.figure(3)
-        plt.plot(
-            peak_times,
-            np.array([pres(time) for time in peak_times]) / 1e5,
-            label="Pressure",
-        )
-        plt.xlabel("Time (s)")
-        plt.ylabel("Pressure (bar)")
-        plt.legend(loc="best")
 
         if filename is None:
             plt.show()
