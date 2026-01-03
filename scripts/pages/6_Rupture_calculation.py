@@ -151,8 +151,8 @@ if __name__ == "__main__":
     st.set_page_config(layout="wide")
     input = read_input()
     hdown = HydDown(input)
-    hdown.run()
-
+    with st.spinner("Calculating, please wait...."):
+        hdown.run(disable_pbar=True)
     st.title("HydDown rigorous gas vessel fire PSV discharge calculation")
     st.subheader(r"https://github.com/andr1976/HydDown")
     my_expander = st.expander("Description")
