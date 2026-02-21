@@ -73,3 +73,9 @@ src/hyddown/__pycache__/thermesh.cpython-311.pyc
 src/hyddown/__pycache__/transport.cpython-311.pyc
 src/hyddown/__pycache__/validator.cpython-311.pyc
 src/hyddown/__pycache__/test_all.cpython-311-pytest-8.3.4.pyc
+TEST_IMPROVEMENTS_SUMMARY.md
+FINAL_TEST_REPORT.md
+apply_bug_fixes.py
+BUG_FIXES_PROPOSAL.md
+BUGS_AND_FIXES_SUMMARY.md
+COMPLETION_SUMMARY.md
