@@ -1,18 +1,62 @@
+# HydDown hydrogen/other gas depressurisation
+# Copyright (c) 2021-2025 Anders Andreasen
+# Published under an MIT license
+
+"""
+Material property database for pressure vessel calculations.
+
+This module provides temperature-dependent material properties for common
+pressure vessel materials including:
+- Stainless steels (SS316, Duplex, Super Duplex)
+- Carbon steels (low temperature grade)
+- Vessel wall materials (steel, aluminum, composites)
+
+Properties available:
+- Heat capacity (Cp) as function of temperature [J/(kg·K)]
+- Ultimate tensile strength (UTS) as function of temperature [MPa]
+- Allowable tensile stress (ATS) as function of temperature [MPa]
+- von Mises equivalent stress calculations
+
+Data sources:
+- Scandpower Risk Management AS guidelines for fire scenarios
+- EN standards for structural steel properties
+- Literature values for composite materials
+
+All temperature data are stored in Kelvin [K].
+Property values are interpolated using numpy.interp() for intermediate temperatures.
+"""
+
 import math
 import numpy as np
 
+# ============================================================================
+# HEAT CAPACITY DATA
+# ============================================================================
+# Temperature array for heat capacity data (converted from °C to K)
 # Propeties from Scandpower guideline
 T_Cp = (
     np.array([20, 100, 200, 300, 400, 500, 600, 700, 750, 800, 900, 1000, 1100])
     + 273.15
 )
+# Stainless Steel 316 heat capacity [J/(kg·K)] at temperatures in T_Cp
 SS316_Cp = np.array((472, 487, 503, 512, 520, 530, 541, 551, 555, 559, 565, 571, 577))
-# Missing points added manually
+
+# Duplex stainless steel heat capacity [J/(kg·K)] at temperatures in T_Cp
+# Missing points from Scandpower guideline were added manually based on interpolation
 Duplex_Cp = np.array([480, 500, 530, 560, 600, 635, 670, 710, 730, 750, 790, 840, 840])
+
+# Super Duplex (SMo254) stainless steel heat capacity [J/(kg·K)] at temperatures in T_Cp
 SMo_Cp = np.array([500, 520, 540, 555, 570, 580, 590, 600, 610, 610, 610, 610, 610])
+
+# Carbon Steel Low Temperature grade heat capacity [J/(kg·K)] at temperatures in T_Cp
+# Note: Discontinuity at 750°C due to phase transformation (austenite formation)
 CS_LT_Cp = np.array([450, 480, 510, 550, 600, 660, 750, 900, 1450, 820, 540, 540, 540])
 
-# Material UTS data from Scandpower guideline
+# ============================================================================
+# ULTIMATE TENSILE STRENGTH (UTS) DATA
+# ============================================================================
+# Temperature array for UTS and ATS data (converted from °C to K)
+# Source: Scandpower Risk Management AS guideline
 T = (
     np.array(
         [
@@ -40,6 +84,9 @@ T = (
     )
     + 273.17
 )
+
+# Duplex stainless steel ultimate tensile strength [Pa] at temperatures in T
+# Converted from MPa to Pa by multiplying by 1e6
 Duplex_UTS = (
     np.array(
         [
@@ -67,6 +114,8 @@ Duplex_UTS = (
     )
     * 1e6
 )
+
+# Stainless steel (generic) ultimate tensile strength [Pa] at temperatures in T
 SS_UTS = (
     np.array(
         [
@@ -94,6 +143,8 @@ SS_UTS = (
     )
     * 1e6
 )
+
+# Super Duplex (SMo254) stainless steel ultimate tensile strength [Pa] at temperatures in T
 SMo_UTS = (
     np.array(
         [
@@ -122,6 +173,8 @@ SMo_UTS = (
     * 1e6
 )
 
+# Carbon Steel 235 Low Temperature grade ultimate tensile strength [Pa] at temperatures in T
+# Note: Last two values are manual hand-interpolations where data was unavailable
 CS_235LT_UTS = (
     np.array(
         [
@@ -150,6 +203,7 @@ CS_235LT_UTS = (
     * 1e6
 )
 
+# Carbon Steel 360 Low Temperature grade ultimate tensile strength [Pa] at temperatures in T
 CS_360LT_UTS = (
     np.array(
         [

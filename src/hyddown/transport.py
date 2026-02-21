@@ -2,6 +2,24 @@
 # Copyright (c) 2021-2025 Anders Andreasen
 # Published under an MIT license
 
+"""
+Heat and mass transfer correlations for vessel depressurization/pressurization.
+
+This module provides functions for calculating:
+- Dimensionless numbers (Grashof, Prandtl, Nusselt, Rayleigh)
+- Heat transfer coefficients for natural and forced convection
+- Mass flow rates through orifices, control valves, and relief valves
+- Boiling heat transfer (pool boiling, film boiling)
+
+The correlations are based on established literature including:
+- Geankoplis, Transport Processes and Unit Operations
+- API Standard 520/521 for relief valve sizing
+- Rohsenow pool boiling correlation
+
+All functions use SI units unless otherwise specified.
+CoolProp is used as the thermodynamic backend for fluid property calculations.
+"""
+
 import math
 from CoolProp.CoolProp import PropsSI
 import CoolProp.CoolProp as CP
@@ -380,10 +398,19 @@ def gas_release_rate(P1, P2, rho, k, CD, area):
         : float
         Gas release rate / mass flow of discharge
     """
+    # Only calculate if there is positive pressure difference (P1 > P2)
     if P1 > P2:
-        if P1 / P2 > ((k + 1) / 2) ** ((k) / (k - 1)):
+        # Determine if flow is critical (sonic/choked) or subcritical
+        # Critical pressure ratio from isentropic flow theory
+        critical_pressure_ratio = ((k + 1) / 2) ** ((k) / (k - 1))
+
+        if P1 / P2 > critical_pressure_ratio:
+            # Critical (choked) flow - velocity at throat equals speed of sound
+            # Flow coefficient = 1 for sonic conditions
             flow_coef = 1
         else:
+            # Subcritical flow - expansion is not complete to sonic velocity
+            # Apply Yellow Book correction factor for subcritical flow
             flow_coef = (
                 2
                 / (k - 1)
@@ -392,6 +419,7 @@ def gas_release_rate(P1, P2, rho, k, CD, area):
                 * (1 - (P2 / P1) ** ((k - 1) / k))
             )
 
+        # Calculate mass flow rate using Yellow Book equation 2.22
         return (
             math.sqrt(flow_coef)
             * CD
@@ -399,6 +427,7 @@ def gas_release_rate(P1, P2, rho, k, CD, area):
             * math.sqrt(rho * P1 * k * (2 / (k + 1)) ** ((k + 1) / (k - 1)))
         )
     else:
+        # No flow if downstream pressure exceeds upstream pressure
         return 0
 
 
@@ -488,17 +517,24 @@ def api_psv_release_rate(P1, Pback, k, CD, T1, Z, MW, area):
         Relief rate / mass flow
     """
 
-    P1 = P1 / 1000
-    Pback = Pback / 1000
-    area = area * 1e6
-    MW = MW * 1000
+    # Convert units for API 520 equations
+    P1 = P1 / 1000  # Pa to kPa
+    Pback = Pback / 1000  # Pa to kPa
+    area = area * 1e6  # m² to mm²
+    MW = MW * 1000  # kg/mol to g/mol
+
+    # API 520 critical flow coefficient
     C = 0.03948 * (k * (2 / (k + 1)) ** ((k + 1) / (k - 1))) ** 0.5
+
+    # Check if flow is critical (choked) or subcritical
     if P1 / Pback > ((k + 1) / 2) ** ((k) / (k - 1)):
+        # Critical flow (choked at throat)
         w = CD * area * C * P1 / math.sqrt(T1 * Z / MW)
     else:
+        # Subcritical flow (not choked)
         r = Pback / P1
+        # Subcritical flow correction factor f2
         f2 = ((k / (k - 1)) * r ** (2 / k) * (1 - r ** ((k - 1) / k)) / (1 - r)) ** 0.5
-        print(f2)
         w = CD * area * f2 / (T1 * Z / (MW * P1 * (P1 - Pback))) ** 0.5 / 17.9
     return w / 3600
 

@@ -2,6 +2,62 @@
 # Copyright (c) 2021-2025 Anders Andreasen
 # Published under an MIT license
 
+"""
+Main calculation engine for pressure vessel filling and discharge simulations.
+
+This module contains the HydDown class, which is the core of the HydDown package.
+It integrates mass and energy balances over time to simulate pressure vessel
+depressurization (discharge) and pressurization (filling) with heat transfer effects.
+
+The HydDown class:
+- Reads and validates YAML input defining vessel geometry, initial conditions,
+  calculation type, valve parameters, and heat transfer settings
+- Initializes thermodynamic state using CoolProp for fluid properties
+- Integrates mass and energy balances using explicit Euler time stepping
+- Calculates heat transfer between fluid and vessel wall
+- Handles various thermodynamic paths: isothermal, isenthalpic, isentropic,
+  constant internal energy, and full energy balance
+- Supports multiple valve types: orifice, control valve, relief valve, constant mass flow
+- Models fire heat loads using Stefan-Boltzmann approach
+- Tracks two-phase systems with separate gas/liquid temperatures
+- Can model 1-D transient heat conduction through vessel walls (composite materials)
+- Stores time-series results and provides plotting capabilities
+
+Calculation types:
+- isothermal: Constant temperature (very slow process with large heat reservoir)
+- isenthalpic: Constant enthalpy (adiabatic, no work)
+- isentropic: Constant entropy (adiabatic with PV work)
+- specified_U: Constant internal energy
+- energybalance: Full energy balance with heat transfer and work
+
+Heat transfer modes (for energybalance):
+- fixed_U: Fixed overall heat transfer coefficient
+- fixed_Q: Fixed heat input rate
+- specified_h: Specified internal/external heat transfer coefficients
+- detailed: 1-D transient conduction through vessel wall
+- fire: External fire heat load using Stefan-Boltzmann equation
+
+Valve types:
+- orifice: Compressible flow through orifice (Yellow Book equation)
+- control_valve: Control valve with Cv characteristic
+- relief_valve: API 520/521 relief valve sizing
+- mdot: Constant mass flow rate
+
+The integration scheme uses explicit Euler method with user-specified time step.
+Results are stored in numpy arrays for time, pressure, temperature, mass flow, etc.
+
+Typical usage:
+    import yaml
+    from hyddown import HydDown
+
+    with open('input.yml') as f:
+        input_data = yaml.load(f, Loader=yaml.FullLoader)
+
+    hdown = HydDown(input_data)
+    hdown.run()
+    hdown.plot()
+"""
+
 import math
 import numpy as np
 import pandas as pd
@@ -334,12 +390,22 @@ class HydDown:
 
     def calc_liquid_level(self):
         """
-        Calculating liquid level based on current fluid state
+        Calculate liquid level height based on current two-phase fluid state.
+
+        For two-phase systems (0 ≤ quality ≤ 1), calculates the height of liquid
+        phase in the vessel based on vapor quality, phase densities, and vessel geometry.
+        Uses vessel geometry from fluids.TANK to convert liquid volume to height.
 
         Parameters
         ----------
         fluid : CoolProp AbstractState
             Current fluid state
+
+        Returns
+        -------
+        float
+            Liquid level height from vessel bottom [m].
+            Returns 0.0 for single-phase gas (quality > 1 or subcooled liquid).
         """
         if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
             rho_liq = self.fluid.saturated_liquid_keyed_output(CP.iDmass)
@@ -353,32 +419,52 @@ class HydDown:
 
     def PHres(self, T, P, H):
         """
-        Residual enthalpy function to be minimised during a PH-problem
+        Residual enthalpy function to be minimized during PH-problem.
+
+        Used by numerical optimizer (scipy.optimize.minimize) to find temperature
+        that satisfies constant pressure-enthalpy constraints for multicomponent
+        fluids. The optimizer adjusts T until residual approaches zero.
 
         Parameters
         ----------
         H : float
-            Enthalpy at initial/final conditions
+            Enthalpy at initial/final conditions [J/kg]
         P : float
-            Pressure at final conditions.
+            Pressure at final conditions [Pa]
         T : float
-            Updated estimate for the final temperature at P,H
+            Updated estimate for the final temperature at (P,H) [K]
+
+        Returns
+        -------
+        float
+            Squared normalized enthalpy residual (dimensionless).
+            Zero when correct temperature is found.
         """
         self.vent_fluid.update(CP.PT_INPUTS, P, T)
         return ((H - self.vent_fluid.hmass()) / H) ** 2
 
     def PHres_relief(self, T, P, H):
         """
-        Residual enthalpy function to be minimised during a PH-problem
+        Residual enthalpy function for PH-problem during relief valve calculations.
+
+        Used by numerical optimizer (scipy.optimize.root_scalar) to find temperature
+        for relief valve discharge calculations. Similar to PHres() but uses the
+        main fluid state instead of vent_fluid state.
 
         Parameters
         ----------
         H : float
-            Enthalpy at initial/final conditions
+            Enthalpy at initial/final conditions [J/kg]
         P : float
-            Pressure at final conditions.
+            Pressure at final conditions [Pa]
         T : float
-            Updated estimate for the final temperature at P,H
+            Updated estimate for the final temperature at (P,H) [K]
+
+        Returns
+        -------
+        float
+            Normalized enthalpy residual (dimensionless).
+            Zero when correct temperature is found.
         """
         self.fluid.update(CP.PT_INPUTS, P, T)
         return (H - self.fluid.hmass()) / H
@@ -606,9 +692,27 @@ class HydDown:
 
         self.time_array[0] = 0
 
-        # setting heat transfer parameters
-        T_profile, T_profile2 = 0, 0
-        relief_area = []
+        # ============================================================================
+        # MAIN TIME INTEGRATION LOOP
+        # ============================================================================
+        # Integrate mass and energy balances forward in time using explicit Euler method
+        # At each time step:
+        #   1. Update mass inventory from mass flow rate
+        #   2. Calculate new density (mass/volume)
+        #   3. Determine thermodynamic state based on calculation method:
+        #      - Simple methods (isenthalpic/isentropic/isothermal/constantU):
+        #        Direct CoolProp update with (density, H/S/T/U)
+        #      - Energy balance method: Solve for temperature from energy balance
+        #        accounting for heat transfer, work, and enthalpy changes
+        #   4. Calculate heat transfer (if energybalance method)
+        #   5. Update vessel wall temperatures
+        #   6. Calculate mass flow rate for next time step
+        # ============================================================================
+
+        # Initialize heat transfer variables
+        T_profile, T_profile2 = 0, 0  # Temperature profiles for detailed wall model
+        relief_area = []  # Track relief valve area changes
+
         for i in tqdm(
             range(1, len(self.time_array)),
             desc="hyddown",
@@ -622,8 +726,12 @@ class HydDown:
 
             self.rho[i] = self.mass_fluid[i] / self.vol
 
-            # For the simple methods key variable is rho, with either H,S,U or T constant
-            # updating T and p is convenient using coolprop.
+            # ------------------------------------------------------------------------
+            # THERMODYNAMIC STATE UPDATE
+            # ------------------------------------------------------------------------
+            # For simple methods, density changes but one other property remains constant
+            # CoolProp can directly calculate (T, P) from (density, H/S/U/T) for single components
+            # For multicomponent fluids, numerical optimization is required (slower)
             if self.method == "isenthalpic":
                 self.fluid.update(CP.DmassHmass_INPUTS, self.rho[i], self.H_mass[i - 1])
                 self.T_fluid[i] = self.fluid.T()
@@ -644,9 +752,25 @@ class HydDown:
                 self.T_fluid[i] = self.fluid.T()
                 self.P[i] = self.fluid.p()
 
-            # This is the **only** complicated part where we have the energy balance included
+            # ------------------------------------------------------------------------
+            # ENERGY BALANCE METHOD (Most Complex Case)
+            # ------------------------------------------------------------------------
+            # Full energy balance accounting for:
+            #   - Heat transfer between fluid and vessel wall (convection)
+            #   - Heat transfer between vessel and environment (convection, radiation, fire)
+            #   - Enthalpy change from mass flow (inlet/outlet streams)
+            #   - Work done by expanding/compressing fluid
+            #   - 1-D transient conduction through vessel wall (if detailed method)
+            #
+            # Energy balance on fluid:
+            #   dU/dt = Q_transfer + H_inlet*dm_inlet/dt - H_outlet*dm_outlet/dt
+            #
+            # where U = internal energy, Q = heat transfer rate, H = specific enthalpy
             elif self.method == "energybalance":
-                # Finding the heat supplied/removed by heat transfer from/to outside
+                # ====================================================================
+                # HEAT TRANSFER COEFFICIENT CALCULATIONS
+                # ====================================================================
+                # Calculate convective heat transfer coefficients for specified_h or detailed methods
                 if self.heat_method == "specified_h" or self.heat_method == "detailed":
                     if self.h_in == "calc":
                         if self.vessel_orientation == "horizontal":
@@ -722,10 +846,20 @@ class HydDown:
                     self.h_inside[i] = hi
                     self.h_inside_wetted[i] = hiw
 
+                    # ================================================================
+                    # TWO-PHASE HEAT TRANSFER (Wetted vs Unwetted Areas)
+                    # ================================================================
+                    # For two-phase systems, split vessel into two regions:
+                    #   1. Wetted area: Wall in contact with liquid phase
+                    #   2. Unwetted area: Wall in contact with gas/vapor phase
+                    # Different heat transfer coefficients and wall temperatures
+                    # are calculated for each region based on liquid level
                     wetted_area = self.inner_vol.SA_from_h(self.liquid_level[i - 1])
                     if np.isnan(wetted_area):
                         wetted_area = 0
 
+                    # Heat transfer from unwetted wall (gas side) to fluid
+                    # Q = A * h * (T_wall - T_fluid)
                     self.Q_inner[i] = (
                         (self.surf_area_inner - wetted_area)
                         * hi
@@ -735,6 +869,8 @@ class HydDown:
                         self.T_inner_wall[i - 1] - self.T_fluid[i - 1]
                     )
 
+                    # Heat transfer from wetted wall (liquid side) to fluid
+                    # Uses different heat transfer coefficient (hiw) for liquid contact
                     self.Q_inner_wetted[i] = (
                         wetted_area
                         * hiw
@@ -745,6 +881,7 @@ class HydDown:
                     if np.isnan(self.Q_inner_wetted[i]):
                         self.Q_inner_wetted[i] = 0
 
+                    # Heat transfer from environment to unwetted outer wall
                     self.Q_outer[i] = (
                         (self.surf_area_inner - wetted_area)
                         * self.surf_area_outer
@@ -793,30 +930,45 @@ class HydDown:
                             / self.inner_vol.A
                         )
 
+                    # ================================================================
+                    # 1-D TRANSIENT HEAT CONDUCTION (Detailed Thermal Model)
+                    # ================================================================
+                    # Solve transient heat conduction through vessel wall using
+                    # finite element method (thermesh module).
+                    # Used for vessels with low thermal conductivity (Type III/IV)
+                    # or composite materials where temperature gradient through
+                    # wall thickness is significant.
+                    #
+                    # For single-layer walls: Uses isothermal material model
+                    # For multi-layer walls: Uses piecewise linear model for liner+shell
+                    #
+                    # Time integration: Crank-Nicolson (theta=0.5) for stability
+                    # Spatial discretization: Linear finite elements with 11 nodes
                     if "thermal_conductivity" in self.input["vessel"].keys():
-                        theta = 0.5  # Crank-Nicholson scheme
-                        dt = self.tstep / 10
+                        theta = 0.5  # Crank-Nicolson scheme (unconditionally stable, 2nd order)
+                        dt = self.tstep / 10  # Sub-step for thermal solver (finer time resolution)
                         k, rho, cp = (
                             self.input["vessel"]["thermal_conductivity"],
                             self.vessel_density,
                             self.vessel_cp,
                         )
+                        # Check if single-layer or composite (liner + shell) construction
                         if (
                             "liner_thermal_conductivity"
                             not in self.input["vessel"].keys()
                         ):
-                            nn = 11  # number of nodes
+                            # Single-layer wall construction
+                            nn = 11  # number of nodes through wall thickness
                             z = np.linspace(0, self.thickness, nn)
                             self.z = z
-                            mesh = tm.Mesh(
-                                z, tm.LinearElement
-                            )  # Or `QuadraticElement` to
-                            mesh_w = tm.Mesh(
-                                z, tm.LinearElement
-                            )  # Or `QuadraticElement` to
+                            # Create meshes for unwetted and wetted regions
+                            mesh = tm.Mesh(z, tm.LinearElement)
+                            mesh_w = tm.Mesh(z, tm.LinearElement)
+                            # Material model with constant properties
                             cpeek = tm.isothermal_model(k, rho, cp)
                             cpeek_w = tm.isothermal_model(k, rho, cp)
 
+                            # Initialize temperature profile on first time step
                             if type(T_profile) == type(int()) and T_profile == 0:
                                 bc = [
                                     {"T": self.T0},
@@ -1047,6 +1199,16 @@ class HydDown:
                     if np.isnan(self.Q_inner_wetted[i]):
                         self.Q_inner_wetted[i] = 0
 
+                    # ================================================================
+                    # FIRE HEAT LOAD CALCULATIONS (Stefan-Boltzmann Method)
+                    # ================================================================
+                    # Calculate external heat flux from fire using Stefan-Boltzmann
+                    # equation accounting for radiative and convective heat transfer.
+                    # Fire types: API 521 pool/jet fire, Scandpower pool/jet/peak fires
+                    # Heat flux is temperature-dependent (higher vessel T → more re-radiation)
+                    #
+                    # For two-phase systems: Calculate separate heat fluxes for
+                    # wetted (liquid contact) and unwetted (gas contact) regions
                     self.Q_outer[i] = (
                         fire.sb_fire(self.T_vessel[i - 1], self.fire_type)
                         * (self.surf_area_inner - wetted_area)
@@ -1347,8 +1509,21 @@ class HydDown:
             else:
                 cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
                 Z = self.fluid.compressibility_factor()
-            # Finally updating the mass rate for the mass balance in the next time step
-            # Already done of the valve is "relief" (estimation)
+            # ====================================================================
+            # MASS FLOW RATE CALCULATIONS (End of Time Step)
+            # ====================================================================
+            # Calculate mass flow rate for next time step based on valve type
+            # and current thermodynamic state. Uses current pressure, temperature,
+            # density to determine compressible flow through valve/orifice.
+            #
+            # Valve types:
+            #   - orifice: Yellow Book compressible flow equation (critical/subcritical)
+            #   - controlvalve: Control valve Cv characteristic with time-dependent opening
+            #   - psv: Relief valve with API 520/521 sizing equations
+            #   - mdot: Constant or time-varying mass flow rate (already set)
+            #
+            # For two-phase systems: Use saturated vapor properties for mass flow calc
+            # Note: "relief" valve type handled separately (not here)
             if input["valve"]["type"] == "orifice":
                 if input["valve"]["flow"] == "filling":
                     k = self.res_fluid.cp0molar() / (self.res_fluid.cp0molar() - 8.314)
@@ -1427,8 +1602,38 @@ class HydDown:
 
     def get_dataframe(self):
         """
-        Storing relevant results in pandas dataframe for e.g. export
-        to csv, excel for archiving or post analysis
+        Export simulation results to pandas DataFrame for analysis and archiving.
+
+        Collects all time-series results from the simulation and organizes them
+        into a pandas DataFrame with labeled columns. Useful for exporting to
+        CSV/Excel, post-processing, or custom plotting.
+
+        Returns
+        -------
+        pd.DataFrame
+            DataFrame with simulation results. Columns include:
+            - Time (s)
+            - Pressure (bar)
+            - Fluid temperature (°C)
+            - Wall temperature (°C)
+            - Vent temperature (°C)
+            - Fluid enthalpy (J/kg)
+            - Fluid entropy (J/(kg·K))
+            - Fluid internal energy (J/kg)
+            - Discharge mass rate (kg/s)
+            - Fluid mass (kg)
+            - Fluid density (kg/m³)
+            - Inner heat transfer coefficient (W/(m²·K))
+            - Internal heat flux (W/m²)
+            - External heat flux (W/m²)
+            - Inner wall temperature (°C)
+            - Outer wall temperature (°C)
+
+        Notes
+        -----
+        Only returns data if simulation has been run (self.isrun == True).
+        Temperature values are converted from Kelvin to Celsius.
+        Pressure values are converted from Pa to bar.
         """
         if self.isrun == True:
             df = pd.DataFrame(self.time_array, columns=["Time (s)"])
@@ -1760,6 +1965,57 @@ class HydDown:
             plt.show()
 
     def analyze_rupture(self, filename=None):
+        """
+        Analyze vessel rupture potential under fire exposure conditions.
+
+        Performs a simplified rupture analysis by calculating vessel wall temperatures
+        under external fire heat load and comparing von Mises stress (from internal
+        pressure) against temperature-dependent allowable tensile stress (ATS).
+        Determines if and when vessel rupture may occur.
+
+        The analysis:
+        1. Calculates wall temperature evolution under fire exposure
+        2. Computes von Mises equivalent stress from internal pressure
+        3. Evaluates temperature-dependent material strength (ATS)
+        4. Identifies rupture time when stress exceeds strength
+        5. Generates diagnostic plots
+
+        Parameters
+        ----------
+        filename : str, optional
+            Base filename for saving plots. If None, plots are displayed on screen.
+            Generates two plot files:
+            - {filename}_peak_wall_temp.png
+            - {filename}_ATS_vonmises.png
+
+        Returns
+        -------
+        None
+            Results are stored in instance variables:
+            - self.rupture_time : float or None
+                Time when rupture occurs [s], or None if no rupture predicted
+            - self.peak_times : ndarray
+                Time array for rupture analysis [s]
+            - self.von_mises : ndarray
+                von Mises equivalent stress history [Pa]
+            - self.ATS_wetted : ndarray
+                Allowable tensile stress for wetted region [Pa]
+            - self.ATS_unwetted : ndarray
+                Allowable tensile stress for unwetted region [Pa]
+            - self.peak_T_wetted : ndarray
+                Wall temperature history for wetted region [K]
+            - self.peak_T_unwetted : ndarray
+                Wall temperature history for unwetted region [K]
+
+        Notes
+        -----
+        Requires rupture analysis parameters in input:
+        - self.rupture_fire: Fire type (e.g., 'api_pool', 'scandpower_jet')
+        - self.rupture_material: Material type for ATS calculation
+
+        The method uses a simplified lumped capacitance model for wall heating.
+        Time step for rupture analysis is fixed at 10 seconds.
+        """
         from hyddown.materials import steel_Cp, ATS, von_mises
         from hyddown import fire
 

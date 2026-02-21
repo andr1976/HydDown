@@ -2,6 +2,30 @@
 # Copyright (c) 2021-2025 Anders Andreasen
 # Published under an MIT license
 
+"""
+Input validation for HydDown YAML configuration files.
+
+This module uses the Cerberus validation library to enforce schema-based validation
+of user-provided input dictionaries parsed from YAML files. It ensures that all
+required parameters are present, values are of correct types, and fall within
+acceptable ranges before calculations begin.
+
+The validation is hierarchical and mode-dependent:
+- Mandatory ruleset: vessel geometry, initial conditions, calculation setup
+- Heat transfer validation: depends on calculation type (energybalance, etc.)
+- Valve validation: depends on valve type (orifice, control valve, relief valve)
+
+Validation errors are reported with descriptive messages to help users correct
+their input files. The module prevents invalid calculations that would lead to
+runtime errors or physically meaningless results.
+
+Main functions:
+- validation(): Top-level validation function called by HydDown class
+- validate_mandatory_ruleset(): Validates core required parameters
+- heat_transfer_validation(): Validates heat transfer settings
+- valve_validation(): Validates valve parameters based on valve type
+"""
+
 from cerberus import Validator
 from cerberus.errors import ValidationError
 
@@ -383,7 +407,7 @@ def heat_transfer_validation(input):
                 "initial": {"required": True},
                 "calculation": {"required": True},
                 "validation": {"required": False},
-                "rupyture": {"required": False},
+                "rupture": {"required": False},
                 "valve": {"required": True},
                 "vessel": {
                     "required": True,
