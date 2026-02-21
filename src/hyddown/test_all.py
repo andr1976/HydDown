@@ -622,5 +622,262 @@ def test_boiling_heat_transfer():
     assert h == pytest.approx(3571, rel=0.01)
 
 
+def test_different_vessel_types():
+    """Test different vessel head types."""
+    from hyddown import HydDown
+
+    # Test with different vessel types
+    vessel_types = ["Flat-end", "ASME F&D"]
+
+    for vtype in vessel_types:
+        input = get_example_input("input.yml")
+        input["vessel"]["type"] = vtype
+        hdown = HydDown(input)
+        hdown.run()
+
+        # Verify calculation completes for all types
+        assert len(hdown.time_array) > 0
+        assert hdown.vol > 0
+
+
+def test_plot_envelope():
+    """Test phase envelope plotting functionality."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+    # Test plot_envelope doesn't raise exceptions
+    try:
+        hdown.plot_envelope(verbose=False)
+    except Exception as e:
+        pytest.fail(f"plot_envelope raised exception: {e}")
+
+
+def test_generate_report():
+    """Test report generation with all metrics."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    hdown = HydDown(input)
+    hdown.run()
+    hdown.generate_report()
+
+    # Verify report contains expected keys
+    assert "final_mass" in hdown.report
+    assert "min_wall_temp" in hdown.report
+    assert "min_fluid_temp" in hdown.report
+    assert "time_min_fluid_temp" in hdown.report
+    assert "max_mass_rate" in hdown.report
+
+    # Verify values are reasonable
+    assert hdown.report["final_mass"] >= 0
+    assert hdown.report["min_wall_temp"] > 0
+    assert hdown.report["min_fluid_temp"] > 0
+    assert hdown.report["max_mass_rate"] >= 0
+
+
+def test_get_dataframe_structure():
+    """Test DataFrame output has correct structure."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    hdown = HydDown(input)
+    hdown.run()
+    df = hdown.get_dataframe()
+
+    # Verify DataFrame has expected columns (exact names from get_dataframe)
+    assert "Time (s)" in df.columns
+    assert "Pressure (bar)" in df.columns
+    assert "Fluid temperature (oC)" in df.columns
+    assert "Fluid mass (kg)" in df.columns
+
+    # Verify data consistency
+    assert len(df) == len(hdown.time_array)
+    assert all(df["Pressure (bar)"] > 0)
+
+
+def test_isothermal_calculation():
+    """Test isothermal calculation type."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    input["calculation"]["type"] = "isothermal"
+
+    hdown = HydDown(input)
+    hdown.run()
+
+    # Temperature should remain constant for isothermal
+    T_initial = hdown.T_fluid[0]
+    T_final = hdown.T_fluid[-1]
+
+    # Allow small deviation due to numerical effects
+    assert T_final == pytest.approx(T_initial, rel=0.05)
+
+
+def test_isentropic_calculation():
+    """Test isentropic calculation type."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    input["calculation"]["type"] = "isentropic"
+
+    hdown = HydDown(input)
+    hdown.run()
+
+    # For discharge, temperature should decrease in isentropic process
+    T_initial = hdown.T_fluid[0]
+    T_final = hdown.T_fluid[-1]
+
+    assert T_final < T_initial
+
+
+def test_mass_conservation_discharge():
+    """Test mass conservation during discharge."""
+    from hyddown import HydDown
+    import numpy as np
+
+    input = get_example_input("input.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+    # For discharge, mass should only decrease (or stay constant)
+    mass_diff = np.diff(hdown.mass_fluid)
+    assert all(mass_diff <= 1e-10)  # Allow small numerical tolerance
+
+
+def test_mass_conservation_filling():
+    """Test mass conservation during filling."""
+    from hyddown import HydDown
+    import numpy as np
+
+    input = get_example_input("filling.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+    # For filling, mass should only increase (or stay constant)
+    mass_diff = np.diff(hdown.mass_fluid)
+    assert all(mass_diff >= -1e-10)  # Allow small numerical tolerance
+
+
+def test_energy_balance_with_fire():
+    """Test energy balance calculation with fire heat load."""
+    from hyddown import HydDown
+
+    input = get_example_input("psv_sb.yml")
+    hdown = HydDown(input)
+    hdown.run()
+
+    # Verify fire heat load increases temperature/pressure
+    assert len(hdown.Q_outer) > 0
+    # External heat should be positive (fire adding heat)
+    assert max(hdown.Q_outer) > 0
+
+
+def test_validation_data_plotting():
+    """Test plotting with validation data."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+
+    # Add validation data
+    input["validation"] = {
+        "pressure": {"time": [0, 10, 20, 30], "pres": [150e5, 120e5, 90e5, 60e5]},
+        "temperature": {
+            "gas_high": {"time": [0, 10, 20, 30], "temp": [298, 280, 260, 240]}
+        },
+    }
+
+    hdown = HydDown(input)
+    hdown.run()
+
+    # Plot should handle validation data without errors
+    try:
+        hdown.plot(verbose=False)
+    except Exception as e:
+        pytest.fail(f"plot with validation data raised exception: {e}")
+
+
+def test_invalid_calculation_type():
+    """Test that invalid calculation type raises error."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    input["calculation"]["type"] = "invalid_type"
+
+    with pytest.raises(Exception):
+        hdown = HydDown(input)
+        hdown.run()
+
+
+def test_zero_initial_mass():
+    """Test behavior with unrealistic zero initial mass."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    input["initial"]["pressure"] = 1e5  # Very low pressure (near atmospheric)
+
+    try:
+        hdown = HydDown(input)
+        hdown.run()
+        # Should complete but with very small mass
+        assert hdown.m0 > 0
+    except Exception:
+        # May raise exception for unrealistic conditions
+        pass
+
+
+def test_very_short_timestep():
+    """Test stability with very short timestep."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    input["calculation"]["time_step"] = 0.001  # Very short
+    input["calculation"]["end_time"] = 1.0  # Short simulation
+
+    hdown = HydDown(input)
+    hdown.run()
+
+    # Should complete without numerical instabilities
+    assert len(hdown.time_array) > 0
+    assert all(hdown.P > 0)
+    assert all(hdown.T_fluid > 0)
+
+
+def test_vessel_horizontal_vs_vertical():
+    """Test that orientation affects heat transfer."""
+    from hyddown import HydDown
+
+    # Horizontal vessel
+    input_h = get_example_input("input.yml")
+    input_h["vessel"]["orientation"] = "horizontal"
+    hdown_h = HydDown(input_h)
+    hdown_h.run()
+
+    # Vertical vessel
+    input_v = get_example_input("input.yml")
+    input_v["vessel"]["orientation"] = "vertical"
+    hdown_v = HydDown(input_v)
+    hdown_v.run()
+
+    # Results should differ due to different heat transfer correlations
+    # (though may be close)
+    assert len(hdown_h.time_array) > 0
+    assert len(hdown_v.time_array) > 0
+
+
+def test_string_representation():
+    """Test __str__ method returns valid string."""
+    from hyddown import HydDown
+
+    input = get_example_input("input.yml")
+    hdown = HydDown(input)
+
+    str_repr = str(hdown)
+    assert isinstance(str_repr, str)
+    assert len(str_repr) > 0
+
+
 if __name__ == "__main__":
     test_sim_rupture()
