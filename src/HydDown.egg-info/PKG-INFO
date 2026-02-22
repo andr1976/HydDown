@@ -9,7 +9,7 @@ Project-URL: Bug Tracker, https://github.com/andr1976/HydDown/new/main/issues
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
-Requires-Python: <3.12,>=3.10
+Requires-Python: <3.13,>=3.10
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: tqdm
@@ -128,4 +128,5 @@ If heat transfer is to be considered the calculation type "energybalance" is req
 - HydDown has been extensively validated as can be seen in the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf).
 - HydDown has been benchmarked against external code by [Ruiz and Moscardelli](https://doi.org/10.1016/j.ijhydene.2023.03.293) , who compared their GeoH2 app against HydDown and found excellent agreement for both pressure, mass flow rate and gas temperature for three different cases of discharge and filling
 - HydDown code has been adopted for the Underground Hydrogen Salt Cavern Simulation Tool [*uh2sc*](https://github.com/sandialabs/uh2sc) tool from [Sandia Labs](https://www.sandia.gov/).
+- Applied by the engineering consultancy Fichtner for the [HYDESS (Hydrogen for the Decarbonisation of Sheffield Steel) project for E.ON](https://assets.publishing.service.gov.uk/media/6913275c1fcc92b3f349635b/HYDESS-project-hydrogen-for-the-decarbonisation-of-Sheffield-steel.pdf). HydDown was used for calculating vent rates. 
 - HydDown has been utilised for a number of commercial client projects including blowdown of hydrocarbon containing vessels, emptying of hydrogen storage cylinders (gas turbine fuel supply) incl. cold temperature analysis, heat-up/boil-off of CO2 containing vessels and piping, fire heat input to pressurised liquid gas storage.  

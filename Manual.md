@@ -1476,9 +1476,9 @@ A simulation with a steel vessel subject to fire heat load is compared against c
 
 The results are displayed in [@fig:Unisim_jet_pres] and [@fig:Unisim_jet_temp]. As seen the agreement between the two simulation codes is indeed adequate. The main difference is the intitial temperature of the steel vessel wall which is higher in Unisim. In Hyddown the vessel wall temperature is initialised at the fluid temperature, whereas in Unisim it is likely based on a steady-heat balance using the applied ambient temperature (set to equal the flame temperature for calculation purpose).
 
-![Calculation of vessel pressure as a function of time for a steel vessel jubject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/unisin_jet_fire_1.png){#fig:Unisim_jet_pres}
+![Calculation of vessel pressure as a function of time for a steel vessel jubject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/Unisin_jet_fire_1.png){#fig:Unisim_jet_pres}
 
-![Calculation of vessel temperature as a function of time for a steel vessel jubject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/unisin_jet_fire_2.png){#fig:Unisim_jet_temp}
+![Calculation of vessl temperature as a function of time for a steel vessel jubject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/Unisin_jet_fire_2.png){#fig:Unisim_jet_temp}
 
 # Example use cases 
 

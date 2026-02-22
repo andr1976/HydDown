@@ -440,9 +440,7 @@ class HydDown:
             Squared normalized enthalpy residual (dimensionless).
             Zero when correct temperature is found.
         """
-        # Extract scalar from array (scipy optimizers pass arrays, CoolProp needs scalars)
-        T_scalar = float(T.item()) if hasattr(T, 'item') else float(T)
-        self.vent_fluid.update(CP.PT_INPUTS, P, T_scalar)
+        self.vent_fluid.update(CP.PT_INPUTS, P, T)
         return ((H - self.vent_fluid.hmass()) / H) ** 2
 
     def PHres_relief(self, T, P, H):
@@ -468,9 +466,7 @@ class HydDown:
             Normalized enthalpy residual (dimensionless).
             Zero when correct temperature is found.
         """
-        # Extract scalar from array (scipy optimizers pass arrays, CoolProp needs scalars)
-        T_scalar = float(T.item()) if hasattr(T, 'item') else float(T)
-        self.fluid.update(CP.PT_INPUTS, P, T_scalar)
+        self.fluid.update(CP.PT_INPUTS, P, T)
         return (H - self.fluid.hmass()) / H
 
     def PHproblem(self, H, P, Tguess, relief=False):
@@ -846,7 +842,6 @@ class HydDown:
                                 hiw = hi
                     else:
                         hi = self.h_in
-                        hiw = self.h_in  # Use same coefficient for wetted surface
 
                     self.h_inside[i] = hi
                     self.h_inside_wetted[i] = hiw
@@ -881,12 +876,7 @@ class HydDown:
                         * hiw
                         * (self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1])
                     )
-
-                    # Avoid division by zero when fully vapor (wetted_area = 0)
-                    if wetted_area > 0:
-                        self.q_inner_wetted[i] = self.Q_inner_wetted[i] / wetted_area
-                    else:
-                        self.q_inner_wetted[i] = 0.0
+                    self.q_inner_wetted[i] = self.Q_inner_wetted[i] / wetted_area
 
                     if np.isnan(self.Q_inner_wetted[i]):
                         self.Q_inner_wetted[i] = 0
@@ -1602,14 +1592,12 @@ class HydDown:
 
         if input["valve"]["type"] == "relief":
             idx_max = self.mass_rate.argmax()
-            # Smooth peak value by averaging with neighbors (avoid array index out of bounds)
-            if 0 < idx_max < len(self.mass_rate) - 1:
-                self.mass_rate[idx_max] = (
-                    self.mass_rate[idx_max - 1] + self.mass_rate[idx_max + 1]
-                ) / 2
-                self.relief_area[idx_max] = (
-                    self.relief_area[idx_max - 1] + self.relief_area[idx_max + 1]
-                ) / 2
+            self.mass_rate[idx_max] = (
+                self.mass_rate[idx_max - 1] + self.mass_rate[idx_max + 1]
+            ) / 2
+            self.relief_area[idx_max] = (
+                self.relief_area[idx_max - 1] + self.relief_area[idx_max + 1]
+            ) / 2
             # print("Relief area:", 2*math.sqrt(max(relief_area[1:])/math.pi), max(self.mass_rate))
 
     def get_dataframe(self):

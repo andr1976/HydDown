@@ -1,5 +1,39 @@
-# Thermeshc code adapted verbatim from https://github.com/wjbg/thermesh
+# Thermesh code adapted verbatim from https://github.com/wjbg/thermesh
 #
+"""
+1-D transient heat conduction solver using finite element method.
+
+This module provides a finite element solver for transient heat conduction problems
+in 1-D domains. It is particularly useful for calculating temperature distributions
+through vessel walls with composite materials or low thermal conductivity.
+
+The code is adapted from the thermesh library (https://github.com/wjbg/thermesh)
+and implements:
+- Linear and quadratic finite elements
+- Theta-method time integration (explicit, implicit, Crank-Nicolson)
+- Temperature-dependent material properties
+- Dirichlet and Neumann boundary conditions
+- Multi-layer/composite material domains
+
+Key classes:
+- Domain: Represents the computational domain with mesh, material model, and BCs
+- Mesh: 1-D finite element mesh with elements and nodes
+- Element: Abstract base class for finite elements
+- LinearElement: 2-node linear finite element
+- QuadraticElement: 3-node quadratic finite element
+
+Typical usage:
+1. Create Mesh with nodes and elements
+2. Define material model (isothermal_model or piecewise_linear_model)
+3. Create Domain with mesh, material, initial temperature, and BCs
+4. Solve using solve_ht() with time step and end time
+
+The solver uses the theta-method for time integration:
+- theta = 0: Forward Euler (explicit, conditionally stable)
+- theta = 0.5: Crank-Nicolson (implicit, unconditionally stable, 2nd order)
+- theta = 1: Backward Euler (implicit, unconditionally stable, 1st order)
+"""
+
 from __future__ import annotations
 import numpy as np
 from typing import Callable, Union
