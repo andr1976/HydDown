@@ -70,6 +70,14 @@ from hyddown import transport as tp
 from hyddown import validator
 from hyddown import fire
 from hyddown import thermesh as tm
+from hyddown import safety_checks as sc
+from hyddown.exceptions import (
+    ThermodynamicConvergenceError,
+    NegativeMassError,
+    TriplePointViolation,
+    NumericalStabilityWarning,
+)
+import warnings
 import fluids
 
 
@@ -502,6 +510,12 @@ class HydDown:
                     method="Nelder-Mead",
                     options={"xatol": 0.1, "fatol": 0.001},
                 )
+                # Check convergence
+                sc.check_optimization_convergence(
+                    res,
+                    solver_name="PHproblem",
+                    state_vars={"P": P, "H": H, "T_guess": x0}
+                )
                 T1 = res.x[0]
             else:
                 res = root_scalar(
@@ -509,6 +523,12 @@ class HydDown:
                     args=(P, H),
                     x0=x0,
                     method="newton",
+                )
+                # Check convergence
+                sc.check_optimization_convergence(
+                    res,
+                    solver_name="PHproblem_relief",
+                    state_vars={"P": P, "H": H}
                 )
                 T1 = res.root
         # single component fluid case
@@ -559,6 +579,12 @@ class HydDown:
                 args=(U, rho),
                 method="Nelder-Mead",
                 options={"xatol": 0.1, "fatol": 0.001},
+            )
+            # Check convergence
+            sc.check_optimization_convergence(
+                res,
+                solver_name="UDproblem",
+                state_vars={"U": U, "rho": rho, "P_guess": Pguess, "T_guess": Tguess}
             )
             P1 = res.x[0]
             T1 = res.x[1]
@@ -729,6 +755,15 @@ class HydDown:
             )
 
             self.rho[i] = self.mass_fluid[i] / self.vol
+
+            # Periodically check CFL stability condition (every 100 steps)
+            if i % 100 == 0 and i > 0:
+                sc.check_cfl_stability(
+                    mass_flow_rate=self.mass_rate[i - 1],
+                    vessel_mass=self.mass_fluid[i],
+                    time_step=self.tstep,
+                    characteristic_fraction=0.1
+                )
 
             # ------------------------------------------------------------------------
             # THERMODYNAMIC STATE UPDATE
@@ -1117,14 +1152,24 @@ class HydDown:
                                     domain2_w, solver2_w
                                 )
                             else:
+                                # Boundary conditions for unwetted (gas) section
+                                # Use safe_divide to handle fully liquid case (unwetted_area = 0)
                                 bc = [
                                     {
-                                        "q": -self.Q_inner[i]
-                                        / (self.surf_area_inner - wetted_area)
+                                        "q": sc.safe_divide(
+                                            -self.Q_inner[i],
+                                            self.surf_area_inner - wetted_area,
+                                            name="q_inner_unwetted",
+                                            default=0.0
+                                        )
                                     },
                                     {
-                                        "q": self.Q_outer[i]
-                                        / (self.surf_area_outer - wetted_area)
+                                        "q": sc.safe_divide(
+                                            self.Q_outer[i],
+                                            self.surf_area_outer - wetted_area,
+                                            name="q_outer_unwetted",
+                                            default=0.0
+                                        )
                                     },
                                 ]
                                 domain2 = tm.Domain(mesh2, [liner, shell], bc)
@@ -1135,9 +1180,25 @@ class HydDown:
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
+                                # Boundary conditions for wetted (liquid) section
+                                # Use safe_divide to handle fully vapor case (wetted_area = 0)
                                 bc_w = [
-                                    {"q": -self.Q_inner_wetted[i] / (wetted_area)},
-                                    {"q": self.Q_outer_wetted[i] / wetted_area},
+                                    {
+                                        "q": sc.safe_divide(
+                                            -self.Q_inner_wetted[i],
+                                            wetted_area,
+                                            name="q_inner_wetted",
+                                            default=0.0
+                                        )
+                                    },
+                                    {
+                                        "q": sc.safe_divide(
+                                            self.Q_outer_wetted[i],
+                                            wetted_area,
+                                            name="q_outer_wetted",
+                                            default=0.0
+                                        )
+                                    },
                                 ]
                                 domain2_w = tm.Domain(mesh2_w, [liner_w, shell_w], bc_w)
                                 domain2_w.set_T(T_profile2_w[-1, :])
@@ -1603,7 +1664,7 @@ class HydDown:
         if input["valve"]["type"] == "relief":
             idx_max = self.mass_rate.argmax()
             # Smooth peak value by averaging with neighbors (avoid array index out of bounds)
-            if 0 < idx_max < len(self.mass_rate) - 1:
+            if sc.check_bounds_for_smoothing(idx_max, len(self.mass_rate), "relief valve smoothing"):
                 self.mass_rate[idx_max] = (
                     self.mass_rate[idx_max - 1] + self.mass_rate[idx_max + 1]
                 ) / 2

@@ -4,3 +4,5 @@
 
 from .hdclass import *
 from .transport import *
+from . import exceptions
+from . import safety_checks
