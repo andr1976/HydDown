@@ -1602,12 +1602,14 @@ class HydDown:
 
         if input["valve"]["type"] == "relief":
             idx_max = self.mass_rate.argmax()
-            self.mass_rate[idx_max] = (
-                self.mass_rate[idx_max - 1] + self.mass_rate[idx_max + 1]
-            ) / 2
-            self.relief_area[idx_max] = (
-                self.relief_area[idx_max - 1] + self.relief_area[idx_max + 1]
-            ) / 2
+            # Smooth peak value by averaging with neighbors (avoid array index out of bounds)
+            if 0 < idx_max < len(self.mass_rate) - 1:
+                self.mass_rate[idx_max] = (
+                    self.mass_rate[idx_max - 1] + self.mass_rate[idx_max + 1]
+                ) / 2
+                self.relief_area[idx_max] = (
+                    self.relief_area[idx_max - 1] + self.relief_area[idx_max + 1]
+                ) / 2
             # print("Relief area:", 2*math.sqrt(max(relief_area[1:])/math.pi), max(self.mass_rate))
 
     def get_dataframe(self):
