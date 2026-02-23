@@ -50,8 +50,16 @@ def validate_mandatory_ruleset(input):
             "type": "dict",
             "allow_unknown": False,
             "schema": {
-                "temperature": {"required": True, "type": "number"},
-                "pressure": {"required": True, "type": "number"},
+                "temperature": {
+                    "required": True,
+                    "type": "number",
+                    "min": 0.001,  # Kelvin scale, effectively > 0
+                },
+                "pressure": {
+                    "required": True,
+                    "type": "number",
+                    "min": 0.001,  # Pressure must be > 0 (Pa)
+                },
                 "fluid": {"required": True, "type": "string"},
             },
         },
@@ -71,8 +79,17 @@ def validate_mandatory_ruleset(input):
                         "specified_U",
                     ],
                 },
-                "time_step": {"required": True, "type": "number", "min": 0.000001},
-                "end_time": {"required": True, "type": "number", "min": 0},
+                "time_step": {
+                    "required": True,
+                    "type": "number",
+                    "min": 0.000001,
+                    "max": 3600,  # Sanity check: max 1 hour per step
+                },
+                "end_time": {
+                    "required": True,
+                    "type": "number",
+                    "min": 0.001,  # Must have positive duration
+                },
             },
         },
         "vessel": {
@@ -80,16 +97,39 @@ def validate_mandatory_ruleset(input):
             "type": "dict",
             "allow_unknown": False,
             "schema": {
-                "length": {"required": True, "type": "number"},
-                "diameter": {"required": True, "type": "number"},
-                "thickness": {"required": False, "type": "number", "min": 0.0},
-                "heat_capacity": {"required": False, "type": "number", "min": 1},
+                "length": {
+                    "required": True,
+                    "type": "number",
+                    "min": 0.001,  # Length must be > 0 (m)
+                },
+                "diameter": {
+                    "required": True,
+                    "type": "number",
+                    "min": 0.001,  # Diameter must be > 0 (m)
+                },
+                "thickness": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.0001,  # Wall thickness must be > 0 when specified
+                },
+                "heat_capacity": {
+                    "required": False,
+                    "type": "number",
+                    "min": 1,
+                    "max": 10000,  # Sanity check [J/(kg·K)]
+                },
                 "thermal_conductivity": {
                     "required": False,
                     "type": "number",
                     "min": 0.0001,
+                    "max": 500,  # Max for metals ~400 W/(m·K)
                 },
-                "density": {"required": False, "type": "number", "min": 1},
+                "density": {
+                    "required": False,
+                    "type": "number",
+                    "min": 1,
+                    "max": 25000,  # Max: osmium ~22,000 kg/m³
+                },
                 "liner_thickness": {"required": False, "type": "number", "min": 0.0},
                 "liner_heat_capacity": {"required": False, "type": "number", "min": 1},
                 "liner_thermal_conductivity": {
@@ -143,8 +183,12 @@ def validate_mandatory_ruleset(input):
                     "type": "string",
                     "allowed": ["discharge", "filling"],
                 },
-                "diameter": {"type": "number", "min": 0},
-                "discharge_coef": {"type": "number", "min": 0},
+                "diameter": {"type": "number", "min": 0},  # Allow 0 for no-flow
+                "discharge_coef": {
+                    "type": "number",
+                    "min": 0.001,  # > 0
+                    "max": 1.0,  # Physical limit for ideal orifice
+                },
                 "set_pressure": {"type": "number", "min": 0},
                 "end_pressure": {"type": "number", "min": 0},
                 "blowdown": {"type": "number", "min": 0, "max": 1},
@@ -180,9 +224,24 @@ def validate_mandatory_ruleset(input):
                     "allowed": ["specified_Q", "specified_h", "specified_U", "s-b"],
                 },
                 "Q_fix": {"required": False, "type": "number"},
-                "U_fix": {"required": False, "type": "number", "min": 0},
-                "temp_ambient": {"required": False, "type": "number", "min": 0},
-                "h_outer": {"required": False, "type": "number", "min": 0},
+                "U_fix": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.001,  # > 0
+                    "max": 1000,  # Sanity check [W/(m²·K)]
+                },
+                "temp_ambient": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.001,  # Kelvin scale > 0
+                    "max": 2000,  # Max for fire scenarios
+                },
+                "h_outer": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0,
+                    "max": 10000,  # Sanity check [W/(m²·K)]
+                },
                 "h_inner": {"required": False, "type": ["number", "string"]},
                 "fire": {
                     "required": False,
@@ -474,8 +533,18 @@ def heat_transfer_validation(input):
                     ],
                     "schema": {
                         "type": {"type": "string", "allowed": ["specified_h"]},
-                        "temp_ambient": {"required": True, "type": "number", "min": 0},
-                        "h_outer": {"required": True, "type": "number", "min": 0},
+                        "temp_ambient": {
+                            "required": True,
+                            "type": "number",
+                            "min": 0.001,  # Kelvin > 0
+                            "max": 2000,  # Max for fire scenarios
+                        },
+                        "h_outer": {
+                            "required": True,
+                            "type": "number",
+                            "min": 0,
+                            "max": 10000,  # Sanity check [W/(m²·K)]
+                        },
                         "h_inner": {"required": True, "type": ["number", "string"]},
                         "D_throat": {"required": False, "type": "number", "min": 0},
                     },
@@ -577,8 +646,18 @@ def heat_transfer_validation(input):
                     "allowed": ["U_fix", "type", "temp_ambient"],
                     "schema": {
                         "type": {"type": "string", "allowed": ["specified_U"]},
-                        "U_fix": {"required": False, "type": "number", "min": 0.0},
-                        "temp_ambient": {"required": True, "type": "number", "min": 0},
+                        "U_fix": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.001,  # > 0
+                            "max": 1000,  # Sanity check [W/(m²·K)]
+                        },
+                        "temp_ambient": {
+                            "required": True,
+                            "type": "number",
+                            "min": 0.001,  # Kelvin > 0
+                            "max": 2000,  # Max for fire scenarios
+                        },
                     },
                 },
             }
@@ -687,7 +766,12 @@ def valve_validation(input):
                     "allowed": ["discharge", "filling"],
                 },
                 "diameter": {"required": False, "type": "number", "min": 0},
-                "discharge_coef": {"required": False, "type": "number", "min": 0},
+                "discharge_coef": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.001,
+                    "max": 1.0,  # Physical limit
+                },
                 "set_pressure": {"required": True, "type": "number", "min": 0},
                 "end_pressure": {"type": "number", "min": 0},
                 "blowdown": {"required": False, "type": "number", "min": 0, "max": 1},
@@ -722,7 +806,12 @@ def valve_validation(input):
                     "allowed": ["discharge", "filling"],
                 },
                 "diameter": {"required": True, "type": "number", "min": 0},
-                "discharge_coef": {"required": True, "type": "number", "min": 0},
+                "discharge_coef": {
+                    "required": True,
+                    "type": "number",
+                    "min": 0.001,
+                    "max": 1.0,  # Physical limit
+                },
                 "set_pressure": {"required": True, "type": "number", "min": 0},
                 "end_pressure": {"type": "number", "min": 0},
                 "blowdown": {"required": True, "type": "number", "min": 0, "max": 1},
@@ -757,7 +846,12 @@ def valve_validation(input):
                     "allowed": ["discharge", "filling"],
                 },
                 "diameter": {"required": True, "type": "number", "min": 0},
-                "discharge_coef": {"required": True, "type": "number", "min": 0},
+                "discharge_coef": {
+                    "required": True,
+                    "type": "number",
+                    "min": 0.001,
+                    "max": 1.0,  # Physical limit
+                },
                 "set_pressure": {"type": "number", "min": 0},
                 "end_pressure": {"type": "number", "min": 0},
                 "blowdown": {"type": "number", "min": 0, "max": 1},
