@@ -77,6 +77,7 @@ from hyddown.exceptions import (
     TriplePointViolation,
     NumericalStabilityWarning,
 )
+from hyddown.thermo_solver import ThermodynamicSolver
 import warnings
 import fluids
 
@@ -305,22 +306,19 @@ class HydDown:
         self.surf_area_outer = self.outer_vol.A
         self.surf_area_inner = self.inner_vol.A
 
-        self.fluid = CP.AbstractState("HEOS", self.comp)
-        if "&" in self.comp:
-            self.fluid.specify_phase(CP.iphase_gas)
-        self.fluid.set_mole_fractions(self.molefracs)
+        # Initialize thermodynamic solver
+        self.solver = ThermodynamicSolver(
+            species=self.comp,
+            mole_fractions=self.molefracs,
+            vessel_geometry=self.inner_vol,
+            species_SRK=self.compSRK,
+        )
 
-        self.transport_fluid = CP.AbstractState("HEOS", self.compSRK)
-        self.transport_fluid.specify_phase(CP.iphase_gas)
-        self.transport_fluid.set_mole_fractions(self.molefracs)
-
-        self.transport_fluid_wet = CP.AbstractState("HEOS", self.compSRK)
-        self.transport_fluid_wet.specify_phase(CP.iphase_liquid)
-        self.transport_fluid_wet.set_mole_fractions(self.molefracs)
-
-        self.vent_fluid = CP.AbstractState("HEOS", self.comp)
-        self.vent_fluid.specify_phase(CP.iphase_gas)
-        self.vent_fluid.set_mole_fractions(self.molefracs)
+        # Create convenience references to solver's fluid states
+        self.fluid = self.solver.fluid
+        self.transport_fluid = self.solver.transport_fluid
+        self.transport_fluid_wet = self.solver.transport_fluid_wet
+        self.vent_fluid = self.solver.vent_fluid
 
         if "liquid_level" in self.input["vessel"]:
             ll = self.input["vessel"]["liquid_level"]
@@ -348,8 +346,8 @@ class HydDown:
             self.Q0 = self.fluid.Q()
             self.vent_fluid.update(CP.PT_INPUTS, self.p0, self.T0)
 
-        self.res_fluid = CP.AbstractState("HEOS", self.comp)
-        self.res_fluid.set_mole_fractions(self.molefracs)
+        # Create convenience reference to solver's reservoir fluid
+        self.res_fluid = self.solver.res_fluid
         if self.input["valve"]["flow"] == "filling":
             self.res_fluid.update(CP.PT_INPUTS, self.p_back, self.T0)
 
@@ -396,204 +394,75 @@ class HydDown:
         self.vapour_volume_fraction = np.zeros(data_len)
         self.liquid_level = np.zeros(data_len)
 
+    # Convenience methods for backward compatibility
+    # These delegate to the ThermodynamicSolver
     def calc_liquid_level(self):
         """
         Calculate liquid level height based on current two-phase fluid state.
 
-        For two-phase systems (0 ≤ quality ≤ 1), calculates the height of liquid
-        phase in the vessel based on vapor quality, phase densities, and vessel geometry.
-        Uses vessel geometry from fluids.TANK to convert liquid volume to height.
-
-        Parameters
-        ----------
-        fluid : CoolProp AbstractState
-            Current fluid state
+        This is a convenience method that delegates to the ThermodynamicSolver.
+        Maintained for backward compatibility with existing code.
 
         Returns
         -------
         float
-            Liquid level height from vessel bottom [m].
-            Returns 0.0 for single-phase gas (quality > 1 or subcooled liquid).
+            Liquid level height from vessel bottom [m]
         """
-        if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
-            rho_liq = self.fluid.saturated_liquid_keyed_output(CP.iDmass)
-            rho_vap = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
-            m_liq = self.fluid.rhomass() * self.inner_vol.V_total * (1 - self.fluid.Q())
-            V_liq = m_liq / rho_liq
-            h_liq = self.inner_vol.h_from_V(V_liq)
-            return h_liq
-        else:
-            return 0.0
-
-    def PHres(self, T, P, H):
-        """
-        Residual enthalpy function to be minimized during PH-problem.
-
-        Used by numerical optimizer (scipy.optimize.minimize) to find temperature
-        that satisfies constant pressure-enthalpy constraints for multicomponent
-        fluids. The optimizer adjusts T until residual approaches zero.
-
-        Parameters
-        ----------
-        H : float
-            Enthalpy at initial/final conditions [J/kg]
-        P : float
-            Pressure at final conditions [Pa]
-        T : float
-            Updated estimate for the final temperature at (P,H) [K]
-
-        Returns
-        -------
-        float
-            Squared normalized enthalpy residual (dimensionless).
-            Zero when correct temperature is found.
-        """
-        # Extract scalar from array (scipy optimizers pass arrays, CoolProp needs scalars)
-        T_scalar = float(T.item()) if hasattr(T, 'item') else float(T)
-        self.vent_fluid.update(CP.PT_INPUTS, P, T_scalar)
-        return ((H - self.vent_fluid.hmass()) / H) ** 2
-
-    def PHres_relief(self, T, P, H):
-        """
-        Residual enthalpy function for PH-problem during relief valve calculations.
-
-        Used by numerical optimizer (scipy.optimize.root_scalar) to find temperature
-        for relief valve discharge calculations. Similar to PHres() but uses the
-        main fluid state instead of vent_fluid state.
-
-        Parameters
-        ----------
-        H : float
-            Enthalpy at initial/final conditions [J/kg]
-        P : float
-            Pressure at final conditions [Pa]
-        T : float
-            Updated estimate for the final temperature at (P,H) [K]
-
-        Returns
-        -------
-        float
-            Normalized enthalpy residual (dimensionless).
-            Zero when correct temperature is found.
-        """
-        # Extract scalar from array (scipy optimizers pass arrays, CoolProp needs scalars)
-        T_scalar = float(T.item()) if hasattr(T, 'item') else float(T)
-        self.fluid.update(CP.PT_INPUTS, P, T_scalar)
-        return (H - self.fluid.hmass()) / H
+        return self.solver.calc_liquid_level()
 
     def PHproblem(self, H, P, Tguess, relief=False):
         """
-        Defining a constant pressure, constant enthalpy problem i.e. typical adiabatic
-        problem like e.g. valve flow for the vented flow (during discharge).
-        For multicomponent mixture the final temperature is changed/optimised until the residual
-        enthalpy is near zero in an optimisation step. For single component fluid the coolprop
-        built in methods are used for speed.
+        Solve constant pressure, constant enthalpy problem.
+
+        This is a convenience method that delegates to the ThermodynamicSolver.
+        Maintained for backward compatibility with existing code.
 
         Parameters
         ----------
         H : float
-            Enthalpy at initial/final conditions
+            Enthalpy [J/kg]
         P : float
-            Pressure at final conditions.
+            Pressure [Pa]
         Tguess : float
-            Initial guess for the final temperature at P,H
-        """
+            Initial temperature guess [K]
+        relief : bool, optional
+            Use relief valve solver if True
 
-        # Multicomponent case
-        if "&" in self.species:
-            x0 = Tguess
-            if relief == False:
-                res = minimize(
-                    self.PHres,
-                    x0,
-                    args=(P, H),
-                    method="Nelder-Mead",
-                    options={"xatol": 0.1, "fatol": 0.001},
-                )
-                # Check convergence
-                sc.check_optimization_convergence(
-                    res,
-                    solver_name="PHproblem",
-                    state_vars={"P": P, "H": H, "T_guess": x0}
-                )
-                T1 = res.x[0]
-            else:
-                res = root_scalar(
-                    self.PHres_relief,
-                    args=(P, H),
-                    x0=x0,
-                    method="newton",
-                )
-                # Check convergence
-                sc.check_optimization_convergence(
-                    res,
-                    solver_name="PHproblem_relief",
-                    state_vars={"P": P, "H": H}
-                )
-                T1 = res.root
-        # single component fluid case
-        else:
-            T1 = PropsSI("T", "P", P, "H", H, self.species)
-        return T1
-
-    def UDres(self, x, U, rho):
+        Returns
+        -------
+        float
+            Temperature at (P, H) [K]
         """
-        Residual U-rho to be minimised during a U-rho/UV-problem
-
-        Parameters
-        ----------
-        U : float
-            Internal energy at final conditions
-        rho : float
-            Density at final conditions
-        """
-        self.fluid.update(CP.PT_INPUTS, x[0], x[1])
-        return ((U - self.fluid.umass()) / U) ** 2 + (
-            (rho - self.fluid.rhomass()) / rho
-        ) ** 2
+        return self.solver.PHproblem(H, P, Tguess, relief)
 
     def UDproblem(self, U, rho, Pguess, Tguess):
         """
-        Defining a constant UV problem i.e. constant internal energy and density/volume
-        problem relevant for the 1. law of thermodynamics.
-        For multicomponent mixture the final temperature/pressure is changed/optimised until the
-        residual U/rho is near zero. For single component fluid the coolprop
-        built in methods are used for speed.
+        Solve constant internal energy, constant density problem.
+
+        This is a convenience method that delegates to the ThermodynamicSolver.
+        Maintained for backward compatibility with existing code.
 
         Parameters
         ----------
         U : float
-            Internal energy at final conditions
+            Internal energy [J/kg]
         rho : float
-            Density at final conditions.
+            Density [kg/m³]
         Pguess : float
-            Initial guess for the final pressure at U, rho
+            Initial pressure guess [Pa]
         Tguess : float
-            Initial guess for the final temperature at U, rho
+            Initial temperature guess [K]
+
+        Returns
+        -------
+        P1 : float
+            Pressure [Pa]
+        T1 : float
+            Temperature [K]
+        Ures : float
+            Internal energy residual [J/kg]
         """
-        if "&" in self.species:
-            x0 = [Pguess, Tguess]
-            res = minimize(
-                self.UDres,
-                x0,
-                args=(U, rho),
-                method="Nelder-Mead",
-                options={"xatol": 0.1, "fatol": 0.001},
-            )
-            # Check convergence
-            sc.check_optimization_convergence(
-                res,
-                solver_name="UDproblem",
-                state_vars={"U": U, "rho": rho, "P_guess": Pguess, "T_guess": Tguess}
-            )
-            P1 = res.x[0]
-            T1 = res.x[1]
-            Ures = U - self.fluid.umass()
-        else:
-            P1 = PropsSI("P", "D", rho, "U", U, self.species)
-            T1 = PropsSI("T", "D", rho, "U", U, self.species)
-            Ures = 0
-        return P1, T1, Ures
+        return self.solver.UDproblem(U, rho, Pguess, Tguess)
 
     def run(self, disable_pbar=True):
         """
@@ -1452,7 +1321,7 @@ class HydDown:
                                 1,
                             )
                         else:
-                            T1 = self.PHproblem(
+                            T1 = self.solver.PHproblem(
                                 h_in
                                 + self.tstep * self.Q_inner[i] / self.mass_fluid[i],
                                 self.Pset,
@@ -1498,7 +1367,7 @@ class HydDown:
 
                         else:
                             self.mass_rate[i] = 0
-                            P1, T1, self.U_res[i] = self.UDproblem(
+                            P1, T1, self.U_res[i] = self.solver.UDproblem(
                                 U_end / self.mass_fluid[i],
                                 self.rho[i],
                                 self.P[i - 1],
@@ -1510,7 +1379,7 @@ class HydDown:
                             self.fluid.update(CP.PT_INPUTS, self.P[i], self.T_fluid[i])
 
                 else:
-                    P1, T1, self.U_res[i] = self.UDproblem(
+                    P1, T1, self.U_res[i] = self.solver.UDproblem(
                         U_end / self.mass_fluid[i],
                         self.rho[i],
                         self.P[i - 1],
@@ -1556,12 +1425,12 @@ class HydDown:
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
 
-            self.liquid_level[i] = self.calc_liquid_level()
+            self.liquid_level[i] = self.solver.calc_liquid_level()
 
             # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":
                 if "&" in self.species:
-                    self.T_vent[i] = self.PHproblem(
+                    self.T_vent[i] = self.solver.PHproblem(
                         self.H_mass[i], self.p_back, self.vent_fluid.T()
                     )
                 else:

@@ -84,7 +84,6 @@ BUG_FIX_VALIDATION_SUMMARY.md
 src/hyddown/__pycache__/hdclass.cpython-312.pyc
 VALIDATION_REPORT.txt
 src/hyddown/__pycache__/hdclass.cpython-312.pyc
-src/hyddown/exceptions.py
 PHASE1_PROGRESS.md
 src/hyddown/__pycache__/__init__.cpython-312.pyc
 src/hyddown/__pycache__/__init__.cpython-312.pyc
@@ -93,3 +92,7 @@ PHASE1_COMPLETE.md
 PHASE1_CERBERUS_ENHANCEMENTS.md
 VALIDATOR_ANALYSIS.md
 PHASE1.5_COMPLETE.md
+PHASE2_EXTRACTION_PLAN.md
+.gitignore
+PHASE2.1_COMPLETE.md
+VALIDATOR_TEST_FIX.md

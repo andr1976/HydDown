@@ -26,6 +26,7 @@ Main functions:
 - valve_validation(): Validates valve parameters based on valve type
 """
 
+import copy
 from cerberus import Validator
 from cerberus.errors import ValidationError
 from hyddown.exceptions import (
@@ -206,8 +207,8 @@ def create_vessel_schema(required_fields=None):
         },
     }
 
-    # Add material properties
-    schema.update(MATERIAL_PROPERTIES.copy())
+    # Add material properties (deep copy to avoid shared state)
+    schema.update(copy.deepcopy(MATERIAL_PROPERTIES))
     schema.update(create_liner_properties())
 
     # Mark specified fields as required
@@ -690,7 +691,8 @@ def heat_transfer_validation(input):
         ht_type = input["heat_transfer"]["type"]
 
         # Build schema using factory functions instead of massive duplication
-        base_schema = create_top_level_schema()
+        # Use deepcopy to ensure no schema state is shared between validations
+        base_schema = copy.deepcopy(create_top_level_schema())
         base_schema["vessel"] = {"required": True}
         base_schema["valve"] = {"required": True}
         base_schema["heat_transfer"] = {"required": True}
@@ -706,7 +708,7 @@ def heat_transfer_validation(input):
                 "orientation",
             ]
 
-            schema_heattransfer = base_schema.copy()
+            schema_heattransfer = copy.deepcopy(base_schema)
             schema_heattransfer["vessel"] = {
                 "required": True,
                 "type": "dict",
@@ -741,7 +743,7 @@ def heat_transfer_validation(input):
             # Vessel requirements for specified_Q (minimal)
             required_vessel_fields = ["length", "diameter"]
 
-            schema_heattransfer = base_schema.copy()
+            schema_heattransfer = copy.deepcopy(base_schema)
             schema_heattransfer["vessel"] = {
                 "required": True,
                 "type": "dict",
@@ -763,7 +765,7 @@ def heat_transfer_validation(input):
             # Vessel requirements for specified_U (minimal)
             required_vessel_fields = ["length", "diameter"]
 
-            schema_heattransfer = base_schema.copy()
+            schema_heattransfer = copy.deepcopy(base_schema)
             schema_heattransfer["vessel"] = {
                 "required": True,
                 "type": "dict",
@@ -803,7 +805,7 @@ def heat_transfer_validation(input):
                 "orientation",
             ]
 
-            schema_heattransfer = base_schema.copy()
+            schema_heattransfer = copy.deepcopy(base_schema)
             schema_heattransfer["vessel"] = {
                 "required": True,
                 "type": "dict",
