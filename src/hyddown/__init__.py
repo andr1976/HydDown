@@ -9,3 +9,4 @@ from . import safety_checks
 from .thermo_solver import ThermodynamicSolver
 from .mass_flow import MassFlowCalculator
 from .heat_transfer import WallHeatTransfer, ConvectiveHeatTransfer, FireHeatTransfer
+from .results_manager import ResultsManager

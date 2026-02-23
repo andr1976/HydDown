@@ -454,10 +454,16 @@ class MassFlowCalculator:
         # Simplified equation for gas flow
         Y = 1 - x / (3 * self.xT)  # Expansion factor
 
-        # Convert Cv to metric units and calculate mass flow
-        # Cv in US units, need to convert
-        # Using simplified correlation
-        mdot = 94.8 * Cv * self.FP * Y * math.sqrt(P1 * dP / (T1 * Z * MW))
+        # Convert units for equation
+        # MW from kg/mol to g/mol
+        # P from Pa to bar
+        MW_gmol = MW * 1000
+        P1_bar = P1 / 1e5
+        P2_bar = P2 / 1e5
+        dP_bar = P1_bar - P2_bar
+
+        # Calculate mass flow using ISA correlation
+        mdot = 94.8 * Cv * self.FP * Y * math.sqrt(P1_bar * dP_bar / (T1 * Z * MW_gmol))
 
         return mdot
 

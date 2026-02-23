@@ -459,7 +459,7 @@ class WallHeatTransfer:
                     T_inner_wall[i - 1],
                     T_fluid[i - 1],
                     transport_fluid,
-                    mass_rate[i - 1],
+                    mass_rate,
                     self.diameter,
                 )
 
@@ -985,8 +985,11 @@ class ConvectiveHeatTransfer(WallHeatTransfer):
 
     def __init__(self, h_out, Tamb, **kwargs):
         """Initialize convective heat transfer model."""
+        # Pass Tamb to parent for validation if detailed wall model is used
+        kwargs['Tamb'] = Tamb
         super().__init__(**kwargs)
         self.h_out = h_out
+        # Tamb already set by parent, but ensure it's set here too for clarity
         self.Tamb = Tamb
 
     def _calculate_external_heat_flux(
