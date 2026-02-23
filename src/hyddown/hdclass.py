@@ -78,6 +78,8 @@ from hyddown.exceptions import (
     NumericalStabilityWarning,
 )
 from hyddown.thermo_solver import ThermodynamicSolver
+from hyddown.mass_flow import MassFlowCalculator
+from hyddown.heat_transfer import ConvectiveHeatTransfer, FireHeatTransfer
 import warnings
 import fluids
 
@@ -320,6 +322,12 @@ class HydDown:
         self.transport_fluid_wet = self.solver.transport_fluid_wet
         self.vent_fluid = self.solver.vent_fluid
 
+        # Initialize mass flow calculator
+        self._initialize_mass_flow_calculator()
+
+        # Initialize heat transfer model
+        self._initialize_heat_transfer_model()
+
         if "liquid_level" in self.input["vessel"]:
             ll = self.input["vessel"]["liquid_level"]
             V_liquid = self.inner_vol.V_from_h(ll)
@@ -393,6 +401,90 @@ class HydDown:
         self.vapour_mass_fraction = np.zeros(data_len)
         self.vapour_volume_fraction = np.zeros(data_len)
         self.liquid_level = np.zeros(data_len)
+
+    def _initialize_mass_flow_calculator(self):
+        """Initialize MassFlowCalculator based on valve configuration."""
+        valve = self.input["valve"]
+        valve_type = valve["type"]
+        flow_direction = valve["flow"]
+
+        # Prepare parameters for MassFlowCalculator
+        params = {
+            "valve_type": valve_type,
+            "flow_direction": flow_direction,
+            "back_pressure": valve.get("back_pressure", 101325),
+        }
+
+        # Add valve-specific parameters
+        if valve_type in ["orifice", "psv"]:
+            params["diameter"] = valve["diameter"]
+            params["discharge_coef"] = valve["discharge_coef"]
+
+        if valve_type == "psv":
+            params["set_pressure"] = valve["set_pressure"]
+            params["blowdown"] = valve["blowdown"]
+
+        if valve_type == "relief":
+            params["set_pressure"] = valve["set_pressure"]
+
+        if valve_type == "controlvalve":
+            params["Cv"] = valve["Cv"]
+            params["xT"] = valve.get("xT", 0.75)
+            params["FP"] = valve.get("Fp", 1.0)
+            params["time_constant"] = valve.get("time_constant", 0)
+            params["characteristic"] = valve.get("characteristic", "linear")
+
+        if valve_type == "mdot":
+            params["mdot"] = valve.get("mdot")
+            params["time"] = valve.get("time")
+
+        # Create MassFlowCalculator instance
+        self.mass_flow_calc = MassFlowCalculator(**params)
+
+    def _initialize_heat_transfer_model(self):
+        """Initialize heat transfer model based on configuration."""
+        # Only create model for energybalance calculation type
+        if self.method != "energybalance":
+            self.heat_transfer_model = None
+            return
+
+        # Only create model for specified_h, detailed, or s-b methods
+        # specified_U and specified_Q are too simple to need extraction
+        if self.heat_method not in ["specified_h", "detailed", "s-b"]:
+            self.heat_transfer_model = None
+            return
+
+        # Common parameters for all heat transfer models
+        common_params = {
+            "vessel_geometry": self.inner_vol,
+            "vessel_orientation": self.vessel_orientation,
+            "diameter": self.diameter,
+            "length": self.length,
+            "vessel_cp": self.vessel_cp,
+            "vessel_density": self.vessel_density,
+            "vol_solid": self.vol_solid,
+            "surf_area_inner": self.surf_area_inner,
+            "surf_area_outer": self.surf_area_outer,
+            "tstep": self.tstep,
+            "species": self.comp,
+            "flow_direction": self.input["valve"]["flow"],
+            "h_in": self.h_in,
+        }
+
+        # Create appropriate heat transfer model
+        if self.heat_method in ["specified_h", "detailed"]:
+            # Convective heat transfer (ambient conditions)
+            self.heat_transfer_model = ConvectiveHeatTransfer(
+                h_out=self.h_out,
+                Tamb=self.Tamb,
+                **common_params
+            )
+        elif self.heat_method == "s-b":
+            # Fire heat transfer (Stefan-Boltzmann)
+            self.heat_transfer_model = FireHeatTransfer(
+                fire_type=self.fire_type,
+                **common_params
+            )
 
     # Convenience methods for backward compatibility
     # These delegate to the ThermodynamicSolver

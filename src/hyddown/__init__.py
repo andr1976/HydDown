@@ -7,3 +7,5 @@ from .transport import *
 from . import exceptions
 from . import safety_checks
 from .thermo_solver import ThermodynamicSolver
+from .mass_flow import MassFlowCalculator
+from .heat_transfer import WallHeatTransfer, ConvectiveHeatTransfer, FireHeatTransfer
