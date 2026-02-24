@@ -80,6 +80,7 @@ from hyddown.exceptions import (
 from hyddown.thermo_solver import ThermodynamicSolver
 from hyddown.mass_flow import MassFlowCalculator
 from hyddown.heat_transfer import ConvectiveHeatTransfer, FireHeatTransfer
+from hyddown.results_manager import ResultsManager
 import warnings
 import fluids
 
@@ -359,48 +360,51 @@ class HydDown:
         if self.input["valve"]["flow"] == "filling":
             self.res_fluid.update(CP.PT_INPUTS, self.p_back, self.T0)
 
-        # data storage
-        data_len = int(self.time_tot / self.tstep)
-        self.rho = np.zeros(data_len)
-        self.T_fluid = np.zeros(data_len)
-        self.T_vent = np.zeros(data_len)
-        self.T_vessel = np.zeros(data_len)
-        self.T_vessel_wetted = np.zeros(data_len)
-        self.T_inner_wall = np.zeros(data_len)
-        self.T_inner_wall_wetted = np.zeros(data_len)
-        self.T_outer_wall = np.zeros(data_len)
-        self.T_outer_wall_wetted = np.zeros(data_len)
-        self.T_bonded_wall = np.zeros(data_len)
-        self.T_bonded_wall_wetted = np.zeros(data_len)
-        self.Q_outer = np.zeros(data_len)
-        self.Q_inner = np.zeros(data_len)
-        self.Q_outer_wetted = np.zeros(data_len)
-        self.Q_inner_wetted = np.zeros(data_len)
-        self.q_outer = np.zeros(data_len)
-        self.q_inner = np.zeros(data_len)
-        self.q_outer_wetted = np.zeros(data_len)
-        self.q_inner_wetted = np.zeros(data_len)
-        self.h_inside = np.zeros(data_len)
-        self.h_inside_wetted = np.zeros(data_len)
-        self.T_vent = np.zeros(data_len)
-        self.H_mass = np.zeros(data_len)
-        self.S_mass = np.zeros(data_len)
-        self.U_mass = np.zeros(data_len)
-        self.U_tot = np.zeros(data_len)
-        self.U_res = np.zeros(data_len)
-        self.P = np.zeros(data_len)
-        self.mass_fluid = np.zeros(data_len)
-        self.mass_rate = np.zeros(data_len)
-        self.time_array = np.zeros(data_len)
-        self.relief_area = np.zeros(data_len)
-        self.temp_profile = []
+        # Initialize results manager for data storage
+        self.results = ResultsManager(time_total=self.time_tot, time_step=self.tstep)
+
+        # Create convenience references to result arrays (for backward compatibility)
+        self.rho = self.results.rho
+        self.T_fluid = self.results.T_fluid
+        self.T_vent = self.results.T_vent
+        self.T_vessel = self.results.T_vessel
+        self.T_vessel_wetted = self.results.T_vessel_wetted
+        self.T_inner_wall = self.results.T_inner_wall
+        self.T_inner_wall_wetted = self.results.T_inner_wall_wetted
+        self.T_outer_wall = self.results.T_outer_wall
+        self.T_outer_wall_wetted = self.results.T_outer_wall_wetted
+        self.T_bonded_wall = self.results.T_bonded_wall
+        self.T_bonded_wall_wetted = self.results.T_bonded_wall_wetted
+        self.Q_outer = self.results.Q_outer
+        self.Q_inner = self.results.Q_inner
+        self.Q_outer_wetted = self.results.Q_outer_wetted
+        self.Q_inner_wetted = self.results.Q_inner_wetted
+        self.q_outer = self.results.q_outer
+        self.q_inner = self.results.q_inner
+        self.q_outer_wetted = self.results.q_outer_wetted
+        self.q_inner_wetted = self.results.q_inner_wetted
+        self.h_inside = self.results.h_inside
+        self.h_inside_wetted = self.results.h_inside_wetted
+        self.H_mass = self.results.H_mass
+        self.S_mass = self.results.S_mass
+        self.U_mass = self.results.U_mass
+        self.U_tot = self.results.U_tot
+        self.U_res = self.results.U_res
+        self.P = self.results.P
+        self.mass_fluid = self.results.mass_fluid
+        self.mass_rate = self.results.mass_rate
+        self.time_array = self.results.time_array
+        self.relief_area = self.results.relief_area
+        self.temp_profile = self.results.temp_profile
+        self.vapour_mole_fraction = self.results.vapour_mole_fraction
+        self.vapour_mass_fraction = self.results.vapour_mass_fraction
+        self.vapour_volume_fraction = self.results.vapour_volume_fraction
+        self.liquid_level = self.results.liquid_level
+
+        # Initialize fluid properties
         self.rho0 = self.fluid.rhomass()
         self.m0 = self.rho0 * self.vol
         self.MW = self.fluid.molar_mass()
-        self.vapour_mole_fraction = np.zeros(data_len)
-        self.vapour_mass_fraction = np.zeros(data_len)
-        self.vapour_volume_fraction = np.zeros(data_len)
-        self.liquid_level = np.zeros(data_len)
 
     def _initialize_mass_flow_calculator(self):
         """Initialize MassFlowCalculator based on valve configuration."""
@@ -1178,40 +1182,11 @@ class HydDown:
         Pressure values are converted from Pa to bar.
         """
         if self.isrun == True:
-            df = pd.DataFrame(self.time_array, columns=["Time (s)"])
-
-            df.insert(1, "Pressure (bar)", self.P / 1e5, True)
-            df.insert(2, "Fluid temperature (oC)", self.T_fluid - 273.15, True)
-            df.insert(3, "Wall temperature  (oC)", self.T_vessel - 273.15, True)
-            df.insert(4, "Vent temperature  (oC)", self.T_vent - 273.15, True)
-            df.insert(5, "Fluid enthalpy (J/kg)", self.H_mass, True)
-            df.insert(6, "Fluid entropy (J/kg K)", self.S_mass, True)
-            df.insert(7, "Fluid internal energy (J/kg)", self.U_mass, True)
-            df.insert(8, "Discharge mass rate (kg/s)", self.mass_rate, True)
-            df.insert(9, "Fluid mass (kg)", self.mass_fluid, True)
-            df.insert(10, "Fluid density (kg/m3)", self.rho, True)
-            df.insert(
-                11, "Inner heat transfer coefficient (W/m2 K)", self.h_inside, True
+            return self.results.to_dataframe(
+                surf_area_inner=self.surf_area_inner,
+                surf_area_outer=self.surf_area_outer
             )
-            df.insert(
-                12,
-                "Internal heat flux (W/m2)",
-                self.Q_inner / self.surf_area_inner,
-                True,
-            )
-            df.insert(
-                13,
-                "External heat flux (W/m2)",
-                self.Q_outer / self.surf_area_outer,
-                True,
-            )
-            df.insert(
-                14, "Inner wall temperature  (oC)", self.T_inner_wall - 273.15, True
-            )
-            df.insert(
-                13, "Outer wall temperature  (oC)", self.T_outer_wall - 273.15, True
-            )
-        return df
+        return None
 
     def plot(self, filename=None, verbose=True):
         """
