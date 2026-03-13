@@ -682,6 +682,38 @@ $$ \dot{m}_{flow}= C_d  \cdot A \cdot\sqrt{\left ( \frac{2 k}{k-1}\right )  \cdo
 - $C_d$ is the discharge coefficient of the orifice opening. $[-]$
 - $A$ is the cross sectional area of the orifice. $[m^2]$
 
+### HEM orifice release
+The HEM (homogeneous equilibrium model) assumption is based on the general steady-flow energy balance for isentropic nozzle flow. The fundamental assumption is that thermal and mechanical equilibrium exist between phases as the fluid passes through the release orifice.
+
+Starting from the steady-flow energy balance (neglecting potential energy and friction):
+
+$$h_0 = h_1 + \frac{v^2}{2}$$
+
+where:
+- $h_0$ = upstream stagnation enthalpy
+- $h_1$ = fluid enthalpy at reduced pressure
+- $v$ = fluid velocity
+
+Rearranging for velocity:
+
+$$v = \sqrt{2(h_0 - h_1)}$$
+
+The mass flux (mass flow per unit area) is:
+
+$$G = \rho \cdot v = \rho \sqrt{2(h_0 - h_1)}$$
+
+where $\rho$ is the fluid density at the reduced pressure conditions.
+
+For an isentropic expansion from upstream pressure $P_0$ to various downstream pressures, the maximum mass flux occurs either at:
+1. The critical flow pressure (choked flow)
+2. The backpressure (unchoked flow)
+
+This can be expressed as:
+
+$$G_{max} = \max\left[\rho(P) \sqrt{2\int_{P_0}^{P} v \, dP}\right]$$
+
+where the integral is evaluated along an isentropic path, and $v$ is the specific volume.
+
 ### Pressure safety valve / Relief valve
 A PSV / relief valve is a mechanical device actuated by the static pressure in the vessel and a conventional PSV is often used for gas/vapor systems.
 A conventional PSV is a spring-loaded device which will activate at a predetermined opening pressure, and relieve the vessel pressure until a given reseat pressure has been reached.
