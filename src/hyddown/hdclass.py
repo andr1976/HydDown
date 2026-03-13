@@ -207,6 +207,7 @@ class HydDown:
         if (
             self.input["valve"]["type"] == "orifice"
             or self.input["valve"]["type"] == "psv"
+            or self.input["valve"]["type"] == "hem_release"
         ):
             self.p_back = self.input["valve"]["back_pressure"]
             self.D_orifice = self.input["valve"]["diameter"]
@@ -441,7 +442,7 @@ class HydDown:
             Zero when correct temperature is found.
         """
         # Extract scalar from array (scipy optimizers pass arrays, CoolProp needs scalars)
-        T_scalar = float(T.item()) if hasattr(T, 'item') else float(T)
+        T_scalar = float(T.item()) if hasattr(T, "item") else float(T)
         self.vent_fluid.update(CP.PT_INPUTS, P, T_scalar)
         return ((H - self.vent_fluid.hmass()) / H) ** 2
 
@@ -469,7 +470,7 @@ class HydDown:
             Zero when correct temperature is found.
         """
         # Extract scalar from array (scipy optimizers pass arrays, CoolProp needs scalars)
-        T_scalar = float(T.item()) if hasattr(T, 'item') else float(T)
+        T_scalar = float(T.item()) if hasattr(T, "item") else float(T)
         self.fluid.update(CP.PT_INPUTS, P, T_scalar)
         return (H - self.fluid.hmass()) / H
 
@@ -636,6 +637,23 @@ class HydDown:
                     self.CD,
                     self.D_orifice**2 / 4 * math.pi,
                 )
+
+        elif input["valve"]["type"] == "hem_release":
+            if input["valve"]["flow"] == "filling":
+                raise ValueError(
+                    "Unsupported valve: ",
+                    input["valve"]["type"],
+                    " for vessel filling.",
+                )
+            else:
+                self.mass_rate[0] = tp.hem_release_rate(
+                    self.p0,
+                    self.p_back,
+                    self.CD,
+                    self.D_orifice**2 / 4 * math.pi,
+                    self.fluid,
+                )
+
         elif input["valve"]["type"] == "mdot":
             if "mdot" in input["valve"].keys() and "time" in input["valve"].keys():
                 mdot = np.asarray(input["valve"]["mdot"])
@@ -956,7 +974,9 @@ class HydDown:
                     # Spatial discretization: Linear finite elements with 11 nodes
                     if "thermal_conductivity" in self.input["vessel"].keys():
                         theta = 0.5  # Crank-Nicolson scheme (unconditionally stable, 2nd order)
-                        dt = self.tstep / 10  # Sub-step for thermal solver (finer time resolution)
+                        dt = (
+                            self.tstep / 10
+                        )  # Sub-step for thermal solver (finer time resolution)
                         k, rho, cp = (
                             self.input["vessel"]["thermal_conductivity"],
                             self.vessel_density,
@@ -1557,6 +1577,19 @@ class HydDown:
                         cpcv,
                         self.CD,
                         self.D_orifice**2 / 4 * math.pi,
+                    )
+            elif input["valve"]["type"] == "hem_release":
+                if input["valve"]["flow"] == "filling":
+                    raise ValueError(
+                        "Filling flow not supported for HEM release valve type"
+                    )
+                else:
+                    self.mass_rate[i] = tp.hem_release_rate(
+                        self.P[i],
+                        self.p_back,
+                        self.CD,
+                        self.D_orifice**2 / 4 * math.pi,
+                        self.fluid,
                     )
             elif input["valve"]["type"] == "controlvalve":
                 Cv = tp.cv_vs_time(
