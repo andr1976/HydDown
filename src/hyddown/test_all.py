@@ -22,6 +22,24 @@ def get_example_input(fname):
     return input
 
 
+def test_hem_release():
+    P1 = 10.0e5
+    P2 = 5.5e5
+    fluid = CP.AbstractState("HEOS", "N2")
+    fluid.update(CP.PT_INPUTS, P1, 298.15)
+    assert tp.hem_release_rate(
+        P1, P2, 0.85, 0.01**2 / 4 * 3.1415, fluid
+    ) == pytest.approx(9.2 / 60, rel=0.01)
+
+    P1 = 55.0e5
+    P2 = 30e5
+    fluid = CP.AbstractState("HEOS", "Ethylene")
+    fluid.update(CP.PT_INPUTS, P1, 300)
+    assert tp.hem_release_rate(
+        P1, P2, 0.7, 0.02**2 / 4 * 3.1415, fluid
+    ) == pytest.approx(3.452, rel=0.01)
+
+
 def test_orifice():
     P1 = 10.0e5
     P2 = 5.5e5
@@ -1162,16 +1180,22 @@ def test_control_valve_time_characteristic():
     Cv_max = 100.0
 
     # Linear opening
-    Cv_linear = tp.cv_vs_time(Cv_max, time, time_constant=time_constant, characteristic="linear")
+    Cv_linear = tp.cv_vs_time(
+        Cv_max, time, time_constant=time_constant, characteristic="linear"
+    )
     expected_linear = Cv_max * time / time_constant
     assert Cv_linear == pytest.approx(expected_linear, rel=0.01)
 
     # Equal percentage
-    Cv_eq = tp.cv_vs_time(Cv_max, time, time_constant=time_constant, characteristic="eq")
+    Cv_eq = tp.cv_vs_time(
+        Cv_max, time, time_constant=time_constant, characteristic="eq"
+    )
     assert 0 < Cv_eq < Cv_max
 
     # Fast opening
-    Cv_fast = tp.cv_vs_time(Cv_max, time, time_constant=time_constant, characteristic="fast")
+    Cv_fast = tp.cv_vs_time(
+        Cv_max, time, time_constant=time_constant, characteristic="fast"
+    )
     assert 0 < Cv_fast < Cv_max
 
     # Fast opening should give higher Cv than equal percentage at same time

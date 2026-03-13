@@ -136,7 +136,14 @@ def validate_mandatory_ruleset(input):
                 "type": {
                     "required": True,
                     "type": "string",
-                    "allowed": ["orifice", "psv", "controlvalve", "mdot", "relief"],
+                    "allowed": [
+                        "orifice",
+                        "psv",
+                        "controlvalve",
+                        "mdot",
+                        "relief",
+                        "hem_release",
+                    ],
                 },
                 "flow": {
                     "required": True,
@@ -679,7 +686,14 @@ def valve_validation(input):
                 "type": {
                     "required": True,
                     "type": "string",
-                    "allowed": ["orifice", "psv", "controlvalve", "mdot", "relief"],
+                    "allowed": [
+                        "orifice",
+                        "psv",
+                        "controlvalve",
+                        "mdot",
+                        "relief",
+                        "hem_release",
+                    ],
                 },
                 "flow": {
                     "required": True,
@@ -769,6 +783,36 @@ def valve_validation(input):
         },
     }
 
+    schema_hem_release = {
+        "initial": {"required": True},
+        "calculation": {"required": True},
+        "validation": {"required": False},
+        "vessel": {"required": True},
+        "rupture": {"required": False},
+        "heat_transfer": {"required": False},
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["hem_release"],
+                },
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge"],
+                },
+                "diameter": {"required": True, "type": "number", "min": 0},
+                "discharge_coef": {"required": True, "type": "number", "min": 0},
+                "end_pressure": {"type": "number", "min": 0},
+                "back_pressure": {"required": True, "type": "number", "min": 0},
+                "Cv": {"type": "number", "min": 0},
+            },
+        },
+    }
     schema_control_valve = {
         "initial": {"required": True},
         "rupture": {"required": False},
@@ -844,6 +888,11 @@ def valve_validation(input):
             print(v.errors)
     elif input["valve"]["type"] == "orifice":
         v = Validator(schema_orifice)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
+    elif input["valve"]["type"] == "hem_release":
+        v = Validator(schema_hem_release)
         retval = v.validate(input)
         if v.errors:
             print(v.errors)

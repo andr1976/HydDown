@@ -21,6 +21,7 @@ CoolProp is used as the thermodynamic backend for fluid property calculations.
 """
 
 import math
+from scipy import optimize
 from CoolProp.CoolProp import PropsSI
 import CoolProp.CoolProp as CP
 from ht import Rohsenow
@@ -371,9 +372,50 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
     return min(max(h_boil, h_conv), 3000)
 
 
+def hem_release_rate(P1, Pback, Cd, area, fluid):
+    """
+    Fluid mass flow (kg/s) trough a hole at critical (sonic) or subcritical
+    flow conditions calculated applying the HEM (Homogenous Equilibrium Model)
+    assumption.
+
+    Parameters
+    ----------
+    P1 : float
+        Upstream pressure
+    Pback : float
+        Back/downstream pressure
+    Cd : float
+        Coefficient of discharge
+    area : float
+        Orifice area
+    fluid : obj
+        Fluid object
+
+    Returns
+    ----------
+        : float
+        Gas release rate / mass flow of discharge
+    """
+    P0 = fluid.p()
+    h0 = fluid.hmass()
+    s0 = fluid.smass()
+
+    def negflux(P):
+        fluid.update(CP.PSmass_INPUTS, P, s0)
+        return -fluid.rhomass() * math.sqrt(2 * (h0 - fluid.hmass()))
+
+    P = optimize.minimize_scalar(negflux, bounds=(Pback, P1), method="bounded")["x"]
+
+    G = -negflux(P)
+
+    mass_flow = Cd * area * G
+    fluid.update(CP.PSmass_INPUTS, P0, s0)
+    return mass_flow
+
+
 def gas_release_rate(P1, P2, rho, k, CD, area):
     """
-    Gas massflow (kg/s) trough a hole at critical (sonic) or subcritical
+    Gas mass flow (kg/s) trough a hole at critical (sonic) or subcritical
     flow conditions. The formula is based on Yellow Book equation 2.22.
 
     Methods for the calculation of physical effects, CPR 14E, van den Bosch and Weterings (Eds.), 1996
@@ -390,7 +432,7 @@ def gas_release_rate(P1, P2, rho, k, CD, area):
         Ideal gas k (Cp/Cv)
     CD : float
         Coefficient of discharge
-    are : float
+    area : float
         Orifice area
 
     Returns
