@@ -84,3 +84,7 @@ BUG_FIX_VALIDATION_SUMMARY.md
 src/hyddown/__pycache__/hdclass.cpython-312.pyc
 VALIDATION_REPORT.txt
 src/hyddown/__pycache__/hdclass.cpython-312.pyc
+src/hyddown/__pycache__/validator.cpython-312.pyc
+src/hyddown/__pycache__/test_materials.cpython-312-pytest-9.0.2.pyc
+src/hyddown/__pycache__/fire.cpython-312.pyc
+src/hyddown/__pycache__/hdclass.cpython-312.pyc
