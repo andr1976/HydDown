@@ -61,7 +61,12 @@ jobs:
         continue-on-error: true
         run: |
           cd docs
-          make latexpdf
+          make latex
+          cd build/latex
+          # Run pdflatex 3 times in non-interactive mode to resolve references
+          pdflatex -interaction=nonstopmode HydDown.tex || true
+          pdflatex -interaction=nonstopmode HydDown.tex || true
+          pdflatex -interaction=nonstopmode HydDown.tex || true
 
       - name: Copy downloadable formats to HTML build
         run: |
