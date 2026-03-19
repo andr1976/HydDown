@@ -5,7 +5,7 @@ vessel:
   heat_capacity: 500
   density: 7700
   thickness: 0.01185
-  thermal_conductivity: 45  # Steel thermal conductivity W/m-K for 1D heat transfer
+  thermal_conductivity: 45 # Steel thermal conductivity W/m-K for 1D heat transfer
   liquid_level: 0.4668
 initial:
   temperature: 279

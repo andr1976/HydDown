@@ -369,6 +369,9 @@ class HydDown:
         self.q_inner_wetted = np.zeros(data_len)
         self.h_inside = np.zeros(data_len)
         self.h_inside_wetted = np.zeros(data_len)
+        # Initialize Biot arrays as NaN (will be calculated if thermal_conductivity_biot specified)
+        self.Biot = np.full(data_len, np.nan)  # Biot number for lumped capacitance validation
+        self.Biot_wetted = np.full(data_len, np.nan)  # Biot number for wetted region
         self.T_vent = np.zeros(data_len)
         self.H_mass = np.zeros(data_len)
         self.S_mass = np.zeros(data_len)
@@ -881,6 +884,14 @@ class HydDown:
                     if np.isnan(wetted_area):
                         wetted_area = 0
 
+                    # Calculate outer wetted area for correct heat transfer on outer surface
+                    # Add wall thickness to liquid level height since outer vessel reference
+                    # is at bottom of wall, not bottom of inner surface
+                    liquid_level_outer = self.liquid_level[i - 1] + self.thickness
+                    wetted_area_outer = self.outer_vol.SA_from_h(liquid_level_outer)
+                    if np.isnan(wetted_area_outer):
+                        wetted_area_outer = 0
+
                     # Heat transfer from unwetted wall (gas side) to fluid
                     # Q = A * h * (T_wall - T_fluid)
                     self.Q_inner[i] = (
@@ -910,10 +921,9 @@ class HydDown:
                         self.Q_inner_wetted[i] = 0
 
                     # Heat transfer from environment to unwetted outer wall
+                    # Use outer surface area directly (outer surface is exposed to environment)
                     self.Q_outer[i] = (
-                        (self.surf_area_inner - wetted_area)
-                        * self.surf_area_outer
-                        / self.surf_area_inner
+                        (self.surf_area_outer - wetted_area_outer)
                         * self.h_out
                         * (self.Tamb - self.T_outer_wall[i - 1])
                     )
@@ -922,9 +932,7 @@ class HydDown:
                     )
 
                     self.Q_outer_wetted[i] = (
-                        wetted_area
-                        * self.surf_area_outer
-                        / self.surf_area_inner
+                        wetted_area_outer
                         * self.h_out
                         * (self.Tamb - self.T_outer_wall_wetted[i - 1])
                     )
@@ -1030,15 +1038,15 @@ class HydDown:
                                     "t_end": 10000,
                                     "theta": theta,
                                 }
-                                t_bonded, T_profile = tm.solve_ht(domain, solver)
                                 t_bonded_w, T_profile_w = tm.solve_ht(
                                     domain_w, solver_w
                                 )
                             else:
+                                # Boundary conditions: z=0 is outer wall, z=L is inner wall
                                 bc = [
                                     {
                                         "q": self.Q_outer[i]
-                                        / (self.surf_area_inner - wetted_area)
+                                        / (self.surf_area_outer - wetted_area_outer)
                                     },
                                     {
                                         "q": -self.Q_inner[i]
@@ -1053,30 +1061,28 @@ class HydDown:
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile = tm.solve_ht(domain, solver)
-                                bc_w = [
-                                    {"q": self.Q_outer_wetted[i] / wetted_area},
-                                    {"q": -self.Q_inner_wetted[i] / wetted_area},
-                                ]
-                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
-                                domain_w.set_T(T_profile_w[-1, :])
-                                solver = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_bonded_w, T_profile_w = tm.solve_ht(
-                                    domain_w, solver_w
-                                )
-                            solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
-                            t, T_profile = tm.solve_ht(domain, solver)
-                            solver_w = {"dt": dt, "t_end": self.tstep, "theta": theta}
-                            t_w, T_profile_w = tm.solve_ht(domain_w, solver_w)
+                                # Wetted wall will be solved below if liquid is present
 
                             self.temp_profile.append(T_profile[-1, :])
                             self.T_outer_wall[i] = T_profile[-1, 0]
                             self.T_inner_wall[i] = T_profile[-1, -1]
-                            self.T_outer_wall_wetted[i] = T_profile_w[-1, 0]
-                            self.T_inner_wall_wetted[i] = T_profile_w[-1, -1]
+
+                            # Only solve wetted wall if liquid is present
+                            if self.liquid_level[i - 1] > 0 and wetted_area > 0:
+                                bc_w = [
+                                    {"q": self.Q_outer_wetted[i] / wetted_area_outer},
+                                    {"q": -self.Q_inner_wetted[i] / wetted_area},
+                                ]
+                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
+                                domain_w.set_T(T_profile_w[-1, :])
+                                solver_w = {"dt": dt, "t_end": self.tstep, "theta": theta}
+                                t_w, T_profile_w = tm.solve_ht(domain_w, solver_w)
+                                self.T_outer_wall_wetted[i] = T_profile_w[-1, 0]
+                                self.T_inner_wall_wetted[i] = T_profile_w[-1, -1]
+                            else:
+                                # No liquid - wetted wall same as unwetted
+                                self.T_outer_wall_wetted[i] = T_profile[-1, 0]
+                                self.T_inner_wall_wetted[i] = T_profile[-1, -1]
                         else:
                             k_liner = self.input["vessel"]["liner_thermal_conductivity"]
                             rho_liner = self.input["vessel"]["liner_density"]
@@ -1137,6 +1143,7 @@ class HydDown:
                                     domain2_w, solver2_w
                                 )
                             else:
+                                # Boundary conditions: z=-liner_thickness is inner, z=thickness is outer
                                 bc = [
                                     {
                                         "q": -self.Q_inner[i]
@@ -1144,7 +1151,7 @@ class HydDown:
                                     },
                                     {
                                         "q": self.Q_outer[i]
-                                        / (self.surf_area_outer - wetted_area)
+                                        / (self.surf_area_outer - wetted_area_outer)
                                     },
                                 ]
                                 domain2 = tm.Domain(mesh2, [liner, shell], bc)
@@ -1156,8 +1163,8 @@ class HydDown:
                                 }
                                 t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
                                 bc_w = [
-                                    {"q": -self.Q_inner_wetted[i] / (wetted_area)},
-                                    {"q": self.Q_outer_wetted[i] / wetted_area},
+                                    {"q": -self.Q_inner_wetted[i] / wetted_area},
+                                    {"q": self.Q_outer_wetted[i] / wetted_area_outer},
                                 ]
                                 domain2_w = tm.Domain(mesh2_w, [liner_w, shell_w], bc_w)
                                 domain2_w.set_T(T_profile2_w[-1, :])
@@ -1177,10 +1184,54 @@ class HydDown:
                             self.T_bonded_wall_wetted[i] = T_profile2_w[-1, (nn - 1)]
                             self.temp_profile.append(T_profile2[-1, :])
                     else:
+                        # Lumped capacitance model (no 1D heat transfer)
                         self.T_inner_wall[i] = self.T_vessel[i]
                         self.T_outer_wall[i] = self.T_vessel[i]
                         self.T_inner_wall_wetted[i] = self.T_vessel_wetted[i]
                         self.T_outer_wall_wetted[i] = self.T_vessel_wetted[i]
+
+                        # Calculate Biot number to validate lumped capacitance assumption
+                        # Bi = h*L/k where L is characteristic length (wall thickness)
+                        # Bi << 0.1: lumped model valid (uniform wall temperature)
+                        # Bi > 0.1: thermal gradient significant, 1D model recommended
+                        if "thickness" in self.input["vessel"]:
+                            L_char = self.thickness
+                            # Check for thermal_conductivity_biot first (for Biot calc only)
+                            # Otherwise check thermal_conductivity (which triggers 1D model)
+                            k_wall = None
+                            if "thermal_conductivity_biot" in self.input["vessel"]:
+                                k_wall = self.input["vessel"]["thermal_conductivity_biot"]
+                            elif "thermal_conductivity" in self.input["vessel"]:
+                                k_wall = self.input["vessel"]["thermal_conductivity"]
+
+                            if k_wall is None:
+                                self.Biot[i] = np.nan
+                                self.Biot_wetted[i] = np.nan
+                            else:
+                                self.Biot[i] = hi * L_char / k_wall
+                                self.Biot_wetted[i] = hiw * L_char / k_wall if hiw > 0 else 0.0
+
+                                # Issue warning if Biot number exceeds threshold
+                                if i == 1 or (i % 100 == 0 and self.Biot[i] > 0.1):
+                                    if self.Biot[i] > 0.1:
+                                        import warnings
+                                        warnings.warn(
+                                            f"t={self.time_array[i]:.1f}s: Biot number (unwetted) = {self.Biot[i]:.3f} > 0.1. "
+                                            f"Lumped capacitance model may be inaccurate. Consider using 1D heat transfer "
+                                            f"by specifying 'thermal_conductivity' in vessel properties.",
+                                            UserWarning
+                                        )
+                                if self.liquid_level[i-1] > 0 and self.Biot_wetted[i] > 0.1:
+                                    if i == 1 or i % 100 == 0:
+                                        import warnings
+                                        warnings.warn(
+                                            f"t={self.time_array[i]:.1f}s: Biot number (wetted) = {self.Biot_wetted[i]:.3f} > 0.1. "
+                                            f"Lumped capacitance model may be inaccurate.",
+                                            UserWarning
+                                        )
+                        else:
+                            self.Biot[i] = np.nan
+                            self.Biot_wetted[i] = np.nan
 
                 elif self.heat_method == "s-b":
                     if self.vessel_orientation == "horizontal":
@@ -1189,6 +1240,16 @@ class HydDown:
                         L = self.length
 
                     wetted_area = self.inner_vol.SA_from_h(self.liquid_level[i - 1])
+                    if np.isnan(wetted_area):
+                        wetted_area = 0
+
+                    # Calculate outer wetted area for correct heat transfer on outer surface
+                    # Add wall thickness to liquid level height since outer vessel reference
+                    # is at bottom of wall, not bottom of inner surface
+                    liquid_level_outer = self.liquid_level[i - 1] + self.thickness
+                    wetted_area_outer = self.outer_vol.SA_from_h(liquid_level_outer)
+                    if np.isnan(wetted_area_outer):
+                        wetted_area_outer = 0
 
                     # Determine which wall temperature to use for internal heat transfer
                     # For 1D heat transfer: Use actual inner wall surface temperature
@@ -1265,20 +1326,17 @@ class HydDown:
                         T_fire_surface = self.T_vessel[i - 1]
                         T_fire_surface_wetted = self.T_vessel_wetted[i - 1]
 
+                    # Fire heats the outer surface - use outer surface area directly
                     self.Q_outer[i] = (
                         fire.sb_fire(T_fire_surface, self.fire_type)
-                        * (self.surf_area_inner - wetted_area)
-                        * self.surf_area_outer
-                        / self.surf_area_inner
+                        * (self.surf_area_outer - wetted_area_outer)
                     )
 
                     self.q_outer[i] = fire.sb_fire(T_fire_surface, self.fire_type)
 
                     self.Q_outer_wetted[i] = (
                         fire.sb_fire(T_fire_surface_wetted, self.fire_type)
-                        * wetted_area
-                        * self.surf_area_outer
-                        / self.surf_area_inner
+                        * wetted_area_outer
                     )
                     self.q_outer_wetted[i] = fire.sb_fire(
                         T_fire_surface_wetted, self.fire_type
@@ -1351,11 +1409,11 @@ class HydDown:
                                     "t_end": 10000,
                                     "theta": theta,
                                 }
-                                t_bonded, T_profile = tm.solve_ht(domain, solver)
                                 t_bonded_w, T_profile_w = tm.solve_ht(
                                     domain_w, solver_w
                                 )
                             else:
+                                # Boundary conditions: z=0 is inner wall, z=L is outer wall
                                 bc = [
                                     {
                                         "q": -self.Q_inner[i]
@@ -1363,7 +1421,7 @@ class HydDown:
                                     },
                                     {
                                         "q": self.Q_outer[i]
-                                        / (self.surf_area_inner - wetted_area)
+                                        / (self.surf_area_outer - wetted_area_outer)
                                     },
                                 ]
                                 domain = tm.Domain(mesh, [cpeek], bc)
@@ -1374,26 +1432,18 @@ class HydDown:
                                     "theta": theta,
                                 }
                                 t_bonded, T_profile = tm.solve_ht(domain, solver)
-                                bc_w = [
-                                    {"q": -self.Q_inner_wetted[i] / wetted_area},
-                                    {"q": self.Q_outer_wetted[i] / wetted_area},
-                                ]
-                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
-                                domain_w.set_T(T_profile_w[-1, :])
-                                solver = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_bonded_w, T_profile_w = tm.solve_ht(
-                                    domain_w, solver_w
-                                )
-                            solver = {"dt": dt, "t_end": self.tstep, "theta": theta}
-                            t, T_profile = tm.solve_ht(domain, solver)
+                                # Wetted wall boundary conditions will be set below
+                                # in the conditional block that checks liquid_level
 
                             # Only solve wetted wall if liquid is present
                             # Check liquid_level to handle both gas-only and liquid-depleted cases
                             if self.liquid_level[i - 1] > 0 and wetted_area > 0:
+                                bc_w = [
+                                    {"q": -self.Q_inner_wetted[i] / wetted_area},
+                                    {"q": self.Q_outer_wetted[i] / wetted_area_outer},
+                                ]
+                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
+                                domain_w.set_T(T_profile_w[-1, :])
                                 solver_w = {"dt": dt, "t_end": self.tstep, "theta": theta}
                                 t_w, T_profile_w = tm.solve_ht(domain_w, solver_w)
                                 self.T_inner_wall_wetted[i] = T_profile_w[-1, 0]
@@ -1469,6 +1519,7 @@ class HydDown:
                                     domain2_w, solver2_w
                                 )
                             else:
+                                # Boundary conditions: z=-liner_thickness is inner, z=thickness is outer
                                 bc = [
                                     {
                                         "q": -self.Q_inner[i]
@@ -1476,7 +1527,7 @@ class HydDown:
                                     },
                                     {
                                         "q": self.Q_outer[i]
-                                        / (self.surf_area_outer - wetted_area)
+                                        / (self.surf_area_outer - wetted_area_outer)
                                     },
                                 ]
                                 domain2 = tm.Domain(mesh2, [liner, shell], bc)
@@ -1492,8 +1543,8 @@ class HydDown:
                                 # Check liquid_level to handle both gas-only and liquid-depleted cases
                                 if self.liquid_level[i - 1] > 0 and wetted_area > 0:
                                     bc_w = [
-                                        {"q": -self.Q_inner_wetted[i] / (wetted_area)},
-                                        {"q": self.Q_outer_wetted[i] / wetted_area},
+                                        {"q": -self.Q_inner_wetted[i] / wetted_area},
+                                        {"q": self.Q_outer_wetted[i] / wetted_area_outer},
                                     ]
                                     domain2_w = tm.Domain(mesh2_w, [liner_w, shell_w], bc_w)
                                     domain2_w.set_T(T_profile2_w[-1, :])
@@ -1549,11 +1600,10 @@ class HydDown:
                             )
                         else:
                             # Hack to heat up previous liquid wetted surface
+                            # Fire heats outer surface - use outer surface area directly
                             self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
                                 fire.sb_fire(self.T_vessel_wetted[i - 1], self.fire_type)
-                                * (self.surf_area_inner - wetted_area)
-                                * self.surf_area_outer
-                                / self.surf_area_inner
+                                * (self.surf_area_outer - wetted_area_outer)
                                 - (self.surf_area_inner - wetted_area)
                                 * hi
                                 * (self.T_vessel_wetted[i - 1] - self.T_fluid[i - 1])
@@ -1567,6 +1617,52 @@ class HydDown:
 
                         if np.isnan(self.T_vessel_wetted[i]):
                             self.T_vessel_wetted[i] = self.T_vessel[i]
+
+                        # Calculate Biot number to validate lumped capacitance assumption
+                        # Bi = h*L/k where L is characteristic length (wall thickness)
+                        # Bi << 0.1: lumped model valid (uniform wall temperature)
+                        # Bi > 0.1: thermal gradient significant, 1D model recommended
+                        if "thickness" in self.input["vessel"]:
+                            L_char = self.thickness  # Characteristic length = wall thickness
+                            # Use inner heat transfer coefficient (typically controls)
+                            # and vessel thermal conductivity if available
+                            # Check for thermal_conductivity_biot first (for Biot calc only)
+                            # Otherwise check thermal_conductivity (which triggers 1D model)
+                            k_wall = None
+                            if "thermal_conductivity_biot" in self.input["vessel"]:
+                                k_wall = self.input["vessel"]["thermal_conductivity_biot"]
+                            elif "thermal_conductivity" in self.input["vessel"]:
+                                k_wall = self.input["vessel"]["thermal_conductivity"]
+
+                            if k_wall is None:
+                                # Lumped model without k specified - can't calc Bi, set to NaN
+                                self.Biot[i] = np.nan
+                                self.Biot_wetted[i] = np.nan
+                            else:
+                                self.Biot[i] = hi * L_char / k_wall
+                                self.Biot_wetted[i] = hiw * L_char / k_wall if hiw > 0 else 0.0
+
+                                # Issue warning if Biot number exceeds threshold
+                                if i == 1 or (i % 100 == 0 and self.Biot[i] > 0.1):
+                                    if self.Biot[i] > 0.1:
+                                        import warnings
+                                        warnings.warn(
+                                            f"t={self.time_array[i]:.1f}s: Biot number (unwetted) = {self.Biot[i]:.3f} > 0.1. "
+                                            f"Lumped capacitance model may be inaccurate. Consider using 1D heat transfer "
+                                            f"by specifying 'thermal_conductivity' in vessel properties.",
+                                            UserWarning
+                                        )
+                                if self.liquid_level[i-1] > 0 and self.Biot_wetted[i] > 0.1:
+                                    if i == 1 or i % 100 == 0:
+                                        import warnings
+                                        warnings.warn(
+                                            f"t={self.time_array[i]:.1f}s: Biot number (wetted) = {self.Biot_wetted[i]:.3f} > 0.1. "
+                                            f"Lumped capacitance model may be inaccurate.",
+                                            UserWarning
+                                        )
+                        else:
+                            self.Biot[i] = np.nan
+                            self.Biot_wetted[i] = np.nan
 
                         self.T_inner_wall[i] = self.T_vessel[i]
                         self.T_outer_wall[i] = self.T_vessel[i]
