@@ -155,7 +155,7 @@ Heat capacity | J/(kg K)
 
 : Unit system
 
-As will be noted when presenting the equations implemented in the code, some of the equations utilise different units than the ones listed in [@tbl:units].
+As will be noted when presenting the equations implemented in the code, some of the equations utilise different units than the ones listed in the table.
 However, it is important to note that unit conversions are built in to the methods implemented, so the user shall not worry about unit conversion.  
 
 ## Credit
@@ -267,7 +267,7 @@ If no arguments are passed, the script will look for an input file with the name
 The content of the main script is shown below:
 
 
-~~~ {.Python}
+```python
 import yaml
 import sys
 from hyddown import HydDown
@@ -286,21 +286,21 @@ if __name__ == "__main__":
     hdown.run()
     hdown.verbose=1
     hdown.plot()
-~~~
+```
 
 ## Module import
 To use HydDown simple import the main calculation class `HydDown`.
 
-~~~ {.Python}
+```python
 from hyddown import HydDown
-~~~
+```
 
 ## Input file examples
 When using HydDown a dictionary holding all relevant input in order for HydDown to do vessel calculations shall be provided when the class is initialized. One way is to read an input file. For HydDown a Yaml format is chosen, but if JSON is a preference this should also work with the Yaml parser being substituted with a JSON parser.
 
 An example of a minimal file for an isentropic vessel depressurization (no heat transfer) is shown below
 
-~~~ {.Yaml}
+```yaml
 vessel:
   length: 1.524
   diameter: 0.273
@@ -318,11 +318,11 @@ valve:
   diameter: 0.00635
   discharge_coef: 0.8
   back_pressure: 101300.
-~~~
+```
 
 A more elaborate example which includes heat transfer and with validation data (some data points dropped for simplicity) included:
 
-~~~ {.Yaml}
+```yaml
 vessel:
   length: 1.524
   diameter: 0.273
@@ -366,7 +366,7 @@ validation:
   pressure:
     time: [0.28869, ... , 98.367]
     pres: [150.02, ... ,1.7204]
-~~~
+```
 
 (sec-input)=
 ## Input fields and hierarchy
@@ -374,32 +374,32 @@ In the following the full hierarchy of input for the different calculation types
 
 At the top level the following fields are accepted, with the last being optional and the second last dependant on calculation type:
 
-~~~ {.Yaml}
+```yaml
 initial: mandatory
 vessel: mandatory
 calculation: mandatory
 valve: mandatory
 heat_transfer: depends on calculation type
 validation: optional
-~~~
+```
 
 ### Calculation
 
 The subfields under `calculation`, with value formats and options are:
 
-~~~ {.Yaml}
+```yaml
 calculation:
   type: "isothermal", "isentropic", "isenthalpic", "constantU", "energybalance"
   time_step: number
   end_time: number
-~~~
+```
 
 The simulation end time is specified as well as the fixed time step used in the integration of the differential equations to be solved.
 The four main calculation types are shown as well.
 
 ### Vessel
 
-~~~ {.Yaml}
+```yaml
 vessel:
   length: number, mandatory
   diameter: number, mandatory
@@ -414,16 +414,16 @@ vessel:
   liner_thermal_conductivity: number, required only for bi-material 1-D transient heat transfer  
   orientation: string, required when heat transfer is calculated
   liquid_level: number, optional for two-phase 
-  type: string, optional for heads other than flat-end, "DIN", "ASME F&D", or "Hemispherical"
-~~~
+  type: string, optional for heads other than Flat-end, "DIN", "ASME F&D", or "Hemispherical"
+```
 
 ### Initial
-~~~ {.Yaml}
+```yaml
 initial:
   temperature: number, mandatory
   pressure: number, mandatory
   fluid: string, mandatory , e.g. "N2", "H2"
-~~~
+```
 
 ### Valve
 The `valve` field determines the mode of the process is it for depressurization/discharge from the vessel using the value `discharge` or if mass flow is entering the vessel, filling it up/increasing pressure with the value `filling`.
@@ -431,25 +431,27 @@ The `valve` field determines the mode of the process is it for depressurization/
 Different types of mass flow devices can be specified:
 
 - Restriction `orifice`
-- Relief valve/pressure safety valve (only for `discharge` not `filling`)
-- Control valve (`controlvalve`)
-- A specified mass flow (`mdot`)
+- Pressure safety valve `psv` (only for `discharge` not `filling`)
+- Simplified relief valve `relief` (only for `discharge` not `filling`)
+- Control valve `controlvalve`
+- A specified mass flow `mdot`
+- Homogeneous equilibrium model release `hem_release`
 
 For the physical devices a `back_pressure` is required for the flow calculations.
 The value of the `back_pressure` **is also used to specify the reservoir pressure when the vessel is filled**.
 See also {ref}`sec-flow` for details about the calculation of flow rates.
 
-~~~ {.Yaml}
+```yaml
 valve:
   flow: string, mandatory "discharge" or "filling"
-  type: string, mandatory "orifice", "controlvalve", "psv", "mdot"
-  back_pressure: number, required for type "orifice", "controlvalve" and "psv"
+  type: string, mandatory "orifice", "controlvalve", "psv", "relief", "mdot", "hem_release"
+  back_pressure: number, required for type "orifice", "controlvalve", "psv", "relief"
   diameter: number, required for "orifice" and "psv"
   discharge_coef: number, required for "orifice" and "psv"
-  Cv: number, required for "control_valve"
-  characteristic:  string, optional for "control_valve"
-  time_constant: number, optional for "control_valve"
-~~~
+  Cv: number, required for "controlvalve"
+  characteristic:  string, optional for "controlvalve"
+  time_constant: number, optional for "controlvalve"
+```
 
 For the calculations using a control valve as mass transfer device a linear rate for the actuator can be specified using the `time_constant` field. An associated valve characteristic is associated in order to translate the linear actuator rate to an opening Cv (of max. Cv). Three caracteristics can be specified:
 
@@ -458,7 +460,7 @@ For the calculations using a control valve as mass transfer device a linear rate
 - Quick opening/fast (square root)
 
 ### Heat transfer
-For more information about the actual estimation of heat transfer see also {ref}`sec-heat`. For the case of `fire` heat input predetermined parameters for the Stefan-Boltzmann fire equation are used to calculate different background heat loads cf. {numref}`tbl-fire`
+For more information about the actual estimation of heat transfer see also {ref}`sec-heat`. For the case of `fire` heat input predetermined parameters for the Stefan-Boltzmann fire equation are used to calculate different background heat loads cf. the table below
 
 | Source          |  Fire type      |       Heat load ($kW/m^2$) |
 |-----------------|-----------------|----------------------------|
@@ -469,7 +471,7 @@ For more information about the actual estimation of heat transfer see also {ref}
 
 : Fire heat loads
 
-~~~ {.Yaml}
+```yaml
 heat_transfer:
   type: string, mandatory, "specified_h", "specified_Q", "specified_U", "s-b"
   temp_ambient: number, required for type "specified_h", "specified_U"
@@ -479,7 +481,7 @@ heat_transfer:
   Q_fix: number, required for type "specified_Q"
   fire: string, required for type "s-b", 'api_pool','api_jet','scandpower_pool','scandpower_jet'
   D_thoat: number, required for flow type "filling", set to vessel ID as a starting point
-~~~
+```
 
 ### Validation
 In order to plot measured data against simulated data the field `validation` is included.
@@ -499,7 +501,7 @@ For each of the above fields arrays for `time`and `temp`shall be supplied with m
 
 A field for measured vessel pressure is also possible, where `time`and `pres` shall be identical length arrays. See also example below.
 
-~~~ {.Yaml}
+```yaml
 validation:
   temperature:
     gas_high:
@@ -517,7 +519,7 @@ validation:
   pressure:
     time: [0.28869, ... , 98.367]
     pres: [150.02, ... ,1.7204]
-~~~
+```
 
 
 # Theory
@@ -653,7 +655,7 @@ The equation can be further simplified if only a single port acting as either in
 ```
 
 where the sign of $\dot{m}$ determines if the control volume is either emptied or filled.
-The continuity equation [@Eq:continuity] and the energy balance [@Eq:energybalance] combined with the equation of state are the key equations that shall be solved/integrated in order to calculate the change in temperature and pressure as a function of time.
+The continuity equation {eq}`eq-continuity` and the energy balance {eq}`eq-energybalance` combined with the equation of state are the key equations that shall be solved/integrated in order to calculate the change in temperature and pressure as a function of time.
 
 (sec-flow)=
 ## Flow devices
@@ -662,7 +664,7 @@ When a fluid flows through a restriction or opening such as an orifice, the velo
 If the upstream pressure is high enough, relative to the downstream pressure, the velocity will reach the speed of sound (Ma = 1) and the flow rate obtained will be the critical flow rate.
 This condition is referred to as choked flow.
 The maximum downstream pressure for the flow to still be sonic (Ma = 1), is when $P_d = P_c$.
-The ratio of the critical and upstream pressure is defined by equation [@Eq:P_critical].
+The ratio of the critical and upstream pressure is defined by equation {eq}`eq-P_critical`.
 
 ```{math}
 :label: eq-P_critical
@@ -677,8 +679,8 @@ The ratio of the critical and upstream pressure is defined by equation [@Eq:P_cr
 
 In order to calculate the mass flow rate through an orifice equations are used based on literature from the Committee for the Prevention of Disasters {cite}`yellowbook`.
 
-To account for the difference in choked and non-choked flow a set limit pressure is introduced as in equation [@Eq:plimit].
-If the downstream pressure, $P_{down}$, is below the pressure limit, $ P_{limit}$, then the flow is choked, and the pressure used, $P_{used}$, in equation [@Eq:massfloworifice] should be the pressure limit, $P_{limit}$.
+To account for the difference in choked and non-choked flow a set limit pressure is introduced as in equation {eq}`eq-plimit`.
+If the downstream pressure, $P_{down}$, is below the pressure limit, $ P_{limit}$, then the flow is choked, and the pressure used, $P_{used}$, in equation {eq}`eq-massfloworifice` should be the pressure limit, $P_{limit}$.
 Otherwise if the downstream pressure, $P_{down}$, is greater than or equal to the pressure limit, $P_{limit}$, the flow is no longer choked and the pressure used should be the downstream pressure, $P_{down}$ {cite}`yellowbook`.
 
 ```{math}
@@ -755,7 +757,7 @@ Conventional/pop action PSV adapted from {cite}`iskov` and {cite}`API520`
 
 The relief valve model implemented in HydDown is the API 520 equations {cite}`API520` for gas relief for both sonic/critical as well as subcritical flow. No corrections factors are implemented in HydDown.
 
-For sonic flow (critical flow), as indicated in equation, the  mass flow through the PSV can be determined by equation [@eq:Stationary_sizing_sonic].
+For sonic flow (critical flow), as indicated in equation, the  mass flow through the PSV can be determined by equation {eq}`eq-Stationary_sizing_sonic`.
 
 ```{math}
 :label: eq-Stationary_sizing_sonic
@@ -765,7 +767,7 @@ W = \frac{A {C \cdot K_d \cdot  K_b \cdot  K_c \cdot  P_1}}{\sqrt{\frac{T\cdot Z
 
 - A is the effective discharge area. [mm$^2$]
 - W is the mass flow through the device. [kg/h]
-- C is a coefficient, as a function of k, as defined in equation [@eq:Stationary_sizing_C_function].
+- C is a coefficient, as a function of k, as defined in equation {eq}`eq-Stationary_sizing_C_function`.
 - $K_d$, $K_b$, and $K_c$ are correction factors.
 - $P_1$ is the allowable upstream absolute pressure. [kPa]
 - T is the temperature of the inlet gas at relieving conditions. [K]
@@ -783,7 +785,7 @@ In the present implementation a value of 1 is assumed.
 C=0.03948 \sqrt{k \left (\frac{2}{k+1}\right)^{\left (\frac{k+1}{k-1}\right)}}
 ```
 
-For subsonic flow (subcritical flow), the effective discharge area of the PSV is determined by equation [@eq:Stationary_sizing_subsonic].
+For subsonic flow (subcritical flow), the effective discharge area of the PSV is determined by equation {eq}`eq-Stationary_sizing_subsonic`.
 
 ```{math}
 :label: eq-Stationary_sizing_subsonic
@@ -791,7 +793,7 @@ For subsonic flow (subcritical flow), the effective discharge area of the PSV is
 W = \frac{A \cdot {F_2 \cdot K_d  \cdot  K_c }}{17.9 \sqrt{\frac{T\cdot Z}{M\cdot P_1\cdot (P_1-P_2)}}}
 ```
 
-F$_2$ is the coefficient of subcritical flow which can be determined from [@eq:Stationary_sizing_F2].
+F$_2$ is the coefficient of subcritical flow which can be determined from {eq}`eq-Stationary_sizing_F2`.
 
 ```{math}
 :label: eq-Stationary_sizing_F2
@@ -812,7 +814,7 @@ In order to close the pressure shall be reduced below the reseat pressure.
 Relief valve hysteresis adapted from {cite}`iskov`
 ```
 
-When specifying PSVs it common to use standard API sizes as shown in [@tbl:psv_sizes]
+When specifying PSVs it common to use standard API sizes as shown in the table
 
 Size    | Area [in$^2$]     |   Area [m$^2$]
 --------|-------------------|----------------------------
@@ -887,7 +889,7 @@ $$ Y = 1 -  \frac{x_{sizing}}{3x_{choked}}$$
 ### Natural convection
 Experiments have indicated that the internal heat transfer mechanism for a vessel subject to depressurization can be well approximated by that of natural convection as found from measured Nusselt numbers being well correlated with Rayleigh number, with no apparent improvement in model performance by inclusion of the Reynolds number in the model {cite}`woodfield`.
 
-To determine the heat transfer for the gas-wall interface, the following is applied cf. equation [@Eq:newton]:
+To determine the heat transfer for the gas-wall interface, the following is applied cf. equation {eq}`eq-newton`:
 
 ```{math}
 :label: eq-newton
@@ -903,7 +905,7 @@ To determine the heat transfer for the gas-wall interface, the following is appl
 - $T_{gas}$ is the temperature of the bulk gas inside the vessel. [K]
 
 The convective heat transfer will need to be estimated for the the gas-wall interface, by the use of empirical relations for the Nusselt number.
-The Nusselt number describes the ratio of convective heat transfer to conductive heat transfer, normal to a surface area, as given in equation [@eq:Nu].
+The Nusselt number describes the ratio of convective heat transfer to conductive heat transfer, normal to a surface area, as given in equation {eq}`eq-Nu`.
 
 ```{math}
 :label: eq-Nu
@@ -918,7 +920,7 @@ Nu=\frac{hL}{k}
 
 The characteristic length $L$ used is the height of the gas volume i.e. the length of a vertical vessel or the diameter of a horizontal vessel.
 
-The empirical correlations used to calculate the Nusselt number of the gas-wall interface is a function of the Rayleigh number, which can be defined by the Grashof number and Prandtl number, as in equation [@Eq:rayleigh_gas]:
+The empirical correlations used to calculate the Nusselt number of the gas-wall interface is a function of the Rayleigh number, which can be defined by the Grashof number and Prandtl number, as in equation {eq}`eq-rayleigh_gas`:
 
 ```{math}
 :label: eq-rayleigh_gas
@@ -930,7 +932,7 @@ Ra=Gr \cdot Pr
 - $Gr$ is the Grashof  number. [-]
 - $Pr$ is the Prandtl number. [-]
 
-The Grashof number is a dimensionless number which approximates the ratio of the buoyancy forces to viscous forces, as given in equation [@Eq:grashof_gas}:
+The Grashof number is a dimensionless number which approximates the ratio of the buoyancy forces to viscous forces, as given in equation [{eq}`eq-grashof_gas`:
 
 ```{math}
 :label: eq-grashof_gas
@@ -938,7 +940,7 @@ The Grashof number is a dimensionless number which approximates the ratio of the
 Gr=\frac{\beta g\rho^2 L^3 \Delta T }{\mu^2}
 ```
 
-The Prandtl number is a dimensionless number defined as the ratio of the momentum diffusivity to thermal diffusivity, as given in equation [@Eq:prandtl_gas]:
+The Prandtl number is a dimensionless number defined as the ratio of the momentum diffusivity to thermal diffusivity, as given in equation {eq}`eq-prandtl_gas`:
 
 ```{math}
 :label: eq-prandtl_gas
@@ -1046,7 +1048,7 @@ The heat flux at the outer (left) and inner (right) is calculated/updated for ea
 
 ### Fire heat loads
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower {cite}`scandpower` and API {cite}`API521`.
-The heat transfer from the flame to the vessel shell is divided into radiation, convection, and reradiation as seen in equation [@Eq:flame]:
+The heat transfer from the flame to the vessel shell is divided into radiation, convection, and reradiation as seen in equation {eq}`eq-flame`:
 
 ```{math}
 :label: eq-flame
@@ -1082,10 +1084,10 @@ The flame temperature is kept constant throughout the simulation:
 q_{total}=\sigma \cdot T_f^4 + h_f \cdot (T_f-T_{amb})
 ```
 
-- $q_{total}$ is the incident flame heat flux as given in table {numref}`tbl-heatfluxes1`. [W/m$^2$]
+- $q_{total}$ is the incident flame heat flux as given in table the table below. [W/m$^2$]
 - $T_{amb}$ is the ambient temperature $\approx$ 293 K (20$^\circ$ C)
 
-The heat flux used to calculate the flame temperature is given in table [@tbl:heatfluxes1].
+The heat flux used to calculate the flame temperature is given in table the table.
 
 |                        | Small jet fire  [kW/m$^2$]  |  Large jet fire  [kW/m$^2$] |  Pool fire  [kW/m$^2$]
 | ----                   |  ----           |  ----           | ----
@@ -1146,7 +1148,7 @@ Where
 - $d$ is the vessel/pipe internal diameter
 - $\sigma_a$ is the longitudinal stress due to the external force. Assumed to be 30 MPa {cite}`scandpower`
 
-The evaluation of vessel rupture is performed as a post-calculation step following the actual depressurisation calculation. The depressurisation calculation is performed with the applicable back-ground heat load to generate the time dependent pressure profile of the vessel inventory. The background heat load is depending on the fire type as also summarised in {numref}`tbl-heatfluxes1`. During the depressurisation calaculation the internal heat flux is calculated. In the post-calculation step an energy balance is made for the vessel material, with the external heat is generated by the applicable peak heat load Stefan-Boltzmann formulation as also provided in {numref}`tbl-heatfluxes1`, with the internal heat flux calculated using the back-gorund heat load. The heat balance for the vessel wall is used to solve for the vessel wall temperature as a function of time
+The evaluation of vessel rupture is performed as a post-calculation step following the actual depressurisation calculation. The depressurisation calculation is performed with the applicable back-ground heat load to generate the time dependent pressure profile of the vessel inventory. The background heat load is depending on the fire type as also summarised in the table below. During the depressurisation calaculation the internal heat flux is calculated. In the post-calculation step an energy balance is made for the vessel material, with the external heat is generated by the applicable peak heat load Stefan-Boltzmann formulation as also provided in the table below, with the internal heat flux calculated using the back-gorund heat load. The heat balance for the vessel wall is used to solve for the vessel wall temperature as a function of time
 
 $$ \frac{dT}{dt} = \frac{q_{external}-q_{internal}}{C_p \rho dx} $$
 
@@ -1161,7 +1163,7 @@ Where:
 
 This oridinary differential equation is solved using a simple explicit Euler scheme. 
 
-The temperature dependent material properties has been sourced from the Scandpower guideline {cite}`scandpower` and visualised in {numref}`fig-heat_capacity` and {numref}`fig-UTS` for heat capacity and Ultimate Tensile Strength, respectively. The materials implemented in *hyddown* are summarised in {numref}`tbl-materials`.  
+The temperature dependent material properties has been sourced from the Scandpower guideline {cite}`scandpower` and visualised in {numref}`fig-heat_capacity` and {numref}`fig-UTS` for heat capacity and Ultimate Tensile Strength, respectively. The materials implemented in *hyddown* are summarised in the table below.  
 
 ```{figure} img/heat_capacity.png
 :name: fig-heat_capacity
@@ -1208,7 +1210,7 @@ In the following, the high-level steps in the solution procedure are outlined fo
 To illustrate calls to the equation of state in CoolProp, the notation $EOS(D,T)$ corresponds to calculation of the state at known density and temperature, for example.
 
 ### Isothermal process
-For an isothermal process, the solution procedure for each calculation step is the following with the mass in the control volume being calculated from [@Eq:euler_mass]:
+For an isothermal process, the solution procedure for each calculation step is the following with the mass in the control volume being calculated from {eq}`eq-euler_mass`:
 
 $$ T(i+1) = T(i) $$
 $$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
@@ -1253,7 +1255,7 @@ U_{cv}(i+1) = \frac{m_{cv}(i)U_{cv}(i) - \left( \dot{m}(i) H (i) +  \dot{Q}(i) \
 
 The above assumes that mass flow is positive when leaving the control volume and heat rate is positive when transferred to the control volume.
 $H(i)$ is the specific enthalpy of the fluid in the control volume for a discharging process and it is equal to the energy of the entering stream for a filling process.
-The heat rate is calculated as outlined in [#Sec:heat].
+The heat rate is calculated as outlined in (see the relevant section above).
 
 For the vessel wall a simple heat balance is also made:
 
@@ -1449,7 +1451,7 @@ Calculations of nitrogen discharge emulating experiment I1 from {cite}`Haque1992
 The experiments were conducted by Haque *et al.* {cite}`Haque1992b` and the experimental data has been extracted from the Ph.d. thesis of Wong {cite}`WONG`.
 
 The experimental vessel is a full-size suction scrubber for a gas compressor which has a total volume of 2.78 m3, with length and inside diameter of 3.240 m (2.75 m tan-to-tan)
-and 1.130 m respectively. The wall thickness is 59 mm. For modelling the length of a flat-ended cylinder has been adjusted to give a total volume of 2.78 m3. An orifice diameter of 6.35 mm was used for discharge and for HydDown modelling the discharge coefficient was adjusted to 0.97 to match the experimental pressure. The results of HydDown and comparison with the experimental results are shown in [@fig:Multi-val].
+and 1.130 m respectively. The wall thickness is 59 mm. For modelling the length of a flat-ended cylinder has been adjusted to give a total volume of 2.78 m3. An orifice diameter of 6.35 mm was used for discharge and for HydDown modelling the discharge coefficient was adjusted to 0.97 to match the experimental pressure. The results of HydDown and comparison with the experimental results are shown in the figure.
 
 ![Calculations of discharge of a non-condensable mixture (0.91/0.09 molefraction of methane/ethane) emulating experiment I1 from {cite}`Haque1992b`. The figure shows calculated gas and wall temperature (full lines) compared to experiments (upper left), calculated and experimental pressure (upper right), specific thermodynamic state variables (lower left), and the calculated vent rate (lower right).](img/NG_validation.png){#fig:Multi-val}
 
@@ -1461,7 +1463,7 @@ The minimum gas temperature simulated by HydDown is -6$^\circ$C, compared to the
 A few notes about vessels with poor thermal conductivity and composite materials. When modelling systems with high Biot number and in particular composite materials the complexity increases significantly. Not just because of the more difficult numerical problem, but even more so because of uncertainty in key parameters such as thermal conductivity, density and heat capacity. Composite materials such as carbon fibre or glass fibre reinforced epoxy systems can be manufactured in many different ways (fibre orientation etc.) which effects the previously mentioned properties. These properties, in particular the thermal conductivity, will influence the results significantly. If these properties are not accurately informed for the system to be analysed, sourcing data from literature shall be done with caution.
 
 ### Validation against commercial simulation tool
-The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. [@tbl:1D-valid-1].
+The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. the table.
 
 
 | Parameter       | Value       |
@@ -1480,7 +1482,7 @@ The first validation case is made against the commercial tool Honeywell Unisim D
 
 : Key vessel data and intial conditions
 
-The comparison between HydDown results and the corresponding simulations using Unisim Design Dynamics are shown in Figure [@fig:unisim_val]: As seen from the results the results obtained using HydDown closely resembles the Unisim Design results. The outer wall temperature is matched perfectly and the final gas temperature and inner vessel temperature deviates marginally by 1.5 and 1.9 $^\circ$C, respectively. Unisim predicts a sligtly lower gas temeprature and HydDown predicts a slightly lower inner wall temperature.  
+The comparison between HydDown results and the corresponding simulations using Unisim Design Dynamics are shown in Figure {numref}`fig-unisim_val`: As seen from the results the results obtained using HydDown closely resembles the Unisim Design results. The outer wall temperature is matched perfectly and the final gas temperature and inner vessel temperature deviates marginally by 1.5 and 1.9 $^\circ$C, respectively. Unisim predicts a sligtly lower gas temeprature and HydDown predicts a slightly lower inner wall temperature.  
 
 ```{figure} img/unisim_validation.png
 :name: fig-unisim_val
@@ -1490,7 +1492,7 @@ Calculations of vessel wall temperature (inner/outer) with 1D transient heat con
 
 
 ### Validation against KIT experiment (Type IV)
-Using data from Molkov *et al.* {cite}`MOLKOV1,MOLKOV2`experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*, see references within refs. {cite}`MOLKOV1,MOLKOV2`. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*. The initial conditions and vessel details are summarised below cf. [@tbl:1D-KIT].
+Using data from Molkov *et al.* {cite}`MOLKOV1,MOLKOV2`experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*, see references within refs. {cite}`MOLKOV1,MOLKOV2`. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*. The initial conditions and vessel details are summarised below cf. the table.
 
 | Type IV tank        |                |
 |---------------------|----------------|
@@ -1524,13 +1526,13 @@ In HydDown the type IV pressure vessel geometry as assumed that of a flat ended 
 Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for comparison with KIT experiments. The figure shows calculated gas and wall temperature (lines) compared to experimental gas temperature (left) and calculated and measured pressure (right).
 ```
 
-HydDown simulations are compared with the KIT experiement in Figure [@fig:KIT_val]. As seen from the results the depressurisation pressure is matched very well. The experimental gas temperature is also matched fairly well. The lowest simulated gas temperature is 182.3 K and the lowest experimental temperature is 177.5 K a difference of 4.8 K. The minimum gas temperature occurs at an earlier time compared to the experimental results. The former at approx. 75 sec. and the latter at approx. 100 sec. This is also in agreement with the simulation model presented by Molkov *et al.* {cite}`MOLKOV1`. The final gas temperature of the simulations is 237 K compared to the experimental value of 216 K.
+HydDown simulations are compared with the KIT experiement in Figure {numref}`fig-KIT_val`. As seen from the results the depressurisation pressure is matched very well. The experimental gas temperature is also matched fairly well. The lowest simulated gas temperature is 182.3 K and the lowest experimental temperature is 177.5 K a difference of 4.8 K. The minimum gas temperature occurs at an earlier time compared to the experimental results. The former at approx. 75 sec. and the latter at approx. 100 sec. This is also in agreement with the simulation model presented by Molkov *et al.* {cite}`MOLKOV1`. The final gas temperature of the simulations is 237 K compared to the experimental value of 216 K.
 
 Molkov *et al.* {cite}`MOLKOV1` also made a thermal analysis of the thermocouple arrangement used in KIT experiment in order to estimate thermal lag in the temperature measurement. Incorporating the thermal model of the thermocouple arrangement displayed an improved prediction of the time of the minimum measured gas temperature as well as the final measured temperature.
 
 
 ## Validation against GasTeF experiments (Type IV)
-The experimental setup is described in more detail in refs. {cite}`ACOSTA,DEMIGUEL`. Different tank types where tested both for filling and discharge including a 29 liter type IV tank and a 40 liter type III tank. In the following the type IV tank is modelled. Key details such as the initial conditions and vessel details are summarised below cf. [@tbl:1D-GasTeF]. The geometry and thermal properties of the liner and composite shell material was not informed in the cited references and it is assumed to be similar to the KIT vessel descibed in the previous section, with the liner and composite shell thickness scaled to match the total thickness of the GasTeF type IV vessel.  
+The experimental setup is described in more detail in refs. {cite}`ACOSTA,DEMIGUEL`. Different tank types where tested both for filling and discharge including a 29 liter type IV tank and a 40 liter type III tank. In the following the type IV tank is modelled. Key details such as the initial conditions and vessel details are summarised below cf. the table. The geometry and thermal properties of the liner and composite shell material was not informed in the cited references and it is assumed to be similar to the KIT vessel descibed in the previous section, with the liner and composite shell thickness scaled to match the total thickness of the GasTeF type IV vessel.  
 
 | Type IV tank        |                |
 |---------------------|----------------|
@@ -1547,7 +1549,7 @@ The experimental setup is described in more detail in refs. {cite}`ACOSTA,DEMIGU
 
 : Key vessel data and initial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops
 
-The simulations with HydDown and comparison against the GasTeF experient is shown in Figure [@fig:GasTeF_val]. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
+The simulations with HydDown and comparison against the GasTeF experient is shown in Figure {numref}`fig-GasTeF_val`. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
 
 
 ```{figure} img/demiguel.png
@@ -1589,7 +1591,7 @@ In lack of a good and complete validation cases, an example is made using the KI
 
 : Key vessel data and initial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops.
 
-The results of HydDown simulation with the *artificial* type III cylinder is shown in Figure [@fig:KIT_typeIII]. As seen the immediate effect of replacing the HDPE liner with aluminum (compared to Figure [@fig:KIT_val]) is a lower temperature drop in the gas phase and a liner temperature which approached the gas temperature very closely. This is in general agreement with the observations in ref. {cite}`DEMIGUEL`.
+The results of HydDown simulation with the *artificial* type III cylinder is shown in Figure {numref}`fig-KIT_typeIII`. As seen the immediate effect of replacing the HDPE liner with aluminum (compared to Figure {numref}`fig-KIT_val`) is a lower temperature drop in the gas phase and a liner temperature which approached the gas temperature very closely. This is in general agreement with the observations in ref. {cite}`DEMIGUEL`.
 
 ```{figure} img/KIT_type_III.png
 :name: fig-KIT_typeIII
@@ -1597,7 +1599,7 @@ The results of HydDown simulation with the *artificial* type III cylinder is sho
 Calculations of vessel wall temperature (inner/outer) with 1D transient heat conduction during helium discharge for a hypothetical type III cylinder with dimensions similar to the KIT type IV cylinder.
 ```
 
-In Figures [@fig:figureIV] and [@fig:figureIII] the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. {cite}`MELIDEO20177304`.
+In Figures the figure below and the figure below the simulated temperature across the vessel liner/composite wall is shown for the real type IV cylinder from the KIT experiment and for the *artificial* type III cylinder, respectively. As seen there is a significant difference between the two bi-materials. The type III cylinder has almost zero temperature gradient across the aluminum liner, which can be rationalised by the very high thermal conductivity. Thus, the entire thermal gradient is over the composite shell material. These observations are in-line with simulation results from ref. {cite}`MELIDEO20177304`.
 
 <div id="fig:figureIV">
 ```{figure} img/KIT_II_tprofile2.png
@@ -1634,7 +1636,7 @@ Calculations of type III vessel wall temperature profile with 1D transient heat 
 </div>
 
 ## Validation against Type III cylinder filling experiments
-For HydDown type III cylinder filling experimental validation, the work of Dicken and Mérida {cite}`Dicken` is used. They conducted experiments of filling a 74 liter type III cylinder and also compared measurements with CFD calculations. Details of type III cyinder tested is shown in Table [@tbl:Dicken-TypeIII]. For HydDown simulation the length of a flat-ended cylinder has been adjusted to give a total cylinder volume of 74 liter. The time-dependent filling mass flow  has been sourced from ref. {cite}`Dicken` and scaled in order to match the final experimental pressure.
+For HydDown type III cylinder filling experimental validation, the work of Dicken and Mérida {cite}`Dicken` is used. They conducted experiments of filling a 74 liter type III cylinder and also compared measurements with CFD calculations. Details of type III cyinder tested is shown in Table the table. For HydDown simulation the length of a flat-ended cylinder has been adjusted to give a total cylinder volume of 74 liter. The time-dependent filling mass flow  has been sourced from ref. {cite}`Dicken` and scaled in order to match the final experimental pressure.
 
 
 | Type III tank        |                |
@@ -1660,7 +1662,7 @@ For HydDown type III cylinder filling experimental validation, the work of Dicke
 
 : Key vessel data and initial conditions for Type III cylinder simulations.
 
-Simulation results from HydDown is compared to the experimental data of Dicken and Mérida in Figure [@fig:Dicken_typeIII]. As seen from the results the gas temperature calculated with HydDown is generally higher than the experimental results. The final calculated temperature is 74.2$^\circ$C, compared to the final measured temperature of 68.9$^\circ$C. The CFD calculations performed by Dicken and Mérida {cite}`Dicken` was also higher than the experimental value (71.3$^\circ$C). Another CFD analysis of the investigated system by Hall and Ramasamy {cite}`Hall` revealed a final mean gas temperature of 71.4$^\circ$C, and a zero-dimensional model by the same authors gave an end temperature of 72.4$^\circ$C.   
+Simulation results from HydDown is compared to the experimental data of Dicken and Mérida in Figure {numref}`fig-Dicken_typeIII`. As seen from the results the gas temperature calculated with HydDown is generally higher than the experimental results. The final calculated temperature is 74.2$^\circ$C, compared to the final measured temperature of 68.9$^\circ$C. The CFD calculations performed by Dicken and Mérida {cite}`Dicken` was also higher than the experimental value (71.3$^\circ$C). Another CFD analysis of the investigated system by Hall and Ramasamy {cite}`Hall` revealed a final mean gas temperature of 71.4$^\circ$C, and a zero-dimensional model by the same authors gave an end temperature of 72.4$^\circ$C.   
 
 ```{figure} img/dicken_typeIII.png
 :name: fig-Dicken_typeIII
@@ -1668,10 +1670,10 @@ Simulation results from HydDown is compared to the experimental data of Dicken a
 Calculations of vessel pressure, gas temperature and wall temperature (inner/outer) with 1D transient heat conduction model during hydrogen filling. Comparison is made against experimental results from Dicken and Mérida {cite}`Dicken` for pressure and gas temperature. Inner wall (liner) temperature is compared to CFD simulations {cite}`Dicken` 
 ```
 
-In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric average of all seven positions from front to back of the cylinder. As seen from Figure [@fig:Dicken_typeIII] the average value from HydDown (52.5$^\circ$C)compares very well with the  average CFD results at the end of filling (52.1$^\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $^\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
+In lack of measured vessel inner wall temperature (liner) the values calculated at the end of filling by Dicken and Mérida using their CFD model is used for comparison. The CFD simulations revealed very large variations in the heat transfer coefficient and resulting wall temperatures. For comparison with HydDown the average CFD calculated temperature is used. This is taken as the arithmetric average of all seven positions from front to back of the cylinder. As seen from Figure {numref}`fig-Dicken_typeIII` the average value from HydDown (52.5$^\circ$C)compares very well with the  average CFD results at the end of filling (52.1$^\circ$C). However, estimated inner wall temperature spanned temperatures from 26 to 67 $^\circ$C, with the highest temperatures recorded opposite to the entry of hydrogen.   
 
 ## Validation of fire heat load
-A simulation with a steel vessel subject to fire heat load is compared against calculations performed with Honeywell Unisim Design using the built-in dynamic depressuring utility and applying a Stefan-Boltzmann heat load. In Unisim the convective part of the Stefan-Boltzmann fire heat load is set by manually specifying the external heat transfer coefficient to 100 W/m$^2$ K and setting the ambient temperature equal to the falme temperature. The simulation in put is summarised in [@tbl:heatload_unisim]. 
+A simulation with a steel vessel subject to fire heat load is compared against calculations performed with Honeywell Unisim Design using the built-in dynamic depressuring utility and applying a Stefan-Boltzmann heat load. In Unisim the convective part of the Stefan-Boltzmann fire heat load is set by manually specifying the external heat transfer coefficient to 100 W/m$^2$ K and setting the ambient temperature equal to the falme temperature. The simulation in put is summarised in the table. 
 
 | Parameter           |                |
 |---------------------|----------------|
@@ -1691,7 +1693,7 @@ A simulation with a steel vessel subject to fire heat load is compared against c
 
 : Data for validation of fire heat load calulations.
 
-The results are displayed in [@fig:Unisim_jet_pres] and [@fig:Unisim_jet_temp]. As seen the agreement between the two simulation codes is indeed adequate. The main difference is the intitial temperature of the steel vessel wall which is higher in Unisim. In Hyddown the vessel wall temperature is initialised at the fluid temperature, whereas in Unisim it is likely based on a steady-heat balance using the applied ambient temperature (set to equal the flame temperature for calculation purpose).
+The results are displayed in {numref}`fig-Unisim_jet_pres` and {numref}`fig-Unisim_jet_temp`. As seen the agreement between the two simulation codes is indeed adequate. The main difference is the intitial temperature of the steel vessel wall which is higher in Unisim. In Hyddown the vessel wall temperature is initialised at the fluid temperature, whereas in Unisim it is likely based on a steady-heat balance using the applied ambient temperature (set to equal the flame temperature for calculation purpose).
 
 ```{figure} img/Unisin_jet_fire_1.png
 :name: fig-Unisim_jet_pres
@@ -1708,12 +1710,12 @@ Calculation of vessl temperature as a function of time for a steel vessel subjec
 # Example use cases 
 
 ## LPG vessel subject to fire heat load
-A vessel containing LPG (propane liquified by pressure) is subject to a back-gorund pool fire heat load. The input data are shown below and the results are shown in [@fig:LPG].
+A vessel containing LPG (propane liquified by pressure) is subject to a back-gorund pool fire heat load. The input data are shown below and the results are shown in {numref}`fig-LPG`.
 Vessel data and initial conditions have been sourced from  Moodie et al. {cite}`moodie`, where a 5 tonne horizontal cylindrical Liquefied Petroleum Gas (LPG) tank was exposed to
 an engulfing kerosene pool fire.
 
 
-~~~ {.Yaml}
+```yaml
 vessel:
   length: 4.64
   diameter: 1.7
@@ -1741,7 +1743,7 @@ valve:
 heat_transfer:
   type: "s-b"
   fire: "scandpower_pool"
-~~~
+```
 
 ```{figure} img/LPG_fire.png
 :name: fig-LPG
@@ -1753,7 +1755,7 @@ LPG vessel subject to pool fire back-gorund heat load with an incident heat flux
 
 The LPG fire scenario can also be simulated using the 1-D transient heat conduction model by adding the `thermal_conductivity` parameter to the vessel properties. This enables separate tracking of inner and outer wall temperatures for both wetted and unwetted regions:
 
-~~~ {.Yaml}
+```yaml
 vessel:
   length: 4.64
   diameter: 1.7
@@ -1763,7 +1765,7 @@ vessel:
   thickness: 0.01185
   thermal_conductivity: 45  # Steel thermal conductivity W/m-K
   liquid_level: 0.4668
-~~~
+```
 
 With the 1-D model, the code solves separate heat conduction equations for the wetted (liquid-contact) and unwetted (gas-contact) wall regions. This is particularly important for two-phase fire scenarios where:
 
@@ -1774,9 +1776,9 @@ With the 1-D model, the code solves separate heat conduction equations for the w
 For this steel vessel case with 11.85 mm wall thickness, the lumped capacitance model ($Bi \approx 0.03$ for unwetted, $Bi \approx 0.79$ for wetted region) gives results very close to the 1-D model. However, for thicker walls, lower thermal conductivity materials (Type III/IV vessels), or when accurate wall temperature profiles are needed, the 1-D model should be used.
 
 ## Rupture estimation 
-The below example is a calculation where a methane filled cylindrical flat-end vessel is subject to a back-ground heat load from a jet fire. The backgorund heat load is given by the general Stefan-Boltzmann fire equation and heat load according to the Scandpower guideline {cite}`scandpower`. In addition to this for the post calculation of rupture according to the von Mises stress criterion as outlined in [@sec:vonmises]. The discharge model is specified as **relief**, in this case the pressure is allowed to increase, until the relief valve set pressure is reached. From this point the pressure is kept constant and the required relief rate in order to keep the pressure constant is calculated. This method only works in case a heat load is applied. 
+The below example is a calculation where a methane filled cylindrical flat-end vessel is subject to a back-ground heat load from a jet fire. The backgorund heat load is given by the general Stefan-Boltzmann fire equation and heat load according to the Scandpower guideline {cite}`scandpower`. In addition to this for the post calculation of rupture according to the von Mises stress criterion as outlined in (see the relevant section). The discharge model is specified as **relief**, in this case the pressure is allowed to increase, until the relief valve set pressure is reached. From this point the pressure is kept constant and the required relief rate in order to keep the pressure constant is calculated. This method only works in case a heat load is applied. 
 
-~~~ {.Yaml}
+```yaml
 vessel:
   length: 9
   diameter: 3
@@ -1804,11 +1806,11 @@ heat_transfer:
 rupture:
   material: "CS_360LT" 
   fire: "scandpower_jet_peak_large"
-~~~
+```
 
 The rupture evaluation is run as a post-processing step by running the class method **analyze_rupture()**. 
 
-~~~ {.Python}
+```python
 import yaml
 import sys
 from hyddown import HydDown
@@ -1828,11 +1830,11 @@ if __name__ == "__main__":
     hdown.verbose=1
     hdown.plot()
     hddown.analyze_rupture()
-~~~
+```
 
 ## Composite cylinder subject to blowdown
 
-~~~ {.Yaml}
+```yaml
 vessel:
   length: 0.7466
   diameter: 0.18
@@ -1862,12 +1864,6 @@ valve:
 heat_transfer:
   type: "specified_h"
   temp_ambient: 293.15
-  h_outer: 8. 
+  h_outer: 8.
   h_inner: "calc"
-~~~
-
-
-## References
-
-```{bibliography}
 ```

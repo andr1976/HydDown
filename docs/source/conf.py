@@ -13,7 +13,13 @@ sys.path.insert(0, os.path.abspath('../../src'))
 project = 'HydDown'
 copyright = '2026, Anders Andreasen'
 author = 'Anders Andreasen'
-release = '1.0'
+
+# Read version from setup.cfg
+import configparser
+config = configparser.ConfigParser()
+config.read('../../setup.cfg')
+version = config.get('metadata', 'version')
+release = version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -107,7 +113,10 @@ html_theme_options = {
     'collapse_navigation': False,
     'sticky_navigation': True,
     'includehidden': True,
-    'titles_only': False
+    'titles_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
 }
 
 # GitHub repository link
@@ -118,6 +127,11 @@ html_context = {
     'github_repo': 'HydDown',
     'github_version': 'main',
     'conf_py_path': '/docs/source/',
+    # Enable downloads in RTD theme
+    'downloads': {
+        'pdf': 'HydDown.pdf',
+        'epub': 'HydDown.epub',
+    },
 }
 
 # Enable Read the Docs download links

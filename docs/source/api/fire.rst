@@ -14,17 +14,9 @@ Predefined Fire Scenarios
 
 The module provides predefined fire scenarios with different heat flux intensities:
 
-Pool Fires
-~~~~~~~~~~
-
-- **pool_fire_api521**: 60 kW/m² incident heat flux per API 521
-- **pool_fire_scandpower**: 100 kW/m² incident heat flux per Scandpower recommendations
-
-Jet Fires
-~~~~~~~~~
-
-- **jet_fire_api521**: 100 kW/m² incident heat flux per API 521
-- **jet_fire_scandpower**: 250 kW/m² incident heat flux per Scandpower recommendations
+- **api_pool**: ~60 kW/m² incident heat flux per API 521 (pool fire)
+- **api_jet**: ~100 kW/m² incident heat flux per API 521 (jet fire)
+- **scandpower**: Higher intensity fire per Scandpower guidelines
 
 Stefan-Boltzmann Calculation
 -----------------------------
@@ -37,7 +29,7 @@ Fire heat load is calculated using:
 
 where:
 
-- :math:`\\varepsilon` is surface emissivity
+- :math:`\\varepsilon` is surface emissivity (built-in value)
 - :math:`\\sigma` is the Stefan-Boltzmann constant (5.67×10⁻⁸ W/m²K⁴)
 - :math:`A` is the exposed surface area
 - :math:`T_{fire}` is the fire temperature
@@ -52,6 +44,5 @@ To use a fire scenario in your input file:
 .. code-block:: yaml
 
    heat_transfer:
-     type: fire
-     fire_type: pool_fire_api521
-     emissivity: 0.8
+     type: "s-b"        # Stefan-Boltzmann radiation model
+     fire: "api_pool"   # API 521 pool fire scenario
