@@ -113,7 +113,10 @@ html_theme_options = {
     'collapse_navigation': False,
     'sticky_navigation': True,
     'includehidden': True,
-    'titles_only': False
+    'titles_only': False,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
 }
 
 # GitHub repository link
@@ -124,6 +127,11 @@ html_context = {
     'github_repo': 'HydDown',
     'github_version': 'main',
     'conf_py_path': '/docs/source/',
+    # Enable downloads in RTD theme
+    'downloads': {
+        'pdf': 'HydDown.pdf',
+        'epub': 'HydDown.epub',
+    },
 }
 
 # Enable Read the Docs download links
