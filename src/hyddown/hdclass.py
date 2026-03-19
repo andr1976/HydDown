@@ -2585,12 +2585,28 @@ class HydDown:
         report["final_mass"] = self.mass_fluid[-1]
         report["volume"] = self.vol
 
+        # Heat transfer (Q in W, q in W/m²)
+        # Track both max and min to capture extreme values in both directions
+        # (discharge: Q_inner > 0, filling: Q_inner < 0)
         report["max_Q_inside"] = max(self.Q_inner)
         report["time_max_Q_inside"] = self.time_array[np.argmax(self.Q_inner)]
-        report["max_heat_flux_inside"] = max(self.Q_inner / self.surf_area_inner)
+        report["min_Q_inside"] = min(self.Q_inner)
+        report["time_min_Q_inside"] = self.time_array[np.argmin(self.Q_inner)]
 
         report["max_Q_outside"] = max(self.Q_outer)
         report["time_max_Q_outside"] = self.time_array[np.argmax(self.Q_outer)]
-        report["max_heat_flux_outside"] = max(self.Q_outer / self.surf_area_outer)
+        report["min_Q_outside"] = min(self.Q_outer)
+        report["time_min_Q_outside"] = self.time_array[np.argmin(self.Q_outer)]
+
+        # Heat flux per unit area (use q arrays which store W/m²)
+        report["max_heat_flux_inside"] = max(self.q_inner)
+        report["time_max_heat_flux_inside"] = self.time_array[np.argmax(self.q_inner)]
+        report["min_heat_flux_inside"] = min(self.q_inner)
+        report["time_min_heat_flux_inside"] = self.time_array[np.argmin(self.q_inner)]
+
+        report["max_heat_flux_outside"] = max(self.q_outer)
+        report["time_max_heat_flux_outside"] = self.time_array[np.argmax(self.q_outer)]
+        report["min_heat_flux_outside"] = min(self.q_outer)
+        report["time_min_heat_flux_outside"] = self.time_array[np.argmin(self.q_outer)]
 
         self.report = report

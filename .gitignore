@@ -181,3 +181,4 @@ comparison_*.png
 *_SUMMARY.md
 *_REPORT.*
 apply_*.py
+src/hyddown/__pycache__/hdclass.cpython-312.pyc
