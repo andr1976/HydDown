@@ -37,10 +37,32 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build documentation
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
+
+      - name: Build HTML documentation
         run: |
           cd docs
           make html
+
+      - name: Build EPUB documentation
+        run: |
+          cd docs
+          make epub
+
+      - name: Build PDF documentation
+        run: |
+          cd docs
+          make latexpdf
+
+      - name: Copy downloadable formats to HTML build
+        run: |
+          # Sphinx/RTD theme looks for these in standard _downloads location
+          mkdir -p docs/build/html/_downloads
+          cp docs/build/epub/HydDown.epub docs/build/html/_downloads/ || true
+          cp docs/build/latex/HydDown.pdf docs/build/html/_downloads/ || true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

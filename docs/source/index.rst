@@ -3,6 +3,10 @@ HydDown Documentation
 
 HydDown is an open source Python package for calculating hydrogen (or other pure gas phase species) pressure vessel filling and discharge incorporating heat transfer effects.
 
+**Download this documentation:**
+`PDF <_downloads/HydDown.pdf>`__ |
+`EPUB <_downloads/HydDown.epub>`__
+
 .. toctree::
    :maxdepth: 2
    :caption: User Guide
