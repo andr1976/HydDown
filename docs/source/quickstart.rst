@@ -20,28 +20,26 @@ Here's a minimal example for a vessel depressurization calculation:
 .. code-block:: yaml
 
    vessel:
-     geometry:
-       orientation: vertical
-       length: 2.0
-       diameter: 0.5
-       type: flat-end
-     material: steel
+     length: 2.0
+     diameter: 0.5
+     orientation: "vertical"
 
    initial:
-     pressure: 150e5
+     pressure: 15000000
      temperature: 293.15
-     fluid: Hydrogen
+     fluid: "Hydrogen"
 
    calculation:
-     type: isentropic
+     type: "isentropic"
      time_step: 0.1
      end_time: 100
 
    valve:
-     type: orifice
-     flow: discharge
+     flow: "discharge"
+     type: "orifice"
      diameter: 0.01
      discharge_coef: 0.84
+     back_pressure: 101325
 
 Save this as ``input.yml`` and run:
 

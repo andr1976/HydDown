@@ -153,14 +153,14 @@ Thermal conductivity | W/(m K)
 Density | kg/m$^3$
 Heat capacity | J/(kg K)
 
-: Unit system {#tbl:units}
+: Unit system
 
 As will be noted when presenting the equations implemented in the code, some of the equations utilise different units than the ones listed in [@tbl:units].
 However, it is important to note that unit conversions are built in to the methods implemented, so the user shall not worry about unit conversion.  
 
 ## Credit
 In the making of this document a great deal of material has been sourced (and modified) from a good colleague's M.Sc. thesis {cite}`iskov`, from co-published papers {cite}`Bjerre2017,safety4010011`and from on-line material published under permissive licenses (with proper citation).
-Further, the making of this project would not have possible without the awesome [CoolProp](http://www.coolprop.org/) library [@doi:10.1021/ie4033999].
+Further, the making of this project would not have possible without the awesome [CoolProp](http://www.coolprop.org/) library {cite}`coolprop`.
 I am also thankful for enlightening discussions with colleague Jacob Gram Iskov Eriksen (Ramboll Energy, Denmark)  and former Ramboll Energy colleague Carsten Stegelmann (ORS Consulting) in relation to vessel depressurization, nozzle flow and heat transfer considerations.
 
 The present document is typeset using Markdown + [pandoc](https://pandoc.org/) with the [Eisvogel](https://github.com/Wandmalfarbe/pandoc-latex-template) template.
@@ -467,7 +467,7 @@ For more information about the actual estimation of heat transfer see also {ref}
 | Scandpower      | Pool            |                  100       |
 | Scandpower      | Jet             |                  100       |
 
-: Fire heat loads {#tbl:fire}
+: Fire heat loads
 
 ~~~ {.Yaml}
 heat_transfer:
@@ -531,7 +531,7 @@ The following main topics are covered:
 ## Thermodynamics
 
 ### Equation of state
-The equation of state used by HydDown is the Helmholtz energy formulation as implemented in [CoolProp](http://www.coolprop.org/) [@doi:10.1021/ie4033999].
+The equation of state used by HydDown is the Helmholtz energy formulation as implemented in [CoolProp](http://www.coolprop.org/) {cite}`coolprop`.
 Most of the text in the present section has been sourced from the CoolProp documentation to be as accurate and true to the source as possible.
 The Helmholtz energy formulation is a convenient construction of the equation of state because all the thermodynamic properties of interest can be obtained directly from partial derivatives of the Helmholtz energy.
 
@@ -603,7 +603,11 @@ A general mass balance or continuity equation can be written:
 Control volume with one entrance and one exit. The image has been sourced from {cite}`firstlaw`.
 ```
 
-$$ \frac{m_{cv}}{dt} + \Delta \left( \dot{m} \right)_{fs}= 0 $$ {#eq:continuity}
+```{math}
+:label: eq-continuity
+
+\frac{m_{cv}}{dt} + \Delta \left( \dot{m} \right)_{fs}= 0
+```
 
 The first term is the accumulation term i.e. the rate of change of the mass inside the control volume, $m_cv$, and the $\Delta$ in the second term represents the difference between the outflow and the inflow
 
@@ -642,7 +646,11 @@ $$ \frac{d(mU)_{cv}}{dt} + \Delta \left[ \dot{m} H \right]_{fs} = \dot{Q}  $$
 
 The equation can be further simplified if only a single port acting as either inlet or outlet is present:
 
-$$ \frac{d(mU)_{cv}}{dt} + \dot{m} H  = \dot{Q}  $$ {#eq:energybalance}
+```{math}
+:label: eq-energybalance
+
+\frac{d(mU)_{cv}}{dt} + \dot{m} H  = \dot{Q}
+```
 
 where the sign of $\dot{m}$ determines if the control volume is either emptied or filled.
 The continuity equation [@Eq:continuity] and the energy balance [@Eq:energybalance] combined with the equation of state are the key equations that shall be solved/integrated in order to calculate the change in temperature and pressure as a function of time.
@@ -656,7 +664,11 @@ This condition is referred to as choked flow.
 The maximum downstream pressure for the flow to still be sonic (Ma = 1), is when $P_d = P_c$.
 The ratio of the critical and upstream pressure is defined by equation [@Eq:P_critical].
 
-$$ \frac{P_{c}}{P_u}=\left (\frac{2}{k+1} \right)^\frac{k}{k-1} $$ {#eq:P_critical}
+```{math}
+:label: eq-P_critical
+
+\frac{P_{c}}{P_u}=\left (\frac{2}{k+1} \right)^\frac{k}{k-1}
+```
 
 - $P_c$ is the critical pressure. [kPa]
 - $P_d$ is the downstream pressure. [kPa]
@@ -669,9 +681,17 @@ To account for the difference in choked and non-choked flow a set limit pressure
 If the downstream pressure, $P_{down}$, is below the pressure limit, $ P_{limit}$, then the flow is choked, and the pressure used, $P_{used}$, in equation [@Eq:massfloworifice] should be the pressure limit, $P_{limit}$.
 Otherwise if the downstream pressure, $P_{down}$, is greater than or equal to the pressure limit, $P_{limit}$, the flow is no longer choked and the pressure used should be the downstream pressure, $P_{down}$ {cite}`yellowbook`.
 
-$$ P_{limit}=P_{up} \cdot \left ( \frac{2}{k+1} \right ) ^{\frac{k}{k-1}} $$ {#eq:plimit}
+```{math}
+:label: eq-plimit
 
-$$ \dot{m}_{flow}= C_d  \cdot A \cdot\sqrt{\left ( \frac{2 k}{k-1}\right )  \cdot  P_{up} \cdot \rho \cdot \left (  \frac{P_{used}}{P_{up}} \right )^{\frac{2}{k}} \left (1-\left ( \frac{P_{used}}{P_{up}} \right ) ^{\frac{k-1}{k}} \right )} $$ {#eq:massfloworifice}
+P_{limit}=P_{up} \cdot \left ( \frac{2}{k+1} \right ) ^{\frac{k}{k-1}}
+```
+
+```{math}
+:label: eq-massfloworifice
+
+\dot{m}_{flow}= C_d  \cdot A \cdot\sqrt{\left ( \frac{2 k}{k-1}\right )  \cdot  P_{up} \cdot \rho \cdot \left (  \frac{P_{used}}{P_{up}} \right )^{\frac{2}{k}} \left (1-\left ( \frac{P_{used}}{P_{up}} \right ) ^{\frac{k-1}{k}} \right )}
+```
 
 - $\rho$ is the density of the gas upstream. $[kg/m^3]$
 - $P_{limit}$ is the pressure limit of the upstream absolute pressure. $[bara]$
@@ -737,7 +757,11 @@ The relief valve model implemented in HydDown is the API 520 equations {cite}`AP
 
 For sonic flow (critical flow), as indicated in equation, the  mass flow through the PSV can be determined by equation [@eq:Stationary_sizing_sonic].
 
-$$ W = \frac{A {C \cdot K_d \cdot  K_b \cdot  K_c \cdot  P_1}}{\sqrt{\frac{T\cdot Z}{M}}} $$ {#eq:Stationary_sizing_sonic}
+```{math}
+:label: eq-Stationary_sizing_sonic
+
+W = \frac{A {C \cdot K_d \cdot  K_b \cdot  K_c \cdot  P_1}}{\sqrt{\frac{T\cdot Z}{M}}}
+```
 
 - A is the effective discharge area. [mm$^2$]
 - W is the mass flow through the device. [kg/h]
@@ -753,15 +777,27 @@ $K_b$ is a back-pressure correction factor between 0 and 1, assumed to be 1.
 $K_c$ is a correction factor used when a rupture disk is installed upstream, otherwise it is 1.
 In the present implementation a value of 1 is assumed.
 
-$$ C=0.03948 \sqrt{k \left (\frac{2}{k+1}\right)^{\left (\frac{k+1}{k-1}\right)}} $$ {#eq:Stationary_sizing_C_function}
+```{math}
+:label: eq-Stationary_sizing_C_function
+
+C=0.03948 \sqrt{k \left (\frac{2}{k+1}\right)^{\left (\frac{k+1}{k-1}\right)}}
+```
 
 For subsonic flow (subcritical flow), the effective discharge area of the PSV is determined by equation [@eq:Stationary_sizing_subsonic].
 
-$$ W = \frac{A \cdot {F_2 \cdot K_d  \cdot  K_c }}{17.9 \sqrt{\frac{T\cdot Z}{M\cdot P_1\cdot (P_1-P_2)}}} $$ {#eq:Stationary_sizing_subsonic}
+```{math}
+:label: eq-Stationary_sizing_subsonic
+
+W = \frac{A \cdot {F_2 \cdot K_d  \cdot  K_c }}{17.9 \sqrt{\frac{T\cdot Z}{M\cdot P_1\cdot (P_1-P_2)}}}
+```
 
 F$_2$ is the coefficient of subcritical flow which can be determined from [@eq:Stationary_sizing_F2].
 
-$$ F_2=\sqrt{\left ( \frac{k}{k-1} \right ) r^{\left (\frac{2}{k} \right )} \left (  \frac{1-r^{\left ( \frac{k-1}{k} \right )}}{1-r}\right )} $$ {#eq:Stationary_sizing_F2}
+```{math}
+:label: eq-Stationary_sizing_F2
+
+F_2=\sqrt{\left ( \frac{k}{k-1} \right ) r^{\left (\frac{2}{k} \right )} \left (  \frac{1-r^{\left ( \frac{k-1}{k} \right )}}{1-r}\right )}
+```
 
 where $r$ is the ratio of backpressure to upstream relieving pressure, $P_2 / P_1$.
 
@@ -795,7 +831,7 @@ Q       |   11.050          |   7.12901 $\cdot$ 10$^{-3}$
 R       |   16.000          |   1.03225 $\cdot$ 10$^{-2}$
 T       |   26.000          |   1.67741 $\cdot$ 10$^{-2}$
 
-: Standard PSV orifice sizes according to API {#tbl:psv_sizes}
+: Standard PSV orifice sizes according to API
 
 ### Control Valve
 For calculating the mass flow through a control valve, the ANSI/ISA {cite}`borden,ISA`methodology also described in IEC 60534 {cite}`IEC60534` is applied.
@@ -853,7 +889,11 @@ Experiments have indicated that the internal heat transfer mechanism for a vesse
 
 To determine the heat transfer for the gas-wall interface, the following is applied cf. equation [@Eq:newton]:
 
-$$  \frac{dQ}{dt} = \dot{Q} = h A ( T_{s} - T_{gas} ) $$  {#eq:newton}
+```{math}
+:label: eq-newton
+
+\frac{dQ}{dt} = \dot{Q} = h A ( T_{s} - T_{gas} )
+```
 
 - $d Q$ is the change in thermal energy due to convective heat transfer. [J]
 - $d t$ is the change in time during the heat transfer. [s]
@@ -865,7 +905,11 @@ $$  \frac{dQ}{dt} = \dot{Q} = h A ( T_{s} - T_{gas} ) $$  {#eq:newton}
 The convective heat transfer will need to be estimated for the the gas-wall interface, by the use of empirical relations for the Nusselt number.
 The Nusselt number describes the ratio of convective heat transfer to conductive heat transfer, normal to a surface area, as given in equation [@eq:Nu].
 
-$$ Nu=\frac{hL}{k} $$ {#eq:Nu}
+```{math}
+:label: eq-Nu
+
+Nu=\frac{hL}{k}
+```
 
 - $Nu$ is the Nusselt number. [-]
 - $h$ is the convective heat transfer. [W/m$^2$$\cdot$K]
@@ -876,7 +920,11 @@ The characteristic length $L$ used is the height of the gas volume i.e. the leng
 
 The empirical correlations used to calculate the Nusselt number of the gas-wall interface is a function of the Rayleigh number, which can be defined by the Grashof number and Prandtl number, as in equation [@Eq:rayleigh_gas]:
 
-$$ Ra=Gr \cdot Pr $$ {#eq:rayleigh_gas}
+```{math}
+:label: eq-rayleigh_gas
+
+Ra=Gr \cdot Pr
+```
 
 - $Ra$ is the Rayleigh number. [-]
 - $Gr$ is the Grashof  number. [-]
@@ -884,11 +932,19 @@ $$ Ra=Gr \cdot Pr $$ {#eq:rayleigh_gas}
 
 The Grashof number is a dimensionless number which approximates the ratio of the buoyancy forces to viscous forces, as given in equation [@Eq:grashof_gas}:
 
-$$ Gr=\frac{\beta g\rho^2 L^3 \Delta T }{\mu^2} $$ {#eq:grashof_gas}
+```{math}
+:label: eq-grashof_gas
+
+Gr=\frac{\beta g\rho^2 L^3 \Delta T }{\mu^2}
+```
 
 The Prandtl number is a dimensionless number defined as the ratio of the momentum diffusivity to thermal diffusivity, as given in equation [@Eq:prandtl_gas]:
 
-$$ Pr=\frac{c_p \mu}{k} $$ {#eq:prandtl_gas}
+```{math}
+:label: eq-prandtl_gas
+
+Pr=\frac{c_p \mu}{k}
+```
 
 - $\beta$ is the coefficient of volume expansion. [1/K]
 - $g$ is the standard acceleration of gravity. [m/s$^2$]
@@ -992,7 +1048,11 @@ The heat flux at the outer (left) and inner (right) is calculated/updated for ea
 The heat transfer from the flame to the shell is modelled using the recommended approach from Scandpower {cite}`scandpower` and API {cite}`API521`.
 The heat transfer from the flame to the vessel shell is divided into radiation, convection, and reradiation as seen in equation [@Eq:flame]:
 
-$$ q_f=\underbrace{{\alpha}_s \cdot {\varepsilon}_f \cdot \sigma \cdot T_f^4}_\text{Radiation}+\underbrace{h_f \cdot (T_f-T_s(t))}_\text{Convection}-\underbrace{{\varepsilon}_s \cdot \sigma \cdot T_s(t)^4 }_\text{Reradiation} $$ {#eq:flame}
+```{math}
+:label: eq-flame
+
+q_f=\underbrace{{\alpha}_s \cdot {\varepsilon}_f \cdot \sigma \cdot T_f^4}_\text{Radiation}+\underbrace{h_f \cdot (T_f-T_s(t))}_\text{Convection}-\underbrace{{\varepsilon}_s \cdot \sigma \cdot T_s(t)^4 }_\text{Reradiation}
+```
 
 - $q_f$ is the flame heat flux. [W/m$^2$]
 - ${\alpha}_s$ is the vessel surface absorptivity. [-]
@@ -1013,10 +1073,14 @@ The convective heat transfer coefficients for a jet fire and a pool fire, and re
 - ${\varepsilon}_s$ = 0.85
 - ${\varepsilon}_f$ = 1.0 (optical thick flames, thickness > 1 m)
 
-The flame temperature is found by solving equation [@Eq:flame2] for the incident heat flux in relation to the ambient conditions.
+The flame temperature is found by solving equation {eq}`eq-flame2` for the incident heat flux in relation to the ambient conditions.
 The flame temperature is kept constant throughout the simulation:
 
-$$ q_{total}=\sigma \cdot T_f^4 + h_f \cdot (T_f-T_{amb})$$ {#eq:flame2}
+```{math}
+:label: eq-flame2
+
+q_{total}=\sigma \cdot T_f^4 + h_f \cdot (T_f-T_{amb})
+```
 
 - $q_{total}$ is the incident flame heat flux as given in table {numref}`tbl-heatfluxes1`. [W/m$^2$]
 - $T_{amb}$ is the ambient temperature $\approx$ 293 K (20$^\circ$ C)
@@ -1028,7 +1092,7 @@ The heat flux used to calculate the flame temperature is given in table [@tbl:he
 | Peak heat load         |  250            |  350            | 150         
 | Background heat load   |   0             |   100           |  100         
 
-: Incident heat fluxes for various fire scenarios given by Scandpower {cite}`scandpower` {#tbl:heatfluxes1}
+: Incident heat fluxes for various fire scenarios given by Scandpower {cite}`scandpower`
 
 
 ## Vessel geometry 
@@ -1051,7 +1115,7 @@ Both ASME F&D, DIN and 2:1 semielliptical are variants of a torispherical vessel
 |  ASME F&D            | 1   | 0.06  |
 |  DIN 28011           | 1   | 0.1   |
 
-: Vessel geometry details. For torispherical tank heads, the following *f* and *k* parameters are used in standards {cite}`fluids`. *f* is the dish-radius parameter for tanks with torispherical heads or bottoms, *k* is the knuckle-radius parameter for tanks with torispherical heads or bottoms {#tbl:vessel_geometry}
+: Vessel geometry details. For torispherical tank heads, the following *f* and *k* parameters are used in standards {cite}`fluids`. *f* is the dish-radius parameter for tanks with torispherical heads or bottoms, *k* is the knuckle-radius parameter for tanks with torispherical heads or bottoms
 
 Using the *fluids* library partial volumes, surface area (full and partial) and liquid level (from partial volume) can be calculated and used internally in *openthermo*.
 
@@ -1121,13 +1185,17 @@ Steel Ultimate Tensile Strengt as a finction of temperature for the materials im
 | Austenitic (SS) | 316       | A-358 316 | 1.4401 | A-320 |
 | Super austenitic (SS) | 6Mo |      | 1.4529 | B-677 |
 
-: Steel materials implemented in *openthermo*. {#tbl:materials}
+: Steel materials implemented in *openthermo*.
 
 
 ## Model implementation
 A simple (naive) explicit Euler scheme is implemented to integrate the mass balance over time, with the mass rate being calculated from an orifice/valve equation as described in {ref}`sec-flow`:
 
-$$ m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t  $$ {#eq:euler_mass}
+```{math}
+:label: eq-euler_mass
+
+m_{cv}(i+1) =  m_{cv}(i) + \dot{m}(i) \Delta t
+```
 
 $$\dot{m}(i) = f(P,T,) $$
 
@@ -1176,7 +1244,12 @@ $$ T(i+1) = EOS(D(i+1),U(i+1)) $$
 The general first law applied to a flow process as outlined in {ref}`sec-firstlaw` subject to an explicit Euler scheme is:
 
 $$ D(i+1) = \frac{m_{cv}(i+1)}{V} $$
-$$ U_{cv}(i+1) = \frac{m_{cv}(i)U_{cv}(i) - \left( \dot{m}(i) H (i) +  \dot{Q}(i) \right) \Delta t}{m_{cv}(i+1)}  $$ {#eq:firstlaw_euler}
+
+```{math}
+:label: eq-firstlaw_euler
+
+U_{cv}(i+1) = \frac{m_{cv}(i)U_{cv}(i) - \left( \dot{m}(i) H (i) +  \dot{Q}(i) \right) \Delta t}{m_{cv}(i+1)}
+```
 
 The above assumes that mass flow is positive when leaving the control volume and heat rate is positive when transferred to the control volume.
 $H(i)$ is the specific enthalpy of the fluid in the control volume for a discharging process and it is equal to the energy of the entering stream for a filling process.
@@ -1309,7 +1382,7 @@ Vessel details are provided below:
 | Density         | 7740 kg/m$^3$ |
 | Heat capacity   | 470 J/(kg K) |
 
-: Key hydrogen vessel data {cite}`STRIEDNIG` {#tbl:h2filling}
+: Key hydrogen vessel data {cite}`STRIEDNIG`
 
 {cite}`STRIEDNIG` reports many different experiments.
 In this comparison we will use experiments applying different pressurisation rates / durations using identical initial conditions.
@@ -1405,7 +1478,7 @@ The first validation case is made against the commercial tool Honeywell Unisim D
 |Discharge mass flow | 0.02 kg/s|
 | Gas | Hydrogen |
 
-: Key vessel data and intial conditions {#tbl:1D-valid-1}
+: Key vessel data and intial conditions
 
 The comparison between HydDown results and the corresponding simulations using Unisim Design Dynamics are shown in Figure [@fig:unisim_val]: As seen from the results the results obtained using HydDown closely resembles the Unisim Design results. The outer wall temperature is matched perfectly and the final gas temperature and inner vessel temperature deviates marginally by 1.5 and 1.9 $^\circ$C, respectively. Unisim predicts a sligtly lower gas temeprature and HydDown predicts a slightly lower inner wall temperature.  
 
@@ -1440,7 +1513,7 @@ Using data from Molkov *et al.* {cite}`MOLKOV1,MOLKOV2`experiments performed at 
 | Initial temperature | 20 $^\circ$C   |
 | Gas                 | Helium         |
 
-: Key vessel data and intial conditions {#tbl:1D-KIT}
+: Key vessel data and intial conditions
 
 
 In HydDown the type IV pressure vessel geometry as assumed that of a flat ended cylinder, with the length adjusted to give a total inventory volume of 19 liter.  In order to simulate the system a lumped heat capacity and density for the type IV cylinder is made. The thermal conductivty is set to that of the liner material, and the outer heat transfer coefficient is set to 8 W/(m$^2$K) as applied in the H2fills software {cite}`KUROKI`. For a type IV vessel, the application of an average value for density, heat capacity and thermal conductivity can be an acceptable approximation since the liner and composite shell material are not too dissimilar.
@@ -1472,7 +1545,7 @@ The experimental setup is described in more detail in refs. {cite}`ACOSTA,DEMIGU
 | Gas                 | Hydrogen       |
 | Discharge rate      | 1.8 g/s        |
 
-: Key vessel data and initial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops {#tbl:1D-GasTeF}
+: Key vessel data and initial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops
 
 The simulations with HydDown and comparison against the GasTeF experient is shown in Figure [@fig:GasTeF_val]. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
 
@@ -1514,7 +1587,7 @@ In lack of a good and complete validation cases, an example is made using the KI
 | Initial temperature | 20 $^\circ$C   |
 | Gas                 | Helium         |
 
-: Key vessel data and initial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops. {#tbl:1D-TypeIII}
+: Key vessel data and initial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops.
 
 The results of HydDown simulation with the *artificial* type III cylinder is shown in Figure [@fig:KIT_typeIII]. As seen the immediate effect of replacing the HDPE liner with aluminum (compared to Figure [@fig:KIT_val]) is a lower temperature drop in the gas phase and a liner temperature which approached the gas temperature very closely. This is in general agreement with the observations in ref. {cite}`DEMIGUEL`.
 
@@ -1585,7 +1658,7 @@ For HydDown type III cylinder filling experimental validation, the work of Dicke
 | Initial temperature | 20.25 $^\circ$C   |
 | Gas                 | H2         |
 
-: Key vessel data and initial conditions for Type III cylinder simulations.  {#tbl:Dicken-TypeIII}
+: Key vessel data and initial conditions for Type III cylinder simulations.
 
 Simulation results from HydDown is compared to the experimental data of Dicken and Mérida in Figure [@fig:Dicken_typeIII]. As seen from the results the gas temperature calculated with HydDown is generally higher than the experimental results. The final calculated temperature is 74.2$^\circ$C, compared to the final measured temperature of 68.9$^\circ$C. The CFD calculations performed by Dicken and Mérida {cite}`Dicken` was also higher than the experimental value (71.3$^\circ$C). Another CFD analysis of the investigated system by Hall and Ramasamy {cite}`Hall` revealed a final mean gas temperature of 71.4$^\circ$C, and a zero-dimensional model by the same authors gave an end temperature of 72.4$^\circ$C.   
 
@@ -1616,7 +1689,7 @@ A simulation with a steel vessel subject to fire heat load is compared against c
 | Fire type         | Jet fire  |
 | Incident heat flux    |  100 kW/m$^2$       |
 
-: Data for validation of fire heat load calulations.  {#tbl:heatload_unisim}
+: Data for validation of fire heat load calulations.
 
 The results are displayed in [@fig:Unisim_jet_pres] and [@fig:Unisim_jet_temp]. As seen the agreement between the two simulation codes is indeed adequate. The main difference is the intitial temperature of the steel vessel wall which is higher in Unisim. In Hyddown the vessel wall temperature is initialised at the fluid temperature, whereas in Unisim it is likely based on a steady-heat balance using the applied ambient temperature (set to equal the flame temperature for calculation purpose).
 

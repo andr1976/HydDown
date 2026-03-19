@@ -15,6 +15,7 @@ HydDown is an open source Python package for calculating hydrogen (or other pure
    installation
    quickstart
    examples
+   parameter_reference
 
 .. toctree::
    :maxdepth: 2
