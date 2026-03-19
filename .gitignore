@@ -1,86 +1,183 @@
-__pycache__/transport.cpython-38.pyc
-main.pyc
-__pycache__/test_main.cpython-38-pytest-6.2.3.pyc
-.gitignore
-__pycache__/main.cpython-38-pytest-6.2.3.pyc
-hyddown/__pycache__/hyddown.cpython-38.pyc
-hyddown/__pycache__/tests.cpython-38-pytest-6.2.3.pyc
-hyddown/transport.pyc
-hyddown/__pycache__/transport.cpython-38.pyc
-hyddown/__init__.pyc
-hyddown/__pycache__/__init__.cpython-38.pyc
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
 
-hyddown/__pycache__/fire.cpython-38.pyc
-hyddown/hyddown.pyc
+# C extensions
+*.so
 
-hyddown/__pycache__/__init__.cpython-38.pyc
-hyddown/__pycache__/transport.cpython-38.pyc
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
 .coverage
-hyddown/hdclass.pyc
-hyddown/__pycache__/transport.cpython-38.pyc
-hyddown/__pycache__/hdclass.cpython-38.pyc
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
 
+# Translations
+*.mo
+*.pot
 
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
 
+# Flask stuff:
+instance/
+.webassets-cache
 
-hyddown/__pycache__/hdclass.cpython-38.pyc
-hyddown/__pycache__/hdclass.cpython-38.pyc
-hyddown/__pycache__/transport.cpython-38.pyc
-hyddown/__pycache__/hdclass.cpython-38.pyc
-hyddown/__pycache__/transport.cpython-38.pyc
-hyddown/__pycache__/hdclass.cpython-38.pyc
-hyddown/__pycache__/hdclass.cpython-38.pyc
-src/hyddown/__pycache__/test_all.cpython-38-pytest-6.2.3.pyc
-src/hyddown/__pycache__/hdclass.cpython-38.pyc
-src/hyddown/__pycache__/validator.cpython-38.pyc
-src/hyddown/__pycache__/hdclass.cpython-38.pyc
-.gitignore
-src/hyddown/__pycache__/validator.cpython-38.pyc
-src/hyddown/__pycache__/hdclass.cpython-38.pyc
-src/hyddown/__pycache__/hdclass.cpython-38.pyc
-src/hyddown/__pycache__/hdclass.cpython-38.pyc
-src/hyddown/__pycache__/test_all.cpython-38-pytest-6.2.3.pyc
-src/hyddown/__pycache__/hdclass.cpython-38.pyc
-.gitignore
-.gitignore
-src/hyddown/__pycache__/test_all.cpython-38-pytest-6.2.3.pyc
-src/hyddown/__pycache__/hdclass.cpython-38.pyc
-src/HydDown.egg-info/PKG-INFO
-src/hyddown/__pycache__/validator.cpython-38.pyc
-src/hyddown/__pycache__/transport.cpython-38.pyc
-src/hyddown/__pycache__/hdclass.cpython-38.pyc
-src/hyddown/__pycache__/__init__.cpython-310.pyc
-src/hyddown/__pycache__/fire.cpython-310.pyc
-src/hyddown/__pycache__/hdclass.cpython-310.pyc
-src/hyddown/__pycache__/thermesh.cpython-310.pyc
-src/hyddown/__pycache__/transport.cpython-310.pyc
-src/hyddown/__pycache__/validator.cpython-310.pyc
-src/hyddown/__pycache__/fire.cpython-311.pyc
-src/hyddown/__pycache__/hdclass.cpython-311.pyc
-src/hyddown/__pycache__/thermesh.cpython-311.pyc
-src/hyddown/__pycache__/transport.cpython-311.pyc
-src/hyddown/__pycache__/validator.cpython-311.pyc
-src/HydDown.egg-info/PKG-INFO
-src/HydDown.egg-info/dependency_links.txt
-src/hyddown/__pycache__/__init__.cpython-311.pyc
-src/HydDown.egg-info/top_level.txt
-src/HydDown.egg-info/dependency_links.txt
-src/HydDown.egg-info/PKG-INFO
-src/hyddown/__pycache__/__init__.cpython-311.pyc
-src/hyddown/__pycache__/fire.cpython-311.pyc
-src/hyddown/__pycache__/hdclass.cpython-311.pyc
-src/hyddown/__pycache__/thermesh.cpython-311.pyc
-src/hyddown/__pycache__/transport.cpython-311.pyc
-src/hyddown/__pycache__/validator.cpython-311.pyc
-src/hyddown/__pycache__/test_all.cpython-311-pytest-8.3.4.pyc
-TEST_IMPROVEMENTS_SUMMARY.md
-FINAL_TEST_REPORT.md
-apply_bug_fixes.py
-BUG_FIXES_PROPOSAL.md
-BUGS_AND_FIXES_SUMMARY.md
-COMPLETION_SUMMARY.md
-VALIDATION_SUMMARY.md
-BUG_FIX_VALIDATION_SUMMARY.md
-src/hyddown/__pycache__/hdclass.cpython-312.pyc
-VALIDATION_REPORT.txt
-src/hyddown/__pycache__/hdclass.cpython-312.pyc
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+*.backup
+*.backup_*
+compare_*.py
+test_*.py
+comparison_*.png
+*_SUMMARY.md
+*_REPORT.*
+apply_*.py

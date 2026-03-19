@@ -89,6 +89,11 @@ def validate_mandatory_ruleset(input):
                     "type": "number",
                     "min": 0.0001,
                 },
+                "thermal_conductivity_biot": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.0001,
+                },
                 "density": {"required": False, "type": "number", "min": 1},
                 "liner_thickness": {"required": False, "type": "number", "min": 0.0},
                 "liner_heat_capacity": {"required": False, "type": "number", "min": 1},
@@ -430,6 +435,11 @@ def heat_transfer_validation(input):
                             "type": "number",
                             "min": 0.0001,
                         },
+                        "thermal_conductivity_biot": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
                         "density": {"required": True, "type": "number", "min": 1},
                         "liner_thickness": {
                             "required": False,
@@ -606,7 +616,33 @@ def heat_transfer_validation(input):
                         "diameter": {"required": True, "type": "number"},
                         "thickness": {"required": True, "type": "number", "min": 0.0},
                         "heat_capacity": {"required": True, "type": "number", "min": 1},
+                        "thermal_conductivity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
+                        "thermal_conductivity_biot": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
                         "density": {"required": True, "type": "number", "min": 1},
+                        "liner_thickness": {"required": False, "type": "number", "min": 0.0},
+                        "liner_heat_capacity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 1,
+                        },
+                        "liner_thermal_conductivity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
+                        "liner_density": {
+                            "required": False,
+                            "type": "number",
+                            "min": 1,
+                        },
                         "orientation": {
                             "required": True,
                             "type": "string",
