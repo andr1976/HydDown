@@ -136,8 +136,8 @@ latex_elements = {
     'pointsize': '10pt',
     'preamble': r'''
 \usepackage{charter}
-\usepackage[defaultsans]{lato}
-\usepackage{inconsolata}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\rmdefault}
 ''',
     'figure_align': 'htbp',
 }
