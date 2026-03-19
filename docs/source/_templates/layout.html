@@ -1,0 +1,13 @@
+{% extends "!layout.html" %}
+
+{# Inject downloads section in the sidebar after search, before navigation menu #}
+{% block sidebartitle %}
+  {{ super() }}
+  <div class="wy-side-nav-downloads" style="margin-top: 1em; padding: 0 1.618em; border-top: 1px solid #343131; padding-top: 1em;">
+    <h3 style="color: #ddd; margin-bottom: 0.5em; font-size: 90%;">Downloads</h3>
+    <ul style="list-style: none; padding-left: 0; margin: 0;">
+      <li style="margin-bottom: 0.5em;"><a href="{{ pathto('_downloads/HydDown.pdf', 1) }}" style="color: #2980b9;"><i class="fa fa-file-pdf-o"></i> PDF</a></li>
+      <li style="margin-bottom: 0.5em;"><a href="{{ pathto('_downloads/HydDown.epub', 1) }}" style="color: #2980b9;"><i class="fa fa-book"></i> EPUB</a></li>
+    </ul>
+  </div>
+{% endblock %}
