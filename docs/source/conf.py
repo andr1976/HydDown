@@ -26,7 +26,11 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx_autodoc_typehints',
     'myst_parser',
+    'sphinxcontrib.bibtex',
 ]
+
+# Bibliography configuration
+bibtex_bibfiles = ['references.bib']
 
 # MyST parser configuration
 myst_enable_extensions = [
@@ -34,7 +38,23 @@ myst_enable_extensions = [
     "deflist",
     "dollarmath",
     "amsmath",
+    "attrs_inline",
 ]
+
+# MyST heading anchors
+myst_heading_anchors = 3
+
+# Enable figure numbering
+numfig = True
+numfig_format = {
+    'figure': 'Figure %s',
+    'table': 'Table %s',
+    'code-block': 'Listing %s',
+    'section': 'Section %s'
+}
+
+# Figure and table numbering
+numfig_secnum_depth = 1
 
 # Napoleon settings for parsing Google and NumPy style docstrings
 napoleon_google_docstring = True
@@ -90,5 +110,55 @@ html_theme_options = {
     'titles_only': False
 }
 
+# GitHub repository link
+html_show_sourcelink = False
+html_context = {
+    'display_github': True,
+    'github_user': 'andr1976',
+    'github_repo': 'HydDown',
+    'github_version': 'main',
+    'conf_py_path': '/docs/source/',
+}
+
+# Enable Read the Docs download links
+# RTD theme will show download links in sidebar/footer if formats are built
+# and available via html_extra_path
+html_use_opensearch = 'https://andr1976.github.io/HydDown'
+
 # GitHub Pages settings
 html_baseurl = 'https://andr1976.github.io/HydDown/'
+
+# -- Options for LaTeX output ------------------------------------------------
+
+latex_engine = 'pdflatex'
+latex_elements = {
+    'papersize': 'letterpaper',
+    'pointsize': '10pt',
+    'preamble': r'''
+\usepackage{charter}
+\usepackage[defaultsans]{lato}
+\usepackage{inconsolata}
+''',
+    'figure_align': 'htbp',
+}
+
+# Grouping the document tree into LaTeX files
+latex_documents = [
+    ('index', 'HydDown.tex', 'HydDown Documentation',
+     'Anders Andreasen', 'manual'),
+]
+
+# -- Options for EPUB output -------------------------------------------------
+
+epub_title = project
+epub_author = author
+epub_publisher = author
+epub_copyright = copyright
+epub_exclude_files = ['search.html']
+
+# -- Options for manual page output ------------------------------------------
+
+man_pages = [
+    ('index', 'hyddown', 'HydDown Documentation',
+     [author], 1)
+]
