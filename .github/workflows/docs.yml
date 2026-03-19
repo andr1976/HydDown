@@ -40,7 +40,12 @@ jobs:
       - name: Install LaTeX
         run: |
           sudo apt-get update
-          sudo apt-get install -y texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended latexmk
+          sudo apt-get install -y \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            latexmk
 
       - name: Build HTML documentation
         run: |
@@ -53,6 +58,7 @@ jobs:
           make epub
 
       - name: Build PDF documentation
+        continue-on-error: true
         run: |
           cd docs
           make latexpdf
@@ -61,8 +67,15 @@ jobs:
         run: |
           # Sphinx/RTD theme looks for these in standard _downloads location
           mkdir -p docs/build/html/_downloads
-          cp docs/build/epub/HydDown.epub docs/build/html/_downloads/ || true
-          cp docs/build/latex/HydDown.pdf docs/build/html/_downloads/ || true
+          # Copy EPUB (should always exist)
+          cp docs/build/epub/HydDown.epub docs/build/html/_downloads/ || echo "EPUB not found"
+          # Copy PDF if it was built successfully
+          if [ -f docs/build/latex/HydDown.pdf ]; then
+            cp docs/build/latex/HydDown.pdf docs/build/html/_downloads/
+            echo "PDF copied successfully"
+          else
+            echo "PDF build failed or not found - skipping"
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
