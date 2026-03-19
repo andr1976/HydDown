@@ -107,15 +107,13 @@ Simulate vessel response to a pool fire:
 
    valve:
      flow: "discharge"
-     type: "relief_valve"
-     diameter: 0.05
+     type: "relief"
      set_pressure: 12000000
-     blow_down: 0.1
+     back_pressure: 101325
 
    heat_transfer:
-     type: "fire"
-     fire_type: "pool_fire_api521"
-     emissivity: 0.8
+     type: "s-b"
+     fire: "api_pool"
 
 Relief Valve Sizing
 -------------------
@@ -148,16 +146,13 @@ Size a relief valve for fire scenario per API 521:
 
    valve:
      flow: "discharge"
-     type: "relief_valve"
-     diameter: 0.1
+     type: "relief"
      set_pressure: 8500000
-     blow_down: 0.1
      back_pressure: 100000
 
    heat_transfer:
-     type: "fire"
-     fire_type: "jet_fire_api521"
-     emissivity: 0.9
+     type: "s-b"
+     fire: "api_jet"
 
 Two-Phase Calculations
 ----------------------
@@ -193,11 +188,11 @@ Model two-phase hydrogen storage with boiling:
    valve:
      flow: "discharge"
      type: "mdot"
-     mass_flow: 0.01
+     mdot: 0.01
+     back_pressure: 101325
 
    heat_transfer:
      type: "specified_h"
-     h_inner_gas: 50
-     h_inner_liquid: 500
+     h_inner: 50
      h_outer: 5
      temp_ambient: 293.15

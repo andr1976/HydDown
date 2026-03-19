@@ -13,7 +13,13 @@ sys.path.insert(0, os.path.abspath('../../src'))
 project = 'HydDown'
 copyright = '2026, Anders Andreasen'
 author = 'Anders Andreasen'
-release = '1.0'
+
+# Read version from setup.cfg
+import configparser
+config = configparser.ConfigParser()
+config.read('../../setup.cfg')
+version = config.get('metadata', 'version')
+release = version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
