@@ -1,0 +1,28 @@
+vessel:
+  length: 9
+  diameter: 3
+  orientation: "vertical"
+  type: "Flat-end"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.136  # Same as rupture.yml
+  thermal_conductivity: 45  # Steel thermal conductivity W/m-K for 1D heat transfer
+initial:
+  temperature: 298.15
+  pressure: 11500000
+  fluid: "CH4"
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 900.
+valve:
+  flow: "discharge"
+  type: "relief"
+  set_pressure: 13550000
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_jet"
+rupture:
+  material: "CS_360LT"
+  fire: "scandpower_jet_peak_large"

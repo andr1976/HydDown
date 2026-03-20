@@ -1,0 +1,28 @@
+vessel:
+  length: 4.64
+  diameter: 1.7
+  orientation: "horizontal"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.01185
+  thermal_conductivity: 45 # Steel thermal conductivity W/m-K for 1D heat transfer
+  liquid_level: 0.4668
+initial:
+  temperature: 279
+  pressure: 550000
+  fluid: "propane"
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 660.
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.040
+  discharge_coef: 0.975
+  set_pressure: 1430000
+  blowdown: 0.20
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"

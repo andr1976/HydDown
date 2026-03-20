@@ -1,0 +1,102 @@
+name: Build and Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            latexmk
+
+      - name: Build HTML documentation
+        run: |
+          cd docs
+          make html
+
+      - name: Build EPUB documentation
+        run: |
+          cd docs
+          make epub
+
+      - name: Build PDF documentation
+        continue-on-error: true
+        run: |
+          cd docs
+          make latex
+          cd build/latex
+          # Run pdflatex 3 times in non-interactive mode to resolve references
+          pdflatex -interaction=nonstopmode HydDown.tex || true
+          pdflatex -interaction=nonstopmode HydDown.tex || true
+          pdflatex -interaction=nonstopmode HydDown.tex || true
+
+      - name: Copy downloadable formats to HTML build
+        run: |
+          # Sphinx/RTD theme looks for these in standard _downloads location
+          mkdir -p docs/build/html/_downloads
+          # Copy EPUB (should always exist)
+          cp docs/build/epub/HydDown.epub docs/build/html/_downloads/ || echo "EPUB not found"
+          # Copy PDF if it was built successfully
+          if [ -f docs/build/latex/HydDown.pdf ]; then
+            cp docs/build/latex/HydDown.pdf docs/build/html/_downloads/
+            echo "PDF copied successfully"
+          else
+            echo "PDF build failed or not found - skipping"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/build/html
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

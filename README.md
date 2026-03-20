@@ -19,7 +19,7 @@ Run the code as simple as:
 
 where main.py is the main script and input.yml is the input file in Yaml syntax. 
 
-Consult the [manual](https://github.com/andr1976/HydDown/raw/main/docs/MANUAL.pdf) for a more rigorous explanation of the software, the implemented methods, and its usage. Further, the manual also contains a few validation studies. 
+Consult the [manual](https://andr1976.github.io/HydDown/) for a more rigorous explanation of the software, the implemented methods, and its usage. Further, the manual also contains a few validation studies. 
 
 ## Citing HydDown 
 

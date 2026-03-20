@@ -37,7 +37,7 @@ st.markdown(
     of what Hyddown can do!
     ### Want to learn more?
     - Check out [HydDown](https://github.com/andr1976/HydDown)
-    - Jump into our [documentation](https://github.com/andr1976/HydDown/blob/main/docs/MANUAL.pdf)
+    - Jump into our [documentation](https://andr1976.github.io/HydDown/)
     - Read the paper in JOSS: [![DOI](https://joss.theoj.org/papers/10.21105/joss.03695/status.svg)](https://doi.org/10.21105/joss.03695)
 
     ### About Hyddown

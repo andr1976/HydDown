@@ -89,6 +89,11 @@ def validate_mandatory_ruleset(input):
                     "type": "number",
                     "min": 0.0001,
                 },
+                "thermal_conductivity_biot": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.0001,
+                },
                 "density": {"required": False, "type": "number", "min": 1},
                 "liner_thickness": {"required": False, "type": "number", "min": 0.0},
                 "liner_heat_capacity": {"required": False, "type": "number", "min": 1},
@@ -136,7 +141,14 @@ def validate_mandatory_ruleset(input):
                 "type": {
                     "required": True,
                     "type": "string",
-                    "allowed": ["orifice", "psv", "controlvalve", "mdot", "relief"],
+                    "allowed": [
+                        "orifice",
+                        "psv",
+                        "controlvalve",
+                        "mdot",
+                        "relief",
+                        "hem_release",
+                    ],
                 },
                 "flow": {
                     "required": True,
@@ -423,6 +435,11 @@ def heat_transfer_validation(input):
                             "type": "number",
                             "min": 0.0001,
                         },
+                        "thermal_conductivity_biot": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
                         "density": {"required": True, "type": "number", "min": 1},
                         "liner_thickness": {
                             "required": False,
@@ -599,7 +616,33 @@ def heat_transfer_validation(input):
                         "diameter": {"required": True, "type": "number"},
                         "thickness": {"required": True, "type": "number", "min": 0.0},
                         "heat_capacity": {"required": True, "type": "number", "min": 1},
+                        "thermal_conductivity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
+                        "thermal_conductivity_biot": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
                         "density": {"required": True, "type": "number", "min": 1},
+                        "liner_thickness": {"required": False, "type": "number", "min": 0.0},
+                        "liner_heat_capacity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 1,
+                        },
+                        "liner_thermal_conductivity": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0001,
+                        },
+                        "liner_density": {
+                            "required": False,
+                            "type": "number",
+                            "min": 1,
+                        },
                         "orientation": {
                             "required": True,
                             "type": "string",
@@ -679,7 +722,14 @@ def valve_validation(input):
                 "type": {
                     "required": True,
                     "type": "string",
-                    "allowed": ["orifice", "psv", "controlvalve", "mdot", "relief"],
+                    "allowed": [
+                        "orifice",
+                        "psv",
+                        "controlvalve",
+                        "mdot",
+                        "relief",
+                        "hem_release",
+                    ],
                 },
                 "flow": {
                     "required": True,
@@ -769,6 +819,36 @@ def valve_validation(input):
         },
     }
 
+    schema_hem_release = {
+        "initial": {"required": True},
+        "calculation": {"required": True},
+        "validation": {"required": False},
+        "vessel": {"required": True},
+        "rupture": {"required": False},
+        "heat_transfer": {"required": False},
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["hem_release"],
+                },
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge"],
+                },
+                "diameter": {"required": True, "type": "number", "min": 0},
+                "discharge_coef": {"required": True, "type": "number", "min": 0},
+                "end_pressure": {"type": "number", "min": 0},
+                "back_pressure": {"required": True, "type": "number", "min": 0},
+                "Cv": {"type": "number", "min": 0},
+            },
+        },
+    }
     schema_control_valve = {
         "initial": {"required": True},
         "rupture": {"required": False},
@@ -844,6 +924,11 @@ def valve_validation(input):
             print(v.errors)
     elif input["valve"]["type"] == "orifice":
         v = Validator(schema_orifice)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
+    elif input["valve"]["type"] == "hem_release":
+        v = Validator(schema_hem_release)
         retval = v.validate(input)
         if v.errors:
             print(v.errors)

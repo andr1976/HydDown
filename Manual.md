@@ -75,7 +75,7 @@ First of all, the the pure substance Helmholtz energy based equation of state (H
 Using only a single gas phase species also means that component balances is redundant and 2 or 3-phase flash calculations are not required.
 That being said, the principle used for a single component is more or less the same, even for multicomponent mixtures with potentially more than one phase.
 
-In the latest revision 1-D transient heat conduction through the vessel wall is now an option if required for low thermal conductivity materials and e.g. type III/IV vessels (1-D heat transfer not yet implemented for fire heat load). Further, rigorous two-phase calculations are now possible by specifying a liquid level in the vessel (1-D heat transfer not yet implemented, only 0-D). Rigorous two-phase single component calculations is also supported in the latest release implementing an equilibrium assumption i.e. gas and liquid phase is in thermal equilibrium, although the vessel wall in contact with gas and liquid, respectively, is allowed to differ. 
+In the latest revision 1-D transient heat conduction through the vessel wall is now an option if required for low thermal conductivity materials and e.g. type III/IV vessels. The 1-D heat transfer model is fully integrated with fire heat load calculations (Stefan-Boltzmann method) and two-phase flow scenarios. Rigorous two-phase single component calculations are supported implementing an equilibrium assumption i.e. gas and liquid phase are in thermal equilibrium, although the vessel wall in contact with gas and liquid, respectively, is allowed to differ in temperature. For two-phase systems, the 1-D model solves separate heat conduction problems for the wetted (liquid-contact) and unwetted (gas-contact) wall regions. 
 
 In case multi-component two-phase behaviour is required, the HydDown sibling ORS [*openthermo*](https://github.com/ORS-Consulting/ORS-openthermo) is recommended. This software package also implements a partial/non-equilibrium assumption for the gas and liquid phase [@Andreasen2025]. 
 
@@ -413,6 +413,7 @@ vessel:
   heat_capacity: number, required when heat transfer is calculated
   density: number, required when heat transfer is calculated
   thermal_conductivity: number, required for 1-D transient heat transfer
+  thermal_conductivity_biot: number, optional for Biot number calculation in lumped models
   liner_thickness: number, required only for bi-material 1-D transient heat transfer
   liner_heat_capacity: number, required only for bi-material 1-D transient heat transfer 
   liner_density: number, required only for bi-material 1-D transient heat transfer
@@ -682,6 +683,38 @@ $$ \dot{m}_{flow}= C_d  \cdot A \cdot\sqrt{\left ( \frac{2 k}{k-1}\right )  \cdo
 - $C_d$ is the discharge coefficient of the orifice opening. $[-]$
 - $A$ is the cross sectional area of the orifice. $[m^2]$
 
+### HEM orifice release
+The HEM (homogeneous equilibrium model) assumption is based on the general steady-flow energy balance for isentropic nozzle flow. The fundamental assumption is that thermal and mechanical equilibrium exist between phases as the fluid passes through the release orifice.
+
+Starting from the steady-flow energy balance (neglecting potential energy and friction):
+
+$$h_0 = h_1 + \frac{v^2}{2}$$
+
+where:
+- $h_0$ = upstream stagnation enthalpy
+- $h_1$ = fluid enthalpy at reduced pressure
+- $v$ = fluid velocity
+
+Rearranging for velocity:
+
+$$v = \sqrt{2(h_0 - h_1)}$$
+
+The mass flux (mass flow per unit area) is:
+
+$$G = \rho \cdot v = \rho \sqrt{2(h_0 - h_1)}$$
+
+where $\rho$ is the fluid density at the reduced pressure conditions.
+
+For an isentropic expansion from upstream pressure $P_0$ to various downstream pressures, the maximum mass flux occurs either at:
+1. The critical flow pressure (choked flow)
+2. The backpressure (unchoked flow)
+
+This can be expressed as:
+
+$$G_{max} = \max\left[\rho(P) \sqrt{2\int_{P_0}^{P} v \, dP}\right]$$
+
+where the integral is evaluated along an isentropic path, and $v$ is the specific volume.
+
 ### Pressure safety valve / Relief valve
 A PSV / relief valve is a mechanical device actuated by the static pressure in the vessel and a conventional PSV is often used for gas/vapor systems.
 A conventional PSV is a spring-loaded device which will activate at a predetermined opening pressure, and relieve the vessel pressure until a given reseat pressure has been reached.
@@ -922,6 +955,18 @@ With a typical thermal conductivity of 45 $W/m K$ for steel and a heat transfer 
 This is significantly higher than that approximated by [@STRIEDNIG].
 However, the Biot number is significantly lower than 1, and the assumption of a uniform temperature is reasonable.
 However, for increased wall thickness, and/or for different materials with lower thermal conductivity, the error may grow to an unacceptable level.
+
+#### Biot number calculation in lumped models
+
+To help users assess the validity of the lumped capacitance assumption, HydDown now calculates the Biot number at each time step for lumped heat transfer models (0-D). When the optional parameter `thermal_conductivity_biot` is specified in the vessel properties, the Biot number is computed as:
+
+$$ Bi = \frac{h \cdot L}{k} $$
+
+where $h$ is the heat transfer coefficient, $L$ is the wall thickness, and $k$ is the thermal conductivity. The code issues warnings when $Bi > 0.1$, indicating that thermal gradients through the wall may be significant and the 1-D transient heat transfer model should be considered instead.
+
+For two-phase systems, separate Biot numbers are calculated for the wetted (liquid-contact) and unwetted (gas-contact) regions, as these typically have very different heat transfer coefficients. The wetted region often exhibits much higher Biot numbers due to the enhanced heat transfer coefficient from boiling.
+
+Note that `thermal_conductivity_biot` is distinct from `thermal_conductivity`: the former is used only for Biot number validation in lumped models, while the latter activates the full 1-D transient heat transfer solver.
 
 Especially for vessels with low conductivity materials (or very thick walls) accurate estimation of the vessel wall temperatures requires the 1-D transient heat transfer problem to be solved. HydDown incorporates the [*thermesh*](https://github.com/wjbg/thermesh) code provided under an MIT license by Wouter Grouve [@thermesh]. The implemented model applies Cartesian coodinates as also applied in the h2fills program by NREL [@KUROKI], i.e. the curved vessel wall is assumed a flat plate. This may to some extent be justied by the relatively large radius of a cylindrical storage container compared to the vessel wall thichness (see also justification references in [@KUROKI]).
 
@@ -1476,9 +1521,9 @@ A simulation with a steel vessel subject to fire heat load is compared against c
 
 The results are displayed in [@fig:Unisim_jet_pres] and [@fig:Unisim_jet_temp]. As seen the agreement between the two simulation codes is indeed adequate. The main difference is the intitial temperature of the steel vessel wall which is higher in Unisim. In Hyddown the vessel wall temperature is initialised at the fluid temperature, whereas in Unisim it is likely based on a steady-heat balance using the applied ambient temperature (set to equal the flame temperature for calculation purpose).
 
-![Calculation of vessel pressure as a function of time for a steel vessel jubject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/Unisin_jet_fire_1.png){#fig:Unisim_jet_pres}
+![Calculation of vessel pressure as a function of time for a steel vessel subject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/Unisin_jet_fire_1.png){#fig:Unisim_jet_pres}
 
-![Calculation of vessl temperature as a function of time for a steel vessel jubject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/Unisin_jet_fire_2.png){#fig:Unisim_jet_temp}
+![Calculation of vessl temperature as a function of time for a steel vessel subject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/Unisin_jet_fire_2.png){#fig:Unisim_jet_temp}
 
 # Example use cases 
 
@@ -1519,6 +1564,30 @@ heat_transfer:
 ~~~
 
 ![LPG vessel subject to pool fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.](docs/img/LPG_fire.png){#fig:LPG}
+
+### LPG vessel with 1-D heat transfer
+
+The LPG fire scenario can also be simulated using the 1-D transient heat conduction model by adding the `thermal_conductivity` parameter to the vessel properties. This enables separate tracking of inner and outer wall temperatures for both wetted and unwetted regions:
+
+~~~ {.Yaml}
+vessel:
+  length: 4.64
+  diameter: 1.7
+  orientation: "horizontal"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.01185
+  thermal_conductivity: 45  # Steel thermal conductivity W/m-K
+  liquid_level: 0.4668
+~~~
+
+With the 1-D model, the code solves separate heat conduction equations for the wetted (liquid-contact) and unwetted (gas-contact) wall regions. This is particularly important for two-phase fire scenarios where:
+
+- The wetted region experiences higher internal heat transfer coefficients due to boiling
+- The unwetted region has lower heat transfer coefficients (gas convection only)
+- Wall temperature gradients through the thickness become significant with thin walls and high heat fluxes
+
+For this steel vessel case with 11.85 mm wall thickness, the lumped capacitance model ($Bi \approx 0.03$ for unwetted, $Bi \approx 0.79$ for wetted region) gives results very close to the 1-D model. However, for thicker walls, lower thermal conductivity materials (Type III/IV vessels), or when accurate wall temperature profiles are needed, the 1-D model should be used.
 
 ## Rupture estimation 
 The below example is a calculation where a methane filled cylindrical flat-end vessel is subject to a back-ground heat load from a jet fire. The backgorund heat load is given by the general Stefan-Boltzmann fire equation and heat load according to the Scandpower guideline [@scandpower]. In addition to this for the post calculation of rupture according to the von Mises stress criterion as outlined in [@sec:vonmises]. The discharge model is specified as **relief**, in this case the pressure is allowed to increase, until the relief valve set pressure is reached. From this point the pressure is kept constant and the required relief rate in order to keep the pressure constant is calculated. This method only works in case a heat load is applied. 
