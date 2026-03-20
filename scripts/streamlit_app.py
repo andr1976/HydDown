@@ -22,7 +22,7 @@ with st.sidebar:
             "Sketch.png",
         )
         icon = Image.open(image_path)
-        st.image(icon, use_container_width=True, caption="HydDown")
+        st.image(icon, width="stretch", caption="HydDown")
     except:
         pass
 
