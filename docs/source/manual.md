@@ -153,7 +153,7 @@ Thermal conductivity | W/(m K)
 Density | kg/m$^3$
 Heat capacity | J/(kg K)
 
-: Unit system
+*Table: Unit system*
 
 As will be noted when presenting the equations implemented in the code, some of the equations utilise different units than the ones listed in the table.
 However, it is important to note that unit conversions are built in to the methods implemented, so the user shall not worry about unit conversion.  
@@ -469,7 +469,7 @@ For more information about the actual estimation of heat transfer see also {ref}
 | Scandpower      | Pool            |                  100       |
 | Scandpower      | Jet             |                  100       |
 
-: Fire heat loads
+*Table: Fire heat loads*
 
 ```yaml
 heat_transfer:
@@ -833,7 +833,7 @@ Q       |   11.050          |   7.12901 $\cdot$ 10$^{-3}$
 R       |   16.000          |   1.03225 $\cdot$ 10$^{-2}$
 T       |   26.000          |   1.67741 $\cdot$ 10$^{-2}$
 
-: Standard PSV orifice sizes according to API
+*Table: Standard PSV orifice sizes according to API*
 
 ### Control Valve
 For calculating the mass flow through a control valve, the ANSI/ISA {cite}`borden,ISA`methodology also described in IEC 60534 {cite}`IEC60534` is applied.
@@ -1094,7 +1094,7 @@ The heat flux used to calculate the flame temperature is given in table the tabl
 | Peak heat load         |  250            |  350            | 150         
 | Background heat load   |   0             |   100           |  100         
 
-: Incident heat fluxes for various fire scenarios given by Scandpower {cite}`scandpower`
+*Table: Incident heat fluxes for various fire scenarios given by Scandpower {cite}`scandpower`*
 
 
 ## Vessel geometry 
@@ -1117,7 +1117,7 @@ Both ASME F&D, DIN and 2:1 semielliptical are variants of a torispherical vessel
 |  ASME F&D            | 1   | 0.06  |
 |  DIN 28011           | 1   | 0.1   |
 
-: Vessel geometry details. For torispherical tank heads, the following *f* and *k* parameters are used in standards {cite}`fluids`. *f* is the dish-radius parameter for tanks with torispherical heads or bottoms, *k* is the knuckle-radius parameter for tanks with torispherical heads or bottoms
+*Table: Vessel geometry details. For torispherical tank heads, the following *f* and *k* parameters are used in standards {cite}`fluids`. *f* is the dish-radius parameter for tanks with torispherical heads or bottoms, *k* is the knuckle-radius parameter for tanks with torispherical heads or bottoms*
 
 Using the *fluids* library partial volumes, surface area (full and partial) and liquid level (from partial volume) can be calculated and used internally in *openthermo*.
 
@@ -1187,7 +1187,7 @@ Steel Ultimate Tensile Strengt as a finction of temperature for the materials im
 | Austenitic (SS) | 316       | A-358 316 | 1.4401 | A-320 |
 | Super austenitic (SS) | 6Mo |      | 1.4529 | B-677 |
 
-: Steel materials implemented in *openthermo*.
+*Table: Steel materials implemented in *openthermo*.*
 
 
 ## Model implementation
@@ -1384,7 +1384,7 @@ Vessel details are provided below:
 | Density         | 7740 kg/m$^3$ |
 | Heat capacity   | 470 J/(kg K) |
 
-: Key hydrogen vessel data {cite}`STRIEDNIG`
+*Table: Key hydrogen vessel data {cite}`STRIEDNIG`*
 
 {cite}`STRIEDNIG` reports many different experiments.
 In this comparison we will use experiments applying different pressurisation rates / durations using identical initial conditions.
@@ -1480,7 +1480,7 @@ The first validation case is made against the commercial tool Honeywell Unisim D
 |Discharge mass flow | 0.02 kg/s|
 | Gas | Hydrogen |
 
-: Key vessel data and intial conditions
+*Table: Key vessel data and intial conditions*
 
 The comparison between HydDown results and the corresponding simulations using Unisim Design Dynamics are shown in Figure {numref}`fig-unisim_val`: As seen from the results the results obtained using HydDown closely resembles the Unisim Design results. The outer wall temperature is matched perfectly and the final gas temperature and inner vessel temperature deviates marginally by 1.5 and 1.9 $^\circ$C, respectively. Unisim predicts a sligtly lower gas temeprature and HydDown predicts a slightly lower inner wall temperature.  
 
@@ -1515,7 +1515,7 @@ Using data from Molkov *et al.* {cite}`MOLKOV1,MOLKOV2`experiments performed at 
 | Initial temperature | 20 $^\circ$C   |
 | Gas                 | Helium         |
 
-: Key vessel data and intial conditions
+*Table: Key vessel data and intial conditions*
 
 
 In HydDown the type IV pressure vessel geometry as assumed that of a flat ended cylinder, with the length adjusted to give a total inventory volume of 19 liter.  In order to simulate the system a lumped heat capacity and density for the type IV cylinder is made. The thermal conductivty is set to that of the liner material, and the outer heat transfer coefficient is set to 8 W/(m$^2$K) as applied in the H2fills software {cite}`KUROKI`. For a type IV vessel, the application of an average value for density, heat capacity and thermal conductivity can be an acceptable approximation since the liner and composite shell material are not too dissimilar.
@@ -1547,7 +1547,7 @@ The experimental setup is described in more detail in refs. {cite}`ACOSTA,DEMIGU
 | Gas                 | Hydrogen       |
 | Discharge rate      | 1.8 g/s        |
 
-: Key vessel data and initial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops
+*Table: Key vessel data and initial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops*
 
 The simulations with HydDown and comparison against the GasTeF experient is shown in Figure {numref}`fig-GasTeF_val`. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
 
@@ -1589,7 +1589,7 @@ In lack of a good and complete validation cases, an example is made using the KI
 | Initial temperature | 20 $^\circ$C   |
 | Gas                 | Helium         |
 
-: Key vessel data and initial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops.
+*Table: Key vessel data and initial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops.*
 
 The results of HydDown simulation with the *artificial* type III cylinder is shown in Figure {numref}`fig-KIT_typeIII`. As seen the immediate effect of replacing the HDPE liner with aluminum (compared to Figure {numref}`fig-KIT_val`) is a lower temperature drop in the gas phase and a liner temperature which approached the gas temperature very closely. This is in general agreement with the observations in ref. {cite}`DEMIGUEL`.
 
@@ -1660,7 +1660,7 @@ For HydDown type III cylinder filling experimental validation, the work of Dicke
 | Initial temperature | 20.25 $^\circ$C   |
 | Gas                 | H2         |
 
-: Key vessel data and initial conditions for Type III cylinder simulations.
+*Table: Key vessel data and initial conditions for Type III cylinder simulations.*
 
 Simulation results from HydDown is compared to the experimental data of Dicken and Mérida in Figure {numref}`fig-Dicken_typeIII`. As seen from the results the gas temperature calculated with HydDown is generally higher than the experimental results. The final calculated temperature is 74.2$^\circ$C, compared to the final measured temperature of 68.9$^\circ$C. The CFD calculations performed by Dicken and Mérida {cite}`Dicken` was also higher than the experimental value (71.3$^\circ$C). Another CFD analysis of the investigated system by Hall and Ramasamy {cite}`Hall` revealed a final mean gas temperature of 71.4$^\circ$C, and a zero-dimensional model by the same authors gave an end temperature of 72.4$^\circ$C.   
 
@@ -1691,7 +1691,7 @@ A simulation with a steel vessel subject to fire heat load is compared against c
 | Fire type         | Jet fire  |
 | Incident heat flux    |  100 kW/m$^2$       |
 
-: Data for validation of fire heat load calulations.
+*Table: Data for validation of fire heat load calulations.*
 
 The results are displayed in {numref}`fig-Unisim_jet_pres` and {numref}`fig-Unisim_jet_temp`. As seen the agreement between the two simulation codes is indeed adequate. The main difference is the intitial temperature of the steel vessel wall which is higher in Unisim. In Hyddown the vessel wall temperature is initialised at the fluid temperature, whereas in Unisim it is likely based on a steady-heat balance using the applied ambient temperature (set to equal the flame temperature for calculation purpose).
 
