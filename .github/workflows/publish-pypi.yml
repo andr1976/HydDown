@@ -8,13 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     # Only allow this workflow to run on the main branch
     if: github.ref == 'refs/heads/main'
-    
-    environment:
-      name: pypi
-      url: https://pypi.org/p/HydDown  # Replace <package-name> with your PyPI project name
-    permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
-
+  
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -43,4 +37,8 @@ jobs:
 
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://pypi.org/legacy/
+        password: ${{ secrets.PYPI_API_TOKEN }}
+        skip-existing: true
 
