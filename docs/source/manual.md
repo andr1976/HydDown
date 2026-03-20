@@ -136,24 +136,26 @@ For the package installed with pip navigate to the install directory `../site-pa
 The SI unit system is adapted for this project.
 The following common units are used in the present project and this also applies to the units used in the input files:
 
-Property | Unit | Comment
-----    | ----  | ----
-Temperature | K | $^\circ$ C is used in plots
-Pressure | Pa    | bar is used in plots
-Mass | kg |
-Volume | m$^3$ |
-Time | s |
-Energy | J |
-Duty/power | W
-Length | m
-Area | m$^2$
-Heat flux | W/m$^2$
-Heat transfer coefficient | W/(m$^2$ K)
-Thermal conductivity | W/(m K)
-Density | kg/m$^3$
-Heat capacity | J/(kg K)
+```{table} Unit system
+:name: tbl-unit-system
 
-*Table: Unit system*
+| Property | Unit | Comment |
+|----------|------|---------|
+| Temperature | K | $^\circ$ C is used in plots |
+| Pressure | Pa | bar is used in plots |
+| Mass | kg | |
+| Volume | m$^3$ | |
+| Time | s | |
+| Energy | J | |
+| Duty/power | W | |
+| Length | m | |
+| Area | m$^2$ | |
+| Heat flux | W/m$^2$ | |
+| Heat transfer coefficient | W/(m$^2$ K) | |
+| Thermal conductivity | W/(m K) | |
+| Density | kg/m$^3$ | |
+| Heat capacity | J/(kg K) | |
+```
 
 As will be noted when presenting the equations implemented in the code, some of the equations utilise different units than the ones listed in the table.
 However, it is important to note that unit conversions are built in to the methods implemented, so the user shall not worry about unit conversion.  
@@ -462,14 +464,16 @@ For the calculations using a control valve as mass transfer device a linear rate
 ### Heat transfer
 For more information about the actual estimation of heat transfer see also {ref}`sec-heat`. For the case of `fire` heat input predetermined parameters for the Stefan-Boltzmann fire equation are used to calculate different background heat loads cf. the table below
 
-| Source          |  Fire type      |       Heat load ($kW/m^2$) |
-|-----------------|-----------------|----------------------------|
-| API521          | Pool            |                   60       |
-| API521          | Jet             |                  100       |
-| Scandpower      | Pool            |                  100       |
-| Scandpower      | Jet             |                  100       |
+```{table} Fire heat loads
+:name: tbl-fire-heat-loads
 
-*Table: Fire heat loads*
+| Source | Fire type | Heat load ($kW/m^2$) |
+|--------|-----------|----------------------|
+| API521 | Pool | 60 |
+| API521 | Jet | 100 |
+| Scandpower | Pool | 100 |
+| Scandpower | Jet | 100 |
+```
 
 ```yaml
 heat_transfer:
@@ -816,24 +820,26 @@ Relief valve hysteresis adapted from {cite}`iskov`
 
 When specifying PSVs it common to use standard API sizes as shown in the table
 
-Size    | Area [in$^2$]     |   Area [m$^2$]
---------|-------------------|----------------------------
-D       |   0.110           |   7.09676 $\cdot$ 10$^{-5}$
-E       |   0.196           |   1.26451 $\cdot$ 10$^{-4}$
-F       |   0.307           |   1.98064 $\cdot$ 10$^{-4}$
-G       |   0.503           |   3.24515 $\cdot$ 10$^{-4}$
-H       |   0.785           |   5.06450 $\cdot$ 10$^{-4}$
-J       |   1.287           |   8.30320 $\cdot$ 10$^{-4}$
-K       |   1.838           |   1.18580 $\cdot$ 10$^{-3}$
-L       |   2.853           |   1.84064 $\cdot$ 10$^{-3}$
-M       |   3.600           |   2.32257 $\cdot$ 10$^{-3}$
-N       |   4.340           |   2.79999 $\cdot$ 10$^{-3}$
-P       |   6.380           |   4.11612 $\cdot$ 10$^{-3}$
-Q       |   11.050          |   7.12901 $\cdot$ 10$^{-3}$
-R       |   16.000          |   1.03225 $\cdot$ 10$^{-2}$
-T       |   26.000          |   1.67741 $\cdot$ 10$^{-2}$
+```{table} Standard PSV orifice sizes according to API
+:name: tbl-psv-orifice-sizes
 
-*Table: Standard PSV orifice sizes according to API*
+| Size | Area [in$^2$] | Area [m$^2$] |
+|------|---------------|--------------|
+| D | 0.110 | 7.09676 $\cdot$ 10$^{-5}$ |
+| E | 0.196 | 1.26451 $\cdot$ 10$^{-4}$ |
+| F | 0.307 | 1.98064 $\cdot$ 10$^{-4}$ |
+| G | 0.503 | 3.24515 $\cdot$ 10$^{-4}$ |
+| H | 0.785 | 5.06450 $\cdot$ 10$^{-4}$ |
+| J | 1.287 | 8.30320 $\cdot$ 10$^{-4}$ |
+| K | 1.838 | 1.18580 $\cdot$ 10$^{-3}$ |
+| L | 2.853 | 1.84064 $\cdot$ 10$^{-3}$ |
+| M | 3.600 | 2.32257 $\cdot$ 10$^{-3}$ |
+| N | 4.340 | 2.79999 $\cdot$ 10$^{-3}$ |
+| P | 6.380 | 4.11612 $\cdot$ 10$^{-3}$ |
+| Q | 11.050 | 7.12901 $\cdot$ 10$^{-3}$ |
+| R | 16.000 | 1.03225 $\cdot$ 10$^{-2}$ |
+| T | 26.000 | 1.67741 $\cdot$ 10$^{-2}$ |
+```
 
 ### Control Valve
 For calculating the mass flow through a control valve, the ANSI/ISA {cite}`borden,ISA`methodology also described in IEC 60534 {cite}`IEC60534` is applied.
@@ -1089,12 +1095,16 @@ q_{total}=\sigma \cdot T_f^4 + h_f \cdot (T_f-T_{amb})
 
 The heat flux used to calculate the flame temperature is given in table the table.
 
-|                        | Small jet fire  [kW/m$^2$]  |  Large jet fire  [kW/m$^2$] |  Pool fire  [kW/m$^2$]
-| ----                   |  ----           |  ----           | ----
-| Peak heat load         |  250            |  350            | 150         
-| Background heat load   |   0             |   100           |  100         
+```{table} Incident heat fluxes for various fire scenarios (Scandpower)
+:name: tbl-incident-heat-fluxes
 
-*Table: Incident heat fluxes for various fire scenarios given by Scandpower {cite}`scandpower`*
+|  | Small jet fire [kW/m$^2$] | Large jet fire [kW/m$^2$] | Pool fire [kW/m$^2$] |
+|--|---------------------------|---------------------------|----------------------|
+| Peak heat load | 250 | 350 | 150 |
+| Background heat load | 0 | 100 | 100 |
+```
+
+*Source: {cite}`scandpower`*
 
 
 ## Vessel geometry 
@@ -1111,13 +1121,17 @@ Both ASME F&D, DIN and 2:1 semielliptical are variants of a torispherical vessel
 
 
 
-| Vessel geometry      | f   | k     |
-| ----                 |---- | ----  |
-|  2:1 semi-elliptical | 0.9 | 0.17  |
-|  ASME F&D            | 1   | 0.06  |
-|  DIN 28011           | 1   | 0.1   |
+```{table} Vessel geometry details (torispherical tank heads)
+:name: tbl-vessel-geometry
 
-*Table: Vessel geometry details. For torispherical tank heads, the following *f* and *k* parameters are used in standards {cite}`fluids`. *f* is the dish-radius parameter for tanks with torispherical heads or bottoms, *k* is the knuckle-radius parameter for tanks with torispherical heads or bottoms*
+| Vessel geometry | f | k |
+|-----------------|-----|-----|
+| 2:1 semi-elliptical | 0.9 | 0.17 |
+| ASME F&D | 1 | 0.06 |
+| DIN 28011 | 1 | 0.1 |
+```
+
+*For torispherical tank heads, the *f* and *k* parameters are used in standards {cite}`fluids`. *f* is the dish-radius parameter, *k* is the knuckle-radius parameter.*
 
 Using the *fluids* library partial volumes, surface area (full and partial) and liquid level (from partial volume) can be calculated and used internally in *openthermo*.
 
@@ -1179,15 +1193,17 @@ Steel Ultimate Tensile Strengt as a finction of temperature for the materials im
 ```
 
 
-| Steel type   | Type / alloy | ASME | DIN | ASTM |
-|--------------|--------------|------|-----|------|
-| Carbon steel | 235LT        |      |     | A-333 / A-671 |  
-|              | 360LT        |      |     |      |
-| Duplex (SS)  | 2205         | SA-770 | 1.4462 | A-790 |
-| Austenitic (SS) | 316       | A-358 316 | 1.4401 | A-320 |
-| Super austenitic (SS) | 6Mo |      | 1.4529 | B-677 |
+```{table} Steel materials implemented in *openthermo*
+:name: tbl-steel-materials
 
-*Table: Steel materials implemented in *openthermo*.*
+| Steel type | Type / alloy | ASME | DIN | ASTM |
+|------------|--------------|------|-----|------|
+| Carbon steel | 235LT | | | A-333 / A-671 |
+| | 360LT | | | |
+| Duplex (SS) | 2205 | SA-770 | 1.4462 | A-790 |
+| Austenitic (SS) | 316 | A-358 316 | 1.4401 | A-320 |
+| Super austenitic (SS) | 6Mo | | 1.4529 | B-677 |
+```
 
 
 ## Model implementation
@@ -1375,16 +1391,21 @@ Experimental results were obtained using a type I tank (steel) with a volume of 
 The filling of hydrogen of gas into the vessel was carried out with an upstream reservoir kept at 350 bar and the flow was controlled with an electronically controlled dispenser.
 Vessel details are provided below:
 
-| Parameter       | Value       |
-|-----------------|-------------|
-| Mass            | 69..5 kg    |
-| Length          | 0.61 m      |
-| OD              | 0.280 m     |
-| Wall thickness  | 0.0129 m    |
-| Density         | 7740 kg/m$^3$ |
-| Heat capacity   | 470 J/(kg K) |
+```{table} Key hydrogen vessel data
+:name: tbl-hydrogen-vessel-data
 
-*Table: Key hydrogen vessel data {cite}`STRIEDNIG`*
+| Parameter | Value |
+|-----------|-------|
+| Mass | 69.5 kg |
+| Length | 0.61 m |
+| OD | 0.280 m |
+| Wall thickness | 0.0129 m |
+| Density | 7740 kg/m$^3$ |
+| Heat capacity | 470 J/(kg K) |
+```
+
+*Source: {cite}`STRIEDNIG`*
+
 
 {cite}`STRIEDNIG` reports many different experiments.
 In this comparison we will use experiments applying different pressurisation rates / durations using identical initial conditions.
@@ -1466,21 +1487,23 @@ A few notes about vessels with poor thermal conductivity and composite materials
 The first validation case is made against the commercial tool Honeywell Unisim Design in dynamics mode. The initial conditions and vessel details are summarised below cf. the table.
 
 
-| Parameter       | Value       |
-|-----------------|-------------|
-| Length          | 6.4 m      |
-| ID              | 0.619 m     |
-| Wall thickness  | 0.024 m    |
-| Density         | 2000 kg/m$^3$ |
-| Heat capacity   | 962 J/(kg K) |
+```{table} Key vessel data and initial conditions
+:name: tbl-unisim-validation
+
+| Parameter | Value |
+|-----------|-------|
+| Length | 6.4 m |
+| ID | 0.619 m |
+| Wall thickness | 0.024 m |
+| Density | 2000 kg/m$^3$ |
+| Heat capacity | 962 J/(kg K) |
 | Thermal conductivity | 0.5 W/(m K) |
 | Outside $h$ | 2 W/(m$^2$ K) |
-| Initial pressure| 182 bar|
-| Initial temperature| 6 $^\circ$C |
-|Discharge mass flow | 0.02 kg/s|
+| Initial pressure | 182 bar |
+| Initial temperature | 6 $^\circ$C |
+| Discharge mass flow | 0.02 kg/s |
 | Gas | Hydrogen |
-
-*Table: Key vessel data and intial conditions*
+```
 
 The comparison between HydDown results and the corresponding simulations using Unisim Design Dynamics are shown in Figure {numref}`fig-unisim_val`: As seen from the results the results obtained using HydDown closely resembles the Unisim Design results. The outer wall temperature is matched perfectly and the final gas temperature and inner vessel temperature deviates marginally by 1.5 and 1.9 $^\circ$C, respectively. Unisim predicts a sligtly lower gas temeprature and HydDown predicts a slightly lower inner wall temperature.  
 
@@ -1494,28 +1517,30 @@ Calculations of vessel wall temperature (inner/outer) with 1D transient heat con
 ### Validation against KIT experiment (Type IV)
 Using data from Molkov *et al.* {cite}`MOLKOV1,MOLKOV2`experiments performed at HYKA-HyJet research facility at Karlsruhe Institute of Technology (KIT) for a 19 liter type IV pressure vessel are simulated. The storage vessel was initially charged to 700 bar with helium gas and then cooled down to a normal room temperature (293 K ) before start of the depressurisation. Tank characteristics were not available and the required parameters were extracted from a similar tank by Molkov *et al.*, see references within refs. {cite}`MOLKOV1,MOLKOV2`. Discharge was thorugh 1 mm nozzle and a discharge coefficient of 0.9 was applied in HydDown as in the study by Molkov *et al.*. The initial conditions and vessel details are summarised below cf. the table.
 
-| Type IV tank        |                |
-|---------------------|----------------|
-| External length     | 904 mm         |
-| ID                  | 180 mm         |
-| OD                  | 228 mm         |
-| **HDPE liner**      |                |
-| Thickness           | 7 mm           |
-| Density             | 945 kg/m$^3$   |
-| Heat capacity       |1584 J/(kg K)   |
-| Thermal conductivity|0.385 W/(m K)   |
-| **CFRP shell**      |                |
-| Thickness           |17 mm           |
-| Density             |1360 kg/m$^3$   |
-| Heat capacity       | 1020 J/(kg K)  |
-| Thermal conductivity| 0.5 W/(m K)    |
-| **Initial conditions** |             |
-| Outside $h$         | 8 W/(m$^2$ K)  |
-| Initial pressure    |  700 bar       |
-| Initial temperature | 20 $^\circ$C   |
-| Gas                 | Helium         |
+```{table} Key vessel data and initial conditions (Type IV)
+:name: tbl-kit-typeiv-vessel
 
-*Table: Key vessel data and intial conditions*
+| Type IV tank | |
+|--------------|--------|
+| External length | 904 mm |
+| ID | 180 mm |
+| OD | 228 mm |
+| **HDPE liner** | |
+| Thickness | 7 mm |
+| Density | 945 kg/m$^3$ |
+| Heat capacity | 1584 J/(kg K) |
+| Thermal conductivity | 0.385 W/(m K) |
+| **CFRP shell** | |
+| Thickness | 17 mm |
+| Density | 1360 kg/m$^3$ |
+| Heat capacity | 1020 J/(kg K) |
+| Thermal conductivity | 0.5 W/(m K) |
+| **Initial conditions** | |
+| Outside $h$ | 8 W/(m$^2$ K) |
+| Initial pressure | 700 bar |
+| Initial temperature | 20 $^\circ$C |
+| Gas | Helium |
+```
 
 
 In HydDown the type IV pressure vessel geometry as assumed that of a flat ended cylinder, with the length adjusted to give a total inventory volume of 19 liter.  In order to simulate the system a lumped heat capacity and density for the type IV cylinder is made. The thermal conductivty is set to that of the liner material, and the outer heat transfer coefficient is set to 8 W/(m$^2$K) as applied in the H2fills software {cite}`KUROKI`. For a type IV vessel, the application of an average value for density, heat capacity and thermal conductivity can be an acceptable approximation since the liner and composite shell material are not too dissimilar.
@@ -1534,20 +1559,24 @@ Molkov *et al.* {cite}`MOLKOV1` also made a thermal analysis of the thermocouple
 ## Validation against GasTeF experiments (Type IV)
 The experimental setup is described in more detail in refs. {cite}`ACOSTA,DEMIGUEL`. Different tank types where tested both for filling and discharge including a 29 liter type IV tank and a 40 liter type III tank. In the following the type IV tank is modelled. Key details such as the initial conditions and vessel details are summarised below cf. the table. The geometry and thermal properties of the liner and composite shell material was not informed in the cited references and it is assumed to be similar to the KIT vessel descibed in the previous section, with the liner and composite shell thickness scaled to match the total thickness of the GasTeF type IV vessel.  
 
-| Type IV tank        |                |
-|---------------------|----------------|
-| External length     | 827 mm         |
-| ID                  | 230 mm         |
-| OD                  | 279 mm         |
-| Liner               | HDPE           |
-| Composite shell     | G&CRPE         |
-| **Initial conditions** |             |
-| Initial pressure    |  700 bar       |
-| Initial temperature | 25$\pm 2^\circ$C   |
-| Gas                 | Hydrogen       |
-| Discharge rate      | 1.8 g/s        |
+```{table} Key vessel data and initial conditions (GasTeF experiment)
+:name: tbl-gastef-vessel
 
-*Table: Key vessel data and initial conditions. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops*
+| Type IV tank | |
+|--------------|--------|
+| External length | 827 mm |
+| ID | 230 mm |
+| OD | 279 mm |
+| Liner | HDPE |
+| Composite shell | G&CRPE |
+| **Initial conditions** | |
+| Initial pressure | 700 bar |
+| Initial temperature | 25$\pm 2^\circ$C |
+| Gas | Hydrogen |
+| Discharge rate | 1.8 g/s |
+```
+
+*Note: The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops.*
 
 The simulations with HydDown and comparison against the GasTeF experient is shown in Figure {numref}`fig-GasTeF_val`. The experimental setup included several thermocouples mounted in different positions inside the test vessel, both at the center line and nearer the top and bottom. The experimental setup did not include a direct measurement of the internal liner temperature interface towards the gas nor the composite shell. The experimental points for the gas temperature as shown in the figure includes the lowest measured temperatures (near the bottom), the gas temperature measured in the middle and towards the top (highest temperatures). The experiments display significant temperature stratification during discharge experiments.
 
@@ -1568,28 +1597,32 @@ Unfortunately, it has not been possible to find reported discharge experiments w
 In lack of a good and complete validation cases, an example is made using the KIT cylinder in the previous section and replacing  the HPDE liner with an aluminum liner.
 
 
-| Type III tank        |                |
-|---------------------|----------------|
-| External length     | 904 mm         |
-| ID                  | 180 mm         |
-| OD                  | 228 mm         |
-| **Aluminum liner**      |                |
-| Thickness           | 7 mm           |
-| Density             | 2700 kg/m$^3$   |
-| Heat capacity       |900 J/(kg K)   |
-| Thermal conductivity|237 W/(m K)   |
-| **CFRP shell**      |                |
-| Thickness           |17 mm           |
-| Density             |1360 kg/m$^3$   |
-| Heat capacity       | 1020 J/(kg K)  |
-| Thermal conductivity| 0.5 W/(m K)    |
-| **Initial conditions** |             |
-| Outside $h$         | 8 W/(m$^2$ K)  |
-| Initial pressure    |  700 bar       |
-| Initial temperature | 20 $^\circ$C   |
-| Gas                 | Helium         |
+```{table} Key vessel data and initial conditions for Type III cylinder simulations
+:name: tbl-kit-typeiii-vessel-1
 
-*Table: Key vessel data and initial conditions for Type III cylinder simulations. The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops.*
+| Type III tank | |
+|---------------|--------|
+| External length | 904 mm |
+| ID | 180 mm |
+| OD | 228 mm |
+| **Aluminum liner** | |
+| Thickness | 7 mm |
+| Density | 2700 kg/m$^3$ |
+| Heat capacity | 900 J/(kg K) |
+| Thermal conductivity | 237 W/(m K) |
+| **CFRP shell** | |
+| Thickness | 17 mm |
+| Density | 1360 kg/m$^3$ |
+| Heat capacity | 1020 J/(kg K) |
+| Thermal conductivity | 0.5 W/(m K) |
+| **Initial conditions** | |
+| Outside $h$ | 8 W/(m$^2$ K) |
+| Initial pressure | 700 bar |
+| Initial temperature | 20 $^\circ$C |
+| Gas | Helium |
+```
+
+*Note: The mass flow during discharge is constant at 1.8 g/s until the pressure drops below 5 MPa after which it drops.*
 
 The results of HydDown simulation with the *artificial* type III cylinder is shown in Figure {numref}`fig-KIT_typeIII`. As seen the immediate effect of replacing the HDPE liner with aluminum (compared to Figure {numref}`fig-KIT_val`) is a lower temperature drop in the gas phase and a liner temperature which approached the gas temperature very closely. This is in general agreement with the observations in ref. {cite}`DEMIGUEL`.
 
@@ -1637,28 +1670,30 @@ Spatioal and temporal temprature contour
 For HydDown type III cylinder filling experimental validation, the work of Dicken and Mérida {cite}`Dicken` is used. They conducted experiments of filling a 74 liter type III cylinder and also compared measurements with CFD calculations. Details of type III cyinder tested is shown in Table the table. For HydDown simulation the length of a flat-ended cylinder has been adjusted to give a total cylinder volume of 74 liter. The time-dependent filling mass flow  has been sourced from ref. {cite}`Dicken` and scaled in order to match the final experimental pressure.
 
 
-| Type III tank        |                |
-|---------------------|----------------|
-| External length     | 893 mm         |
-| ID                  | 358  mm         |
-| OD                  | 396 mm         |
-| **Aluminum liner**      |                |
-| Thickness           | 4 mm           |
-| Density             | 2700 kg/m$^3$   |
-| Heat capacity       |900 J/(kg K)   |
-| Thermal conductivity|167 W/(m K)   |
-| **CFRP shell**      |                |
-| Thickness           |15 mm           |
-| Density             |938 kg/m$^3$   |
-| Heat capacity       | 1494 J/(kg K)  |
-| Thermal conductivity| 1.0 W/(m K)    |
-| **Initial conditions** |             |
-| Outside $h$         | 8 W/(m$^2$ K)  |
-| Initial pressure    |  93 bar       |
-| Initial temperature | 20.25 $^\circ$C   |
-| Gas                 | H2         |
+```{table} Key vessel data and initial conditions for Type III cylinder simulations
+:name: tbl-kit-typeiii-vessel-2
 
-*Table: Key vessel data and initial conditions for Type III cylinder simulations.*
+| Type III tank | |
+|---------------|--------|
+| External length | 893 mm |
+| ID | 358 mm |
+| OD | 396 mm |
+| **Aluminum liner** | |
+| Thickness | 4 mm |
+| Density | 2700 kg/m$^3$ |
+| Heat capacity | 900 J/(kg K) |
+| Thermal conductivity | 167 W/(m K) |
+| **CFRP shell** | |
+| Thickness | 15 mm |
+| Density | 938 kg/m$^3$ |
+| Heat capacity | 1494 J/(kg K) |
+| Thermal conductivity | 1.0 W/(m K) |
+| **Initial conditions** | |
+| Outside $h$ | 8 W/(m$^2$ K) |
+| Initial pressure | 93 bar |
+| Initial temperature | 20.25 $^\circ$C |
+| Gas | H2 |
+```
 
 Simulation results from HydDown is compared to the experimental data of Dicken and Mérida in Figure {numref}`fig-Dicken_typeIII`. As seen from the results the gas temperature calculated with HydDown is generally higher than the experimental results. The final calculated temperature is 74.2$^\circ$C, compared to the final measured temperature of 68.9$^\circ$C. The CFD calculations performed by Dicken and Mérida {cite}`Dicken` was also higher than the experimental value (71.3$^\circ$C). Another CFD analysis of the investigated system by Hall and Ramasamy {cite}`Hall` revealed a final mean gas temperature of 71.4$^\circ$C, and a zero-dimensional model by the same authors gave an end temperature of 72.4$^\circ$C.   
 
@@ -1673,23 +1708,25 @@ In lack of measured vessel inner wall temperature (liner) the values calculated 
 ## Validation of fire heat load
 A simulation with a steel vessel subject to fire heat load is compared against calculations performed with Honeywell Unisim Design using the built-in dynamic depressuring utility and applying a Stefan-Boltzmann heat load. In Unisim the convective part of the Stefan-Boltzmann fire heat load is set by manually specifying the external heat transfer coefficient to 100 W/m$^2$ K and setting the ambient temperature equal to the falme temperature. The simulation in put is summarised in the table. 
 
-| Parameter           |                |
-|---------------------|----------------|
-| External length     | 9 m         |
-| ID                  | 3 m         |
-| **Shell**      |                |
-| Thickness           | 136 mm           |
-| Density             | 7700 kg/m$^3$   |
-| Heat capacity       | 500 J/(kg K)   |
-| **Initial conditions** |             |
-| Initial pressure    | 115 bar       |
-| Initial temperature | 25 $^\circ$C   |
-| Gas                 | Methane         |
-| **Heat load** |             |
-| Fire type         | Jet fire  |
-| Incident heat flux    |  100 kW/m$^2$       |
+```{table} Data for validation of fire heat load calculations
+:name: tbl-fire-validation
 
-*Table: Data for validation of fire heat load calulations.*
+| Parameter | |
+|-----------|--------|
+| External length | 9 m |
+| ID | 3 m |
+| **Shell** | |
+| Thickness | 136 mm |
+| Density | 7700 kg/m$^3$ |
+| Heat capacity | 500 J/(kg K) |
+| **Initial conditions** | |
+| Initial pressure | 115 bar |
+| Initial temperature | 25 $^\circ$C |
+| Gas | Methane |
+| **Heat load** | |
+| Fire type | Jet fire |
+| Incident heat flux | 100 kW/m$^2$ |
+```
 
 The results are displayed in {numref}`fig-Unisim_jet_pres` and {numref}`fig-Unisim_jet_temp`. As seen the agreement between the two simulation codes is indeed adequate. The main difference is the intitial temperature of the steel vessel wall which is higher in Unisim. In Hyddown the vessel wall temperature is initialised at the fluid temperature, whereas in Unisim it is likely based on a steady-heat balance using the applied ambient temperature (set to equal the flame temperature for calculation purpose).
 
