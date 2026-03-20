@@ -997,7 +997,7 @@ $$
   - $C_{sf}$ is Rohsenow coefficient specific to fluid and metal [-]
   - $n$ constant, 1 for water, 1.7 (default) for other fluids usually [-]
 
-In the present study a value of the Rohsenow coefficient of 0.013 is applied and the exponent $n$ is set to 1.7. See also [@pioro_experimental_1999;@jabardo_evaluation_2004].
+In the present study a value of the Rohsenow coefficient of 0.013 is applied and the exponent $n$ is set to 1.7. See also {cite}`pioro_experimental_1999,jabardo_evaluation_2004`.
 
 ### Conduction
 For accurate prediction of the outer and especially the inner wall temperature for correct estimation of internal convective heat transfer and the average material temperature, the general equation of 1-D unsteady heat transfer shall be solved:
