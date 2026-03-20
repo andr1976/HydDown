@@ -185,11 +185,12 @@ def validate_mandatory_ruleset(input):
                 "fire",
                 "s-b",
                 "D_throat",
+                "q_outer",
             ],
             "schema": {
                 "type": {
                     "type": "string",
-                    "allowed": ["specified_Q", "specified_h", "specified_U", "s-b"],
+                    "allowed": ["specified_Q", "specified_h", "specified_U", "s-b", "specified_q"],
                 },
                 "Q_fix": {"required": False, "type": "number"},
                 "U_fix": {"required": False, "type": "number", "min": 0},
@@ -207,6 +208,13 @@ def validate_mandatory_ruleset(input):
                     ],
                 },
                 "D_throat": {"required": False, "type": "number", "min": 0},
+                "q_outer": {
+                    "required": False,
+                    "anyof": [
+                        {"type": "number"},
+                        {"type": "dict"},
+                    ],
+                },
             },
         },
         "validation": {
@@ -681,6 +689,65 @@ def heat_transfer_validation(input):
                                 "scandpower_jet",
                             ],
                         },
+                    },
+                },
+            }
+
+        elif input["heat_transfer"]["type"] == "specified_q":
+            schema_heattransfer = {
+                "initial": {"required": True},
+                "calculation": {"required": True},
+                "validation": {"required": False},
+                "valve": {"required": True},
+                "rupture": {"required": False},
+                "vessel": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "schema": {
+                        "length": {"required": True, "type": "number"},
+                        "diameter": {"required": True, "type": "number"},
+                        "thickness": {"required": True, "type": "number", "min": 0.0},
+                        "heat_capacity": {"required": True, "type": "number", "min": 1},
+                        "density": {"required": True, "type": "number", "min": 1},
+                        "orientation": {
+                            "required": True,
+                            "type": "string",
+                            "allowed": ["vertical", "horizontal"],
+                        },
+                        "type": {
+                            "required": False,
+                            "type": "string",
+                            "allowed": ["Flat-end", "DIN", "ASME F&D", "Hemispherical"],
+                        },
+                        "liquid_level": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0,
+                        },
+                    },
+                },
+                "heat_transfer": {
+                    "required": True,
+                    "type": "dict",
+                    "allow_unknown": False,
+                    "allowed": ["type", "q_outer", "h_inner"],
+                    "schema": {
+                        "type": {"type": "string", "allowed": ["specified_q"]},
+                        "q_outer": {
+                            "required": True,
+                            "anyof": [
+                                {"type": "number"},
+                                {
+                                    "type": "dict",
+                                    "schema": {
+                                        "time": {"required": True, "type": "list"},
+                                        "heat_flux": {"required": True, "type": "list"},
+                                    },
+                                },
+                            ],
+                        },
+                        "h_inner": {"required": False, "type": ["number", "string"]},
                     },
                 },
             }
