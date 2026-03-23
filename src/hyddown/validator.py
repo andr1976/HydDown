@@ -185,6 +185,7 @@ def validate_mandatory_ruleset(input):
                 "fire",
                 "s-b",
                 "D_throat",
+                "scaling",
             ],
             "schema": {
                 "type": {
@@ -207,6 +208,12 @@ def validate_mandatory_ruleset(input):
                     ],
                 },
                 "D_throat": {"required": False, "type": "number", "min": 0},
+                "scaling": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.0,
+                    "max": 1.0,
+                },
             },
         },
         "validation": {
@@ -627,7 +634,11 @@ def heat_transfer_validation(input):
                             "min": 0.0001,
                         },
                         "density": {"required": True, "type": "number", "min": 1},
-                        "liner_thickness": {"required": False, "type": "number", "min": 0.0},
+                        "liner_thickness": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0,
+                        },
                         "liner_heat_capacity": {
                             "required": False,
                             "type": "number",
@@ -664,7 +675,7 @@ def heat_transfer_validation(input):
                     "required": True,
                     "type": "dict",
                     "allow_unknown": False,
-                    "allowed": ["fire", "type"],
+                    "allowed": ["fire", "type", "scaling"],
                     "schema": {
                         "type": {
                             "required": True,
@@ -680,6 +691,12 @@ def heat_transfer_validation(input):
                                 "scandpower_pool",
                                 "scandpower_jet",
                             ],
+                        },
+                        "scaling": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0,
+                            "max": 1.0,
                         },
                     },
                 },

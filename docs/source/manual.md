@@ -485,6 +485,7 @@ heat_transfer:
   Q_fix: number, required for type "specified_Q"
   fire: string, required for type "s-b", 'api_pool','api_jet','scandpower_pool','scandpower_jet'
   D_thoat: number, required for flow type "filling", set to vessel ID as a starting point
+  scaling: number between 0 and 1, optional, scales total heat load 
 ```
 
 ### Validation
