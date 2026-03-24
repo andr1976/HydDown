@@ -924,6 +924,7 @@ def valve_validation(input):
                 "mdot": {"required": True, "type": ["number", "list"]},
                 "time": {"type": ["number", "list"]},
                 "back_pressure": {"required": True, "type": "number", "min": 0},
+		"end_pressure": {"required": False, "type": "number", "min": 0},
             },
         },
     }
