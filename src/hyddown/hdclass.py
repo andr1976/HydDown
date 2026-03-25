@@ -289,6 +289,33 @@ class HydDown:
                     self.scaling = 1.0
                 if self.input["valve"]["flow"] == "filling":
                     raise ValueError("Filling and Fire heat load not implemented")
+            if self.heat_method == "specified_q":
+                self.vessel_cp = self.input["vessel"]["heat_capacity"]
+                self.vessel_density = self.input["vessel"]["density"]
+                self.vessel_orientation = self.input["vessel"]["orientation"]
+                self.thickness = self.input["vessel"]["thickness"]
+                # Handle q_outer: can be a number (fixed) or dict (time-dependent)
+                q_outer_input = self.input["heat_transfer"]["q_outer"]
+                if isinstance(q_outer_input, (int, float)):
+                    # Fixed heat flux
+                    self.q_outer_func = lambda t: q_outer_input
+                elif isinstance(q_outer_input, dict):
+                    # Time-dependent heat flux from dict
+                    time_data = np.array(q_outer_input["time"])
+                    heat_flux_data = np.array(q_outer_input["heat_flux"])
+                    self.q_outer_func = lambda t: np.interp(t, time_data, heat_flux_data)
+                else:
+                    raise ValueError("q_outer must be a number or dict with time/heat_flux")
+                # Handle h_inner
+                if "h_inner" in self.input["heat_transfer"]:
+                    self.h_in = self.input["heat_transfer"]["h_inner"]
+                else:
+                    self.h_in = "calc"
+                if self.input["valve"]["flow"] == "filling":
+                    if "D_throat" in self.input["heat_transfer"]:
+                        self.D_throat = self.input["heat_transfer"]["D_throat"]
+                    else:
+                        self.D_throat = self.input["vessel"]["diameter"]
 
     def initialize(self):
         """
@@ -802,7 +829,7 @@ class HydDown:
                 # HEAT TRANSFER COEFFICIENT CALCULATIONS
                 # ====================================================================
                 # Calculate convective heat transfer coefficients for specified_h or detailed methods
-                if self.heat_method == "specified_h" or self.heat_method == "detailed":
+                if self.heat_method == "specified_h" or self.heat_method == "detailed" or self.heat_method == "specified_q":
                     if self.h_in == "calc":
                         if self.vessel_orientation == "horizontal":
                             L = self.diameter
@@ -928,24 +955,33 @@ class HydDown:
 
                     # Heat transfer from environment to unwetted outer wall
                     # Use outer surface area directly (outer surface is exposed to environment)
-                    self.Q_outer[i] = (
-                        (self.surf_area_outer - wetted_area_outer)
-                        * self.h_out
-                        * (self.Tamb - self.T_outer_wall[i - 1])
-                    )
-                    self.q_outer[i] = self.h_out * (
-                        self.Tamb - self.T_outer_wall[i - 1]
-                    )
+                    if self.heat_method == "specified_q":
+                        # User-defined heat flux (time-dependent or constant)
+                        q_ext = self.q_outer_func(self.time_array[i])
+                        self.Q_outer[i] = q_ext * (self.surf_area_outer - wetted_area_outer)
+                        self.q_outer[i] = q_ext
+                        self.Q_outer_wetted[i] = q_ext * wetted_area_outer
+                        self.q_outer_wetted[i] = q_ext
+                    else:
+                        # specified_h or detailed: convective heat transfer
+                        self.Q_outer[i] = (
+                            (self.surf_area_outer - wetted_area_outer)
+                            * self.h_out
+                            * (self.Tamb - self.T_outer_wall[i - 1])
+                        )
+                        self.q_outer[i] = self.h_out * (
+                            self.Tamb - self.T_outer_wall[i - 1]
+                        )
 
-                    self.Q_outer_wetted[i] = (
-                        wetted_area_outer
-                        * self.h_out
-                        * (self.Tamb - self.T_outer_wall_wetted[i - 1])
-                    )
+                        self.Q_outer_wetted[i] = (
+                            wetted_area_outer
+                            * self.h_out
+                            * (self.Tamb - self.T_outer_wall_wetted[i - 1])
+                        )
 
-                    self.q_outer_wetted[i] = self.h_out * (
-                        self.Tamb - self.T_outer_wall_wetted[i - 1]
-                    )
+                        self.q_outer_wetted[i] = self.h_out * (
+                            self.Tamb - self.T_outer_wall_wetted[i - 1]
+                        )
                     if np.isnan(self.Q_outer_wetted[i]):
                         self.Q_outer_wetted[i] = 0
 
