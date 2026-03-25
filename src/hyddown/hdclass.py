@@ -2031,9 +2031,16 @@ class HydDown:
                 )
             if (
                 "end_pressure" in self.input["valve"]
-                and self.P[i] > self.input["valve"]["end_pressure"]
+                and self.input['valve']['flow']=='filling' and self.P[i] > self.input["valve"]["end_pressure"]
+            ):
+                massflow_stop_switch = 1 
+            elif (
+                "end_pressure" in self.input["valve"]
+                and self.input['valve']['flow']=='discharge' and self.P[i] < self.input["valve"]["end_pressure"]
             ):
                 massflow_stop_switch = 1
+            else:
+                massflow_stop_switch = 0 
             if massflow_stop_switch:
                 self.mass_rate[i] = 0
         self.isrun = True
