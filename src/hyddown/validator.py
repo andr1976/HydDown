@@ -186,6 +186,7 @@ def validate_mandatory_ruleset(input):
                 "s-b",
                 "D_throat",
                 "q_outer",
+                "scaling",
             ],
             "schema": {
                 "type": {
@@ -214,6 +215,12 @@ def validate_mandatory_ruleset(input):
                         {"type": "number"},
                         {"type": "dict"},
                     ],
+                },
+                "scaling": {
+                    "required": False,
+                    "type": "number",
+                    "min": 0.0,
+                    "max": 1.0,
                 },
             },
         },
@@ -635,7 +642,11 @@ def heat_transfer_validation(input):
                             "min": 0.0001,
                         },
                         "density": {"required": True, "type": "number", "min": 1},
-                        "liner_thickness": {"required": False, "type": "number", "min": 0.0},
+                        "liner_thickness": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0,
+                        },
                         "liner_heat_capacity": {
                             "required": False,
                             "type": "number",
@@ -672,7 +683,7 @@ def heat_transfer_validation(input):
                     "required": True,
                     "type": "dict",
                     "allow_unknown": False,
-                    "allowed": ["fire", "type"],
+                    "allowed": ["fire", "type", "scaling"],
                     "schema": {
                         "type": {
                             "required": True,
@@ -688,6 +699,12 @@ def heat_transfer_validation(input):
                                 "scandpower_pool",
                                 "scandpower_jet",
                             ],
+                        },
+                        "scaling": {
+                            "required": False,
+                            "type": "number",
+                            "min": 0.0,
+                            "max": 1.0,
                         },
                     },
                 },
@@ -974,6 +991,7 @@ def valve_validation(input):
                 "mdot": {"required": True, "type": ["number", "list"]},
                 "time": {"type": ["number", "list"]},
                 "back_pressure": {"required": True, "type": "number", "min": 0},
+		"end_pressure": {"required": False, "type": "number", "min": 0},
             },
         },
     }
