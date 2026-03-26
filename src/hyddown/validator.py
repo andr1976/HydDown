@@ -73,6 +73,8 @@ def validate_mandatory_ruleset(input):
                 },
                 "time_step": {"required": True, "type": "number", "min": 0.000001},
                 "end_time": {"required": True, "type": "number", "min": 0},
+                "non_equilibrium": {"required": False, "type": "boolean"},
+                "h_gas_liquid": {"required": False, "type": "number", "min": 0},
             },
         },
         "vessel": {

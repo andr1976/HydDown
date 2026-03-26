@@ -203,6 +203,19 @@ class HydDown:
         self.time_tot = self.input["calculation"]["end_time"]
         self.method = self.input["calculation"]["type"]
 
+        # Check for non-equilibrium model flag
+        if "non_equilibrium" in self.input["calculation"]:
+            self.non_equilibrium = self.input["calculation"]["non_equilibrium"]
+        else:
+            self.non_equilibrium = False
+
+        # Non-equilibrium model only works with single component and energybalance
+        if self.non_equilibrium:
+            if "&" in self.input["initial"]["fluid"]:
+                raise ValueError("Non-equilibrium model only supports single component fluids")
+            if self.method != "energybalance":
+                raise ValueError("Non-equilibrium model requires calculation.type = 'energybalance'")
+
         # Reading valve specific data
         if (
             self.input["valve"]["type"] == "orifice"
@@ -377,6 +390,40 @@ class HydDown:
         if self.input["valve"]["flow"] == "filling":
             self.res_fluid.update(CP.PT_INPUTS, self.p_back, self.T0)
 
+        # Non-equilibrium model: Create separate AbstractState objects for gas and liquid
+        if self.non_equilibrium:
+            # Create parent phase objects - these CAN enter two-phase region
+            # Do NOT use specify_phase - we want to detect phase change via quality
+            self.fluid_gas = CP.AbstractState("HEOS", self.comp)
+            self.fluid_gas.set_mole_fractions(self.molefracs)
+
+            self.fluid_liquid = CP.AbstractState("HEOS", self.comp)
+            self.fluid_liquid.set_mole_fractions(self.molefracs)
+
+            # Initialize at saturation conditions (equilibrium at t=0)
+            if "liquid_level" in self.input["vessel"]:
+                # Two-phase initial condition
+                # Initialize gas slightly superheated to avoid PT_INPUTS failing at exact saturation
+                # Liquid stays at saturation temperature
+                self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)
+                self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)
+                self.T_gas0 = self.fluid_gas.T() + 5.0  # Superheat gas by 5 K
+                self.T_liquid0 = self.fluid_liquid.T()  # Liquid at saturation
+
+                # Calculate initial masses
+                ll = self.input["vessel"]["liquid_level"]
+                V_liquid = self.inner_vol.V_from_h(ll)
+                self.m_liquid0 = V_liquid * self.fluid_liquid.rhomass()
+                V_vapour = self.inner_vol.V_total - V_liquid
+                self.m_gas0 = V_vapour * self.fluid_gas.rhomass()
+            else:
+                # Single-phase gas initial condition
+                self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T0)
+                self.T_gas0 = self.T0
+                self.m_gas0 = self.fluid_gas.rhomass() * self.vol
+                self.m_liquid0 = 0.0
+                self.T_liquid0 = self.T0  # Not used if no liquid
+
         # data storage
         data_len = int(self.time_tot / self.tstep)
         self.rho = np.zeros(data_len)
@@ -424,6 +471,18 @@ class HydDown:
         self.vapour_mass_fraction = np.zeros(data_len)
         self.vapour_volume_fraction = np.zeros(data_len)
         self.liquid_level = np.zeros(data_len)
+
+        # Non-equilibrium model data storage
+        if self.non_equilibrium:
+            self.T_gas = np.zeros(data_len)  # Gas phase temperature
+            self.T_liquid = np.zeros(data_len)  # Liquid phase temperature
+            self.m_gas = np.zeros(data_len)  # Gas phase mass
+            self.m_liquid = np.zeros(data_len)  # Liquid phase mass
+            self.U_gas = np.zeros(data_len)  # Gas phase internal energy (specific)
+            self.U_liquid = np.zeros(data_len)  # Liquid phase internal energy (specific)
+            self.rho_gas = np.zeros(data_len)  # Gas phase density
+            self.rho_liquid = np.zeros(data_len)  # Liquid phase density
+            self.mdot_phase_transfer = np.zeros(data_len)  # Mass transfer rate (condensation > 0, evaporation < 0)
 
     def calc_liquid_level(self):
         """
@@ -606,6 +665,315 @@ class HydDown:
             Ures = 0
         return P1, T1, Ures
 
+    def nem_objective_function(self, x, m_gas, m_liquid, U_gas_tot, U_liquid_tot, T_gas_prev, T_liquid_prev):
+        """
+        Objective function for NEM solver (inspired by ORS-openthermo).
+
+        Solves for (T_gas, T_liquid, P) simultaneously by minimizing
+        normalized residuals for volume and energy constraints.
+
+        Parameters
+        ----------
+        x : array
+            [T_gas, T_liquid, P]
+        m_gas : float
+            Gas mass [kg]
+        m_liquid : float
+            Liquid mass [kg]
+        U_gas_tot : float
+            Total gas internal energy [J]
+        U_liquid_tot : float
+            Total liquid internal energy [J]
+        T_gas_prev : float
+            Previous gas temperature (for bounds checking) [K]
+        T_liquid_prev : float
+            Previous liquid temperature (for bounds checking) [K]
+
+        Returns
+        -------
+        float
+            Objective value (sum of normalized squared residuals)
+        """
+        T_gas, T_liquid, P = x
+
+        # Sanity checks
+        if P <= 0 or T_gas <= 0 or T_liquid <= 0:
+            return 1e10
+
+        # Sanity checks on inputs - return high penalty if out of reasonable range
+        if P <= 1e4 or P > 1e8:  # 0.1 to 1000 bar
+            return 1e10
+        if T_gas <= 100 or T_gas > 1000:  # 100 K to 1000 K
+            return 1e10
+        if T_liquid <= 100 or T_liquid > 1000:
+            return 1e10
+
+        # Update gas state with T, P
+        # Handle case where PT is at saturation (CoolProp will fail)
+        if m_gas > 1e-6:
+            try:
+                self.fluid_gas.update(CP.PT_INPUTS, P, T_gas)
+                rho_gas = self.fluid_gas.rhomass()
+                U_gas_calc = self.fluid_gas.umass() * m_gas
+                V_gas = m_gas / rho_gas
+            except ValueError as e:
+                # PT failed - likely at or near saturation
+                # Penalize this state heavily to push optimizer away from saturation line
+                return 1e10
+        else:
+            U_gas_calc = 0.0
+            V_gas = 0.0
+
+        # Update liquid state with T, P
+        if m_liquid > 1e-6:
+            try:
+                self.fluid_liquid.update(CP.PT_INPUTS, P, T_liquid)
+                rho_liquid = self.fluid_liquid.rhomass()
+                U_liquid_calc = self.fluid_liquid.umass() * m_liquid
+                V_liquid = m_liquid / rho_liquid
+            except ValueError as e:
+                # PT failed - likely at or near saturation
+                # Penalize this state heavily
+                return 1e10
+        else:
+            U_liquid_calc = 0.0
+            V_liquid = 0.0
+
+        # Calculate normalized squared residuals
+        V_total = V_gas + V_liquid
+
+        # Volume constraint (normalized by vessel volume)
+        vol_res = ((V_total - self.vol) / self.vol) ** 2
+
+        # Energy constraints (normalized by target energy)
+        if m_gas > 1e-6 and U_gas_tot > 0:
+            energy_res_gas = ((U_gas_calc - U_gas_tot) / U_gas_tot) ** 2
+        else:
+            energy_res_gas = 0.0
+
+        if m_liquid > 1e-6 and U_liquid_tot > 0:
+            energy_res_liq = ((U_liquid_calc - U_liquid_tot) / U_liquid_tot) ** 2
+        else:
+            energy_res_liq = 0.0
+
+        # Combined objective with equal weights
+        # All residuals are normalized squared differences
+        objective = vol_res + energy_res_gas + energy_res_liq
+
+        # Debug: Store individual residuals for diagnosis (only if requested)
+        if hasattr(self, '_debug_nem_residuals') and self._debug_nem_residuals:
+            print(f"  P={P/1e5:.2f} bar, T_g={T_gas:.1f} K, T_l={T_liquid:.1f} K")
+            print(f"    vol_res={vol_res:.2e}, U_gas_res={energy_res_gas:.2e}, U_liq_res={energy_res_liq:.2e}")
+            print(f"    V_calc={V_total:.4f} m³ vs V_target={self.vol:.4f} m³")
+            print(f"    U_gas_calc={U_gas_calc/1e6:.3f} MJ vs U_gas_target={U_gas_tot/1e6:.3f} MJ")
+            print(f"    U_liq_calc={U_liquid_calc/1e6:.3f} MJ vs U_liq_target={U_liquid_tot/1e6:.3f} MJ")
+
+        return objective
+
+    def nem_residual(self, P, m_gas, m_liquid, U_gas_tot, U_liquid_tot):
+        """
+        Residual function for non-equilibrium model (NEM) solver.
+
+        Solves for common pressure P such that total volume equals vessel volume.
+
+        Key insight: Both phases are in mechanical equilibrium (same pressure P).
+        Given P and U for each phase, CoolProp gives us rho and T via DmassUmass inputs.
+
+        The constraint is: V_gas(P,U_gas) + V_liquid(P,U_liquid) = V_vessel
+
+        Parameters
+        ----------
+        P : float
+            Common pressure for both phases [Pa]
+        m_gas : float
+            Gas phase mass [kg]
+        m_liquid : float
+            Liquid phase mass [kg]
+        U_gas_tot : float
+            Total gas phase internal energy [J]
+        U_liquid_tot : float
+            Total liquid phase internal energy [J]
+
+        Returns
+        -------
+        float
+            Volume residual (V_total - V_vessel) / V_vessel
+        """
+        # Ensure positive pressure
+        if P <= 0:
+            return 1e10
+
+        V_total = 0.0
+
+        # Gas phase: given P and U, find rho (and T implicitly)
+        # We need to iterate to find rho_gas such that fluid_gas(rho_gas, U_gas) gives pressure P
+        if m_gas > 1e-6:
+            U_gas_spec = U_gas_tot / m_gas
+            try:
+                # For given P and U, find the density
+                # This requires iteration since we can't directly specify P,U to CoolProp
+                # We use PUmass_INPUTS if available, otherwise iterate
+                self.fluid_gas.update(CP.PUmass_INPUTS, P, U_gas_spec)
+                rho_gas = self.fluid_gas.rhomass()
+                V_gas = m_gas / rho_gas
+                V_total += V_gas
+            except:
+                # PUmass might not work for all fluids, try iteration
+                # Initial guess: use ideal gas for first estimate
+                from scipy.optimize import brentq
+
+                def rho_residual(rho):
+                    try:
+                        self.fluid_gas.update(CP.DmassUmass_INPUTS, rho, U_gas_spec)
+                        return self.fluid_gas.p() - P
+                    except:
+                        return 1e10
+
+                try:
+                    # Search for density that gives the target pressure
+                    rho_gas = brentq(rho_residual, 0.01, 1000.0, xtol=1e-6)
+                    V_gas = m_gas / rho_gas
+                    V_total += V_gas
+                except:
+                    return 1e10
+
+        # Liquid phase: given P and U, find rho (and T implicitly)
+        if m_liquid > 1e-6:
+            U_liquid_spec = U_liquid_tot / m_liquid
+            try:
+                self.fluid_liquid.update(CP.PUmass_INPUTS, P, U_liquid_spec)
+                rho_liquid = self.fluid_liquid.rhomass()
+                V_liquid = m_liquid / rho_liquid
+                V_total += V_liquid
+            except:
+                # PUmass might not work, try iteration
+                from scipy.optimize import brentq
+
+                def rho_residual(rho):
+                    try:
+                        self.fluid_liquid.update(CP.DmassUmass_INPUTS, rho, U_liquid_spec)
+                        return self.fluid_liquid.p() - P
+                    except:
+                        return 1e10
+
+                try:
+                    # Search for density that gives the target pressure
+                    rho_liquid = brentq(rho_residual, 100.0, 2000.0, xtol=1e-6)
+                    V_liquid = m_liquid / rho_liquid
+                    V_total += V_liquid
+                except:
+                    return 1e10
+
+        # Return volume residual
+        vol_residual = (V_total - self.vol) / self.vol
+        return vol_residual
+
+    def nem_solve_state(self, m_gas, m_liquid, U_gas_tot, U_liquid_tot, P_guess, T_gas_guess, T_liquid_guess):
+        """
+        Solve for (T_gas, T_liquid, P) in non-equilibrium model.
+
+        Uses optimization approach inspired by ORS-openthermo: minimize combined
+        residuals for volume and energy constraints.
+
+        Parameters
+        ----------
+        m_gas : float
+            Gas phase mass [kg]
+        m_liquid : float
+            Liquid phase mass [kg]
+        U_gas_tot : float
+            Total gas internal energy [J]
+        U_liquid_tot : float
+            Total liquid internal energy [J]
+        P_guess : float
+            Initial pressure guess [Pa]
+        T_gas_guess : float
+            Initial gas temperature guess [K]
+        T_liquid_guess : float
+            Initial liquid temperature guess [K]
+
+        Returns
+        -------
+        tuple
+            (P, T_gas, T_liquid) - solved state [Pa, K, K]
+        """
+        from scipy.optimize import minimize
+
+        # Initial guess
+        x0 = [T_gas_guess, T_liquid_guess, P_guess]
+
+        # Bounds: allow reasonable deviations from previous state
+        bounds = [
+            (max(T_gas_guess - 50, 200), T_gas_guess + 100),     # T_gas bounds
+            (max(T_liquid_guess - 50, 200), T_liquid_guess + 100),  # T_liquid bounds
+            (max(P_guess * 0.5, 1e5), P_guess * 2.0)              # P bounds
+        ]
+
+        # Use Nelder-Mead (doesn't require derivatives, works well for non-smooth problems)
+        result = minimize(
+            fun=self.nem_objective_function,
+            x0=x0,
+            args=(m_gas, m_liquid, U_gas_tot, U_liquid_tot, T_gas_guess, T_liquid_guess),
+            method='Nelder-Mead',
+            bounds=bounds,
+            options={'maxiter': 1000, 'xatol': 1e-6, 'fatol': 1e-9}
+        )
+
+        # Accept solution if objective is reasonable
+        # Note: Objective = vol_res² + U_gas_res² + U_liq_res² (all normalized)
+        # Objective < 1e-4 means ~0.01% error in each constraint
+        # Objective < 1e-2 means ~1% error in each constraint
+        if result.fun < 1e-2:
+            T_gas, T_liquid, P = result.x
+            return P, T_gas, T_liquid
+
+        # If convergence is poor, print warning but still return result
+        # This can happen when constraints are difficult to satisfy exactly
+        if result.fun < 0.1:  # ~10% error - still usable
+            print(f"Warning: NEM solver converged with objective={result.fun:.2e} at P={P_guess/1e5:.1f} bar")
+            T_gas, T_liquid, P = result.x
+            return P, T_gas, T_liquid
+
+        # If Nelder-Mead didn't converge well enough, raise error
+        raise RuntimeError(f"NEM solver failed. Objective={result.fun:.2e}, P_guess={P_guess/1e5:.2f} bar, T_gas={T_gas_guess:.1f} K, T_liq={T_liquid_guess:.1f} K")
+
+    def nem_calc_phase_transfer(self, P, T_gas, T_liquid, m_gas, m_liquid, dt):
+        """
+        Calculate phase transfer based on vapor quality from CoolProp thermodynamic updates.
+
+        After updating each phase with its internal energy, CoolProp returns a vapor quality:
+        - For liquid phase: quality > 0 means some liquid has evaporated (transfer to gas)
+        - For gas phase: quality < 1 means some gas has condensed (transfer to liquid)
+
+        This approach uses thermodynamics directly rather than relaxation assumptions.
+
+        Parameters
+        ----------
+        P : float
+            Current pressure [Pa]
+        T_gas : float
+            Gas phase temperature [K]
+        T_liquid : float
+            Liquid phase temperature [K]
+        m_gas : float
+            Gas phase mass [kg]
+        m_liquid : float
+            Liquid phase mass [kg]
+        dt : float
+            Time step [s]
+
+        Returns
+        -------
+        dm_transfer : float
+            Net mass transfer [kg] (positive = condensation gas→liquid, negative = evaporation liquid→gas)
+
+        Note: This function signature kept for compatibility, but actual phase transfer
+        is now calculated directly in the main integration loop using vapor quality.
+        """
+        # This function is now a placeholder - actual phase transfer calculated
+        # in main loop using vapor quality from CoolProp updates
+        return 0.0
+
     def run(self, disable_pbar=True):
         """
         Routine for running the actual problem defined i.e. integrating the mass and energy balances
@@ -637,6 +1005,28 @@ class HydDown:
             self.vapour_mole_fraction[0] = self.fluid.Q()
         else:
             self.vapour_mole_fraction[0] = 1.0
+
+        # Non-equilibrium model initialization
+        if self.non_equilibrium:
+            self.T_gas[0] = self.T_gas0
+            self.T_liquid[0] = self.T_liquid0
+            self.m_gas[0] = self.m_gas0
+            self.m_liquid[0] = self.m_liquid0
+            # Use PQ_INPUTS for saturation conditions (avoids PT issues)
+            if self.m_liquid0 > 0:
+                # Two-phase: initialize at saturation
+                self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)  # Saturated vapor
+                self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)  # Saturated liquid
+                self.U_liquid[0] = self.fluid_liquid.umass()
+                self.rho_liquid[0] = self.fluid_liquid.rhomass()
+            else:
+                # Single-phase gas
+                self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T_gas0)
+                self.U_liquid[0] = 0.0
+                self.rho_liquid[0] = 0.0
+            self.U_gas[0] = self.fluid_gas.umass()
+            self.rho_gas[0] = self.fluid_gas.rhomass()
+            self.mdot_phase_transfer[0] = 0.0
 
         if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
             cpcv = self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) / (
@@ -837,8 +1227,15 @@ class HydDown:
                             L = self.length
                         if input["valve"]["flow"] == "filling":
                             # T_film = (self.T_fluid[i - 1] + self.T_vessel[i - 1]) / 2
+                            # For NEM: use gas temperature for unwetted (gas-side) heat transfer
+                            # For equilibrium: use bulk fluid temperature
+                            if self.non_equilibrium and hasattr(self, 'T_gas'):
+                                T_for_gas_side_htc = self.T_gas[i - 1]
+                            else:
+                                T_for_gas_side_htc = self.T_fluid[i - 1]
+
                             T_film = (
-                                self.T_fluid[i - 1] + self.T_inner_wall[i - 1]
+                                T_for_gas_side_htc + self.T_inner_wall[i - 1]
                             ) / 2
                             self.transport_fluid.update(
                                 CP.PT_INPUTS, self.P[i - 1], T_film
@@ -848,36 +1245,81 @@ class HydDown:
                                 L,
                                 # self.T_vessel[i - 1],
                                 self.T_inner_wall[i - i],
-                                self.T_fluid[i - 1],
+                                T_for_gas_side_htc,
                                 self.transport_fluid,
                                 self.mass_rate[i - 1],
                                 self.diameter,
                             )
-                            if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
-                                self.transport_fluid_wet.update(
-                                    CP.PT_INPUTS, self.P[i - 1], T_film
-                                )
-                                hiw = tp.h_inside_wetted(
-                                    L,
-                                    self.T_inner_wall_wetted[i - 1],
-                                    self.T_fluid[i - 1],
-                                    self.transport_fluid_wet,
-                                    self.fluid,
-                                )
+                            # NEM: Use liquid properties for wetted heat transfer
+                            # Equilibrium: Use existing logic with equilibrium fluid
+                            if self.non_equilibrium:
+                                # For NEM, if liquid exists, use nucleate boiling correlation
+                                # No need to check quality - liquid phase is always liquid
+                                liquid_exists = self.m_liquid[i-1] > 1e-6
+                                if liquid_exists:
+                                    # Use liquid temperature for film temperature
+                                    T_film_wet = (self.T_liquid[i-1] + self.T_inner_wall_wetted[i-1]) / 2
+                                    try:
+                                        self.transport_fluid_wet.update(CP.PT_INPUTS, self.P[i-1], T_film_wet)
+                                    except:
+                                        # If film temperature fails, use liquid temperature
+                                        try:
+                                            self.transport_fluid_wet.update(CP.PT_INPUTS, self.P[i-1], self.T_liquid[i-1])
+                                        except:
+                                            # Last resort: use saturation
+                                            self.transport_fluid_wet.update(CP.PQ_INPUTS, self.P[i-1], 0.0)
+
+                                    # Update fluid_liquid to saturated state for h_inside_wetted
+                                    # (needed for surface tension and saturated properties)
+                                    self.fluid_liquid.update(CP.PQ_INPUTS, self.P[i-1], 0.0)
+
+                                    hiw = tp.h_inside_wetted(
+                                        L,
+                                        self.T_inner_wall_wetted[i - 1],
+                                        self.T_liquid[i - 1],      # Use liquid temperature
+                                        self.transport_fluid_wet,
+                                        self.fluid_liquid,         # Use liquid phase object at saturation
+                                    )
+                                else:
+                                    # No liquid - use gas-side coefficient
+                                    hiw = hi
                             else:
-                                hiw = hi
+                                # Equilibrium mode: use existing logic
+                                if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                                    self.transport_fluid_wet.update(
+                                        CP.PT_INPUTS, self.P[i - 1], T_film
+                                    )
+                                    hiw = tp.h_inside_wetted(
+                                        L,
+                                        self.T_inner_wall_wetted[i - 1],
+                                        self.T_fluid[i - 1],
+                                        self.transport_fluid_wet,
+                                        self.fluid,
+                                    )
+                                else:
+                                    hiw = hi
                         else:
+                            # For NEM: use gas temperature for unwetted (gas-side) heat transfer
+                            # For equilibrium: use bulk fluid temperature
+                            if self.non_equilibrium and hasattr(self, 'T_gas'):
+                                T_for_gas_side_htc = self.T_gas[i - 1]
+                            else:
+                                T_for_gas_side_htc = self.T_fluid[i - 1]
+
                             T_film = (
-                                self.T_fluid[i - 1] + self.T_inner_wall[i - 1]
+                                T_for_gas_side_htc + self.T_inner_wall[i - 1]
                             ) / 2
                             try:
                                 self.transport_fluid.update(
                                     CP.PT_INPUTS, self.P[i - 1], T_film
                                 )
-                                if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
-                                    self.transport_fluid_wet.update(
-                                        CP.PT_INPUTS, self.P[i - 1], self.T_fluid[i - 1]
-                                    )
+                                # Update transport fluid for wetted surface
+                                # For NEM, will be updated later with liquid temperature
+                                if not self.non_equilibrium:
+                                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                                        self.transport_fluid_wet.update(
+                                            CP.PT_INPUTS, self.P[i - 1], self.T_fluid[i - 1]
+                                        )
                             except:
                                 self.transport_fluid.update(
                                     CP.PQ_INPUTS, self.P[i - 1], 1.0
@@ -885,19 +1327,55 @@ class HydDown:
                             hi = tp.h_inside(
                                 L,
                                 self.T_inner_wall[i - 1],
-                                self.T_fluid[i - 1],
+                                T_for_gas_side_htc,
                                 self.transport_fluid,
                             )
-                            if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
-                                hiw = tp.h_inside_wetted(
-                                    L,
-                                    self.T_inner_wall_wetted[i - 1],
-                                    self.T_fluid[i - 1],
-                                    self.transport_fluid_wet,
-                                    self.fluid,
-                                )
+
+                            # NEM: Check liquid phase for boiling, use liquid properties
+                            # Equilibrium: Use existing logic with equilibrium fluid
+                            if self.non_equilibrium:
+                                # For NEM, if liquid exists, use nucleate boiling correlation
+                                # No need to check quality - liquid phase is always liquid
+                                liquid_exists = self.m_liquid[i-1] > 1e-6
+                                if liquid_exists:
+                                    # Use liquid temperature for film temperature
+                                    T_film_wet = (self.T_liquid[i-1] + self.T_inner_wall_wetted[i-1]) / 2
+                                    try:
+                                        self.transport_fluid_wet.update(CP.PT_INPUTS, self.P[i-1], T_film_wet)
+                                    except:
+                                        # If film temperature fails, use liquid temperature
+                                        try:
+                                            self.transport_fluid_wet.update(CP.PT_INPUTS, self.P[i-1], self.T_liquid[i-1])
+                                        except:
+                                            # Last resort: use saturation
+                                            self.transport_fluid_wet.update(CP.PQ_INPUTS, self.P[i-1], 0.0)
+
+                                    # Update fluid_liquid to saturated state for h_inside_wetted
+                                    # (needed for surface tension and saturated properties)
+                                    self.fluid_liquid.update(CP.PQ_INPUTS, self.P[i-1], 0.0)
+
+                                    hiw = tp.h_inside_wetted(
+                                        L,
+                                        self.T_inner_wall_wetted[i - 1],
+                                        self.T_liquid[i - 1],      # Use liquid temperature
+                                        self.transport_fluid_wet,
+                                        self.fluid_liquid,         # Use liquid phase object at saturation
+                                    )
+                                else:
+                                    # No liquid - use gas-side coefficient
+                                    hiw = hi
                             else:
-                                hiw = hi
+                                # Equilibrium mode: use existing logic
+                                if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                                    hiw = tp.h_inside_wetted(
+                                        L,
+                                        self.T_inner_wall_wetted[i - 1],
+                                        self.T_fluid[i - 1],
+                                        self.transport_fluid_wet,
+                                        self.fluid,
+                                    )
+                                else:
+                                    hiw = hi
                     else:
                         hi = self.h_in
                         hiw = self.h_in  # Use same coefficient for wetted surface
@@ -926,22 +1404,35 @@ class HydDown:
                         wetted_area_outer = 0
 
                     # Heat transfer from unwetted wall (gas side) to fluid
-                    # Q = A * h * (T_wall - T_fluid)
+                    # For NEM: use gas temperature
+                    # For equilibrium: use bulk fluid temperature
+                    if self.non_equilibrium and hasattr(self, 'T_gas'):
+                        T_for_gas_side_htc = self.T_gas[i - 1]
+                    else:
+                        T_for_gas_side_htc = self.T_fluid[i - 1]
+
                     self.Q_inner[i] = (
                         (self.surf_area_inner - wetted_area)
                         * hi
-                        * (self.T_inner_wall[i - 1] - self.T_fluid[i - 1])
+                        * (self.T_inner_wall[i - 1] - T_for_gas_side_htc)
                     )
                     self.q_inner[i] = hi * (
-                        self.T_inner_wall[i - 1] - self.T_fluid[i - 1]
+                        self.T_inner_wall[i - 1] - T_for_gas_side_htc
                     )
 
                     # Heat transfer from wetted wall (liquid side) to fluid
                     # Uses different heat transfer coefficient (hiw) for liquid contact
+                    # For NEM: use liquid temperature
+                    # For equilibrium: use bulk fluid temperature
+                    if self.non_equilibrium and hasattr(self, 'T_liquid'):
+                        T_fluid_wet = self.T_liquid[i - 1]
+                    else:
+                        T_fluid_wet = self.T_fluid[i - 1]
+
                     self.Q_inner_wetted[i] = (
                         wetted_area
                         * hiw
-                        * (self.T_inner_wall_wetted[i - 1] - self.T_fluid[i - 1])
+                        * (self.T_inner_wall_wetted[i - 1] - T_fluid_wet)
                     )
 
                     # Avoid division by zero when fully vapor (wetted_area = 0)
@@ -995,7 +1486,8 @@ class HydDown:
                         / self.inner_vol.A
                     )
 
-                    if self.Q_outer_wetted[i] == 0 and self.Q_inner_wetted[i] == 0:
+                    # Update wetted wall temperature only if wetted area exists
+                    if wetted_area < 1e-10 or (self.Q_outer_wetted[i] == 0 and self.Q_inner_wetted[i] == 0):
                         self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1]
                     else:
                         self.T_vessel_wetted[i] = self.T_vessel_wetted[i - 1] + (
@@ -1322,40 +1814,93 @@ class HydDown:
                         T_wall_inner = self.T_vessel[i - 1]
                         T_wall_inner_wetted = self.T_vessel_wetted[i - 1]
 
+                    # For NEM: use gas temperature for unwetted (gas-side) heat transfer
+                    # For equilibrium: use bulk fluid temperature
+                    if self.non_equilibrium and hasattr(self, 'T_gas'):
+                        T_for_gas_side = self.T_gas[i - 1]
+                    else:
+                        T_for_gas_side = self.T_fluid[i - 1]
+
                     hi = tp.h_inner(
                         L,
-                        self.T_fluid[i - 1],
+                        T_for_gas_side,
                         T_wall_inner,
                         self.P[i - 1],
                         self.species,
                     )
                     self.h_inside[i] = hi
-                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
-                        self.transport_fluid_wet.update(
-                            CP.PT_INPUTS, self.P[i - 1], self.T_fluid[i - 1]
-                        )
-                        hiw = tp.h_inside_wetted(
-                            L,
-                            T_wall_inner_wetted,
-                            self.T_fluid[i - 1],
-                            self.transport_fluid_wet,
-                            self.fluid,
-                        )
+
+                    # NEM: Check liquid phase for boiling, use liquid properties
+                    # Equilibrium: Use existing logic with equilibrium fluid
+                    if self.non_equilibrium:
+                        # For NEM, if liquid exists, use nucleate boiling correlation
+                        # No need to check quality - liquid phase is always liquid
+                        liquid_exists = self.m_liquid[i-1] > 1e-6
+                        if liquid_exists:
+                            # Use liquid temperature and liquid phase object
+                            try:
+                                self.transport_fluid_wet.update(
+                                    CP.PT_INPUTS, self.P[i - 1], self.T_liquid[i - 1]
+                                )
+                            except:
+                                # If update fails, use saturation
+                                self.transport_fluid_wet.update(CP.PQ_INPUTS, self.P[i - 1], 0.0)
+
+                            # Update fluid_liquid to saturated state for h_inside_wetted
+                            # (needed for surface tension and saturated properties)
+                            self.fluid_liquid.update(CP.PQ_INPUTS, self.P[i - 1], 0.0)
+
+                            hiw = tp.h_inside_wetted(
+                                L,
+                                T_wall_inner_wetted,
+                                self.T_liquid[i - 1],      # Use liquid temperature
+                                self.transport_fluid_wet,
+                                self.fluid_liquid,         # Use liquid phase object at saturation
+                            )
+                        else:
+                            # No liquid - use gas-side coefficient
+                            hiw = hi
                     else:
-                        hiw = hi
+                        # Equilibrium mode: use existing logic
+                        if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                            self.transport_fluid_wet.update(
+                                CP.PT_INPUTS, self.P[i - 1], self.T_fluid[i - 1]
+                            )
+                            hiw = tp.h_inside_wetted(
+                                L,
+                                T_wall_inner_wetted,
+                                self.T_fluid[i - 1],
+                                self.transport_fluid_wet,
+                                self.fluid,
+                            )
+                        else:
+                            hiw = hi
+
+                    # For unwetted heat transfer, use gas temperature in NEM
+                    if self.non_equilibrium and hasattr(self, 'T_gas'):
+                        T_for_gas_side_htc = self.T_gas[i - 1]
+                    else:
+                        T_for_gas_side_htc = self.T_fluid[i - 1]
 
                     self.Q_inner[i] = self.scaling * (
                         (self.surf_area_inner - wetted_area)
                         * hi
-                        * (T_wall_inner - self.T_fluid[i - 1])
+                        * (T_wall_inner - T_for_gas_side_htc)
                     )
 
-                    self.q_inner[i] = hi * (T_wall_inner - self.T_fluid[i - 1])
+                    self.q_inner[i] = hi * (T_wall_inner - T_for_gas_side_htc)
+
+                    # For wetted heat transfer, use liquid temperature in NEM
+                    if self.non_equilibrium and hasattr(self, 'T_liquid'):
+                        T_fluid_wet = self.T_liquid[i - 1]
+                    else:
+                        T_fluid_wet = self.T_fluid[i - 1]
+
                     self.Q_inner_wetted[i] = self.scaling * (
-                        wetted_area * hiw * (T_wall_inner_wetted - self.T_fluid[i - 1])
+                        wetted_area * hiw * (T_wall_inner_wetted - T_fluid_wet)
                     )
                     self.q_inner_wetted[i] = hiw * (
-                        T_wall_inner_wetted - self.T_fluid[i - 1]
+                        T_wall_inner_wetted - T_fluid_wet
                     )
                     if np.isnan(self.Q_inner_wetted[i]):
                         self.Q_inner_wetted[i] = 0
@@ -1796,8 +2341,338 @@ class HydDown:
 
                 self.U_mass[i] = U_end / self.mass_fluid[i]
 
+                # ====================================================================
+                # NON-EQUILIBRIUM MODEL (NEM) ENERGY BALANCE
+                # ====================================================================
+                # For non-equilibrium model, solve separate energy balances for gas and liquid phases
+                if self.non_equilibrium:
+                    # First, update masses with valve flow only (no phase transfer yet)
+                    # Assume discharge/filling happens through gas phase
+                    if input["valve"]["flow"] == "discharge":
+                        # Mass leaves through gas phase
+                        self.m_gas[i] = self.m_gas[i-1] - self.mass_rate[i-1] * self.tstep
+                        self.m_liquid[i] = self.m_liquid[i-1]
+                    else:  # filling
+                        # Mass enters through gas phase
+                        self.m_gas[i] = self.m_gas[i-1] - self.mass_rate[i-1] * self.tstep
+                        self.m_liquid[i] = self.m_liquid[i-1]
+
+                    # Prevent negative masses
+                    if self.m_gas[i] < 0:
+                        self.m_gas[i] = 0.0
+                    if self.m_liquid[i] < 0:
+                        self.m_liquid[i] = 0.0
+
+                    # ====================================================================
+                    # PHASE TRANSFER (Part of Mass Balance)
+                    # ====================================================================
+                    # Check if previous timestep had two-phase conditions in either phase
+                    # Transfer mass and energy between phases based on vapor quality
+                    # This happens BEFORE energy balance, as part of mass redistribution
+
+                    dm_evap_mass = 0.0  # Mass evaporated (liquid → gas)
+                    dm_cond_mass = 0.0  # Mass condensed (gas → liquid)
+                    E_evap = 0.0  # Energy transferred with evaporation
+                    E_cond = 0.0  # Energy transferred with condensation
+
+                    # Check liquid phase from previous timestep
+                    if self.m_liquid[i-1] > 1e-6:
+                        try:
+                            # Check if liquid was in two-phase region at previous state
+                            self.fluid_liquid.update(CP.DmassUmass_INPUTS, self.rho_liquid[i-1], self.U_liquid[i-1])
+                            quality_liquid = self.fluid_liquid.Q()
+
+                            if quality_liquid > 0 and quality_liquid < 1:
+                                # Liquid is in two-phase region - some should evaporate
+                                relax_factor = 0.8  # Transfer 80% per timestep
+                                dm_evap_mass = quality_liquid * self.m_liquid[i-1] * relax_factor
+
+                                # Safety limit: evaporation rate limited by available heat
+                                # Maximum dm/dt from heat input: Q / h_fg
+                                h_liq_sat_check = self.fluid_liquid.saturated_liquid_keyed_output(CP.iHmass)
+                                h_vap_sat_check = self.fluid_liquid.saturated_vapor_keyed_output(CP.iHmass)
+                                h_fg = h_vap_sat_check - h_liq_sat_check
+
+                                # Estimate available heat for evaporation (use PREVIOUS timestep)
+                                Q_available = max(self.Q_inner_wetted[i-1], 0.0) * self.tstep  # J
+                                dm_evap_max = Q_available / h_fg if h_fg > 0 else dm_evap_mass
+
+                                # Limit to 50x heat-based rate to allow for stored energy
+                                dm_evap_mass = min(dm_evap_mass, dm_evap_max * 50.0)
+
+                                # Transfer mass
+                                self.m_liquid[i] -= dm_evap_mass
+                                self.m_gas[i] += dm_evap_mass
+
+                                # Energy transferred with phase change
+                                # Evaporated mass leaves liquid as VAPOR (phase change occurs)
+                                # The evaporated liquid becomes saturated vapor
+                                # Use (h+u)/2 compromise between enthalpy and internal energy
+                                h_vap_sat = self.fluid_liquid.saturated_vapor_keyed_output(CP.iHmass)
+                                u_vap_sat = self.fluid_liquid.saturated_vapor_keyed_output(CP.iUmass)
+                                e_vap_sat = (h_vap_sat + u_vap_sat) / 2.0
+
+                                # E_evap = energy carried by evaporated mass
+                                # This energy is SUBTRACTED from liquid and ADDED to gas
+                                E_evap = dm_evap_mass * e_vap_sat
+                        except:
+                            pass  # Not in two-phase, no transfer
+
+                    # Check gas phase from previous timestep (only if no evaporation)
+                    if self.m_gas[i-1] > 1e-6 and dm_evap_mass == 0:
+                        try:
+                            # Check if gas was in two-phase region at previous state
+                            self.fluid_gas.update(CP.DmassUmass_INPUTS, self.rho_gas[i-1], self.U_gas[i-1])
+                            quality_gas = self.fluid_gas.Q()
+
+                            if quality_gas > 0 and quality_gas < 1:
+                                # Gas is in two-phase region - some should condense
+                                relax_factor = 0.8  # Transfer 80% per timestep
+                                dm_cond_mass = (1.0 - quality_gas) * self.m_gas[i-1] * relax_factor
+
+                                # Safety limit: condensation rate limited by heat removal
+                                h_liq_sat_check = self.fluid_gas.saturated_liquid_keyed_output(CP.iHmass)
+                                h_vap_sat_check = self.fluid_gas.saturated_vapor_keyed_output(CP.iHmass)
+                                h_fg = h_vap_sat_check - h_liq_sat_check
+
+                                # Estimate heat removal rate (use PREVIOUS timestep)
+                                Q_removal = max(-self.Q_inner[i-1], 0.0) * self.tstep  # J (positive value)
+                                dm_cond_max = Q_removal / h_fg if h_fg > 0 else dm_cond_mass
+
+                                # Limit to 50x heat-based rate
+                                dm_cond_mass = min(dm_cond_mass, dm_cond_max * 50.0)
+
+                                # Transfer mass
+                                self.m_gas[i] -= dm_cond_mass
+                                self.m_liquid[i] += dm_cond_mass
+
+                                # Energy transferred with phase change
+                                # Condensed mass leaves gas as LIQUID (phase change occurs)
+                                # The condensed vapor becomes saturated liquid
+                                # Use (h+u)/2 compromise between enthalpy and internal energy
+                                h_liq_sat = self.fluid_gas.saturated_liquid_keyed_output(CP.iHmass)
+                                u_liq_sat = self.fluid_gas.saturated_liquid_keyed_output(CP.iUmass)
+                                e_liq_sat = (h_liq_sat + u_liq_sat) / 2.0
+
+                                # E_cond = energy carried by condensed mass
+                                # This energy is SUBTRACTED from gas and ADDED to liquid
+                                E_cond = dm_cond_mass * e_liq_sat
+                        except:
+                            pass  # Not in two-phase, no transfer
+
+                    # Store phase transfer rate for output
+                    net_transfer = dm_cond_mass - dm_evap_mass  # Positive = condensation
+                    self.mdot_phase_transfer[i] = net_transfer / self.tstep
+
+                    # Calculate gas-liquid interfacial heat transfer
+                    # Q_gl = h_gl * A_interface * (T_gas - T_liquid)
+                    # Positive = heat from gas to liquid
+                    if self.m_liquid[i-1] > 1e-6 and self.m_gas[i-1] > 1e-6:
+                        # Calculate interface area from liquid level
+                        # For horizontal cylinder, interface area is the cross-sectional area at liquid level
+                        V_liquid_prev = self.m_liquid[i-1] / self.rho_liquid[i-1]
+                        ll_prev = self.inner_vol.h_from_V(V_liquid_prev)
+
+                        # For horizontal cylinder: interface is rectangular (length × width at that height)
+                        # Approximation: use vessel diameter × length as characteristic area
+                        # Better: calculate actual cross-sectional area at liquid level
+                        # For now, use a simple approximation based on vessel geometry
+                        if hasattr(self.inner_vol, 'L'):
+                            # Horizontal cylinder
+                            D = self.inner_vol.D
+                            L = self.inner_vol.L
+                            # Interface area ≈ L × chord_width
+                            # For simplicity, use L × D as upper bound
+                            A_interface = L * D * 0.5  # Rough estimate
+                        else:
+                            # Vertical cylinder
+                            A_interface = np.pi * (self.inner_vol.D / 2)**2
+
+                        # Heat transfer coefficient (W/m²K)
+                        # Can be specified in input file, otherwise use default
+                        if "h_gas_liquid" in input["calculation"]:
+                            h_gl = input["calculation"]["h_gas_liquid"]
+                        else:
+                            h_gl = 50.0  # Default value
+
+                        # Heat transfer rate (W)
+                        Q_gas_liquid = h_gl * A_interface * (self.T_gas[i-1] - self.T_liquid[i-1])
+                    else:
+                        Q_gas_liquid = 0.0
+
+                    # ====================================================================
+                    # ENERGY BALANCE
+                    # ====================================================================
+                    # Apply heat transfer and flow work to each phase
+                    # Phase transfer energy already accounted for in mass balance
+
+                    # Gas phase energy balance:
+                    # dU_gas = Q_wall_gas - Q_gas_liquid + h_valve*dm_valve + E_phase_transfer
+                    U_gas_start = self.U_gas[i-1] * self.m_gas[i-1]
+
+                    # Enthalpy for valve flow
+                    if input["valve"]["flow"] == "filling":
+                        h_valve = self.res_fluid.hmass()
+                        U_gas_tentative = (U_gas_start
+                                          - self.tstep * self.mass_rate[i-1] * h_valve
+                                          + self.tstep * self.Q_inner[i]
+                                          - self.tstep * Q_gas_liquid
+                                          + E_evap - E_cond)  # Phase transfer energy
+                    else:  # discharge
+                        if self.m_gas[i-1] > 1e-6:
+                            # Use DmassUmass to get enthalpy (avoids PT issues at saturation)
+                            # Calculate discharge enthalpy - fail if thermodynamic state is invalid
+                            self.fluid_gas.update(CP.DmassUmass_INPUTS, self.rho_gas[i-1], self.U_gas[i-1])
+                            h_valve = self.fluid_gas.hmass()
+                        else:
+                            h_valve = 0.0
+                        U_gas_tentative = (U_gas_start
+                                          - self.tstep * self.mass_rate[i-1] * h_valve
+                                          + self.tstep * self.Q_inner[i]
+                                          - self.tstep * Q_gas_liquid
+                                          + E_evap - E_cond)  # Phase transfer energy
+
+                    # Liquid phase energy balance:
+                    # dU_liquid = Q_wall_liquid + Q_gas_liquid - E_phase_transfer
+                    U_liquid_start = self.U_liquid[i-1] * self.m_liquid[i-1]
+                    U_liquid_tentative = (U_liquid_start
+                                         + self.tstep * self.Q_inner_wetted[i]
+                                         + self.tstep * Q_gas_liquid
+                                         - E_evap + E_cond)  # Phase transfer energy (opposite sign)
+
+                    # Final internal energies for P-solver
+                    U_gas_end = U_gas_tentative
+                    U_liquid_end = U_liquid_tentative
+
+                    # Safety check: if gas mass is very small, switch to single-phase liquid
+                    if self.m_gas[i] < 1e-3:  # Less than 1 gram of gas
+                        # Essentially single-phase liquid - add remaining gas energy to liquid
+                        U_liquid_end += U_gas_end
+                        U_gas_end = 0.0
+                        self.m_gas[i] = 0.0
+
+                    # Safety check: if liquid mass is very small, switch to single-phase gas
+                    if self.m_liquid[i] < 1e-3:  # Less than 1 gram of liquid
+                        # Essentially single-phase gas - add remaining liquid energy to gas
+                        U_gas_end += U_liquid_end
+                        U_liquid_end = 0.0
+                        self.m_liquid[i] = 0.0
+
+                    # Solve for pressure P such that volume constraint is satisfied
+                    # Given P and U, CoolProp directly gives T and ρ (no nested iteration needed!)
+                    from scipy.optimize import brentq
+
+                    def volume_residual(P):
+                        """
+                        For given pressure P, update phases with (P, U) and check volume constraint.
+                        Returns (V_gas + V_liquid - V_vessel) / V_vessel
+                        """
+                        try:
+                            U_gas_specific = U_gas_end / self.m_gas[i]
+                            U_liquid_specific = U_liquid_end / self.m_liquid[i]
+
+                            # Update gas with (P, U) → CoolProp gives ρ and T directly
+                            self.fluid_gas.update(CP.PUmass_INPUTS, P, U_gas_specific)
+                            rho_gas = self.fluid_gas.rhomass()
+
+                            # Update liquid with (P, U) → CoolProp gives ρ and T directly
+                            self.fluid_liquid.update(CP.PUmass_INPUTS, P, U_liquid_specific)
+                            rho_liquid = self.fluid_liquid.rhomass()
+
+                            # Calculate volumes
+                            V_gas = self.m_gas[i] / rho_gas
+                            V_liquid = self.m_liquid[i] / rho_liquid
+                            V_total = V_gas + V_liquid
+
+                            # Return normalized volume residual
+                            return (V_total - self.vol) / self.vol
+
+                        except Exception:
+                            return 1.0  # High residual if update fails
+
+                    try:
+                        # Check if we're essentially single-phase
+                        if self.m_gas[i] < 1e-6 and self.m_liquid[i] > 1e-6:
+                            # Single-phase liquid - use DU update
+                            U_total_specific = U_liquid_end / self.m_liquid[i]
+                            rho_total = self.mass_fluid[i] / self.vol
+                            self.fluid.update(CP.DmassUmass_INPUTS, rho_total, U_total_specific)
+                            P_solution = self.fluid.p()
+                        elif self.m_liquid[i] < 1e-6 and self.m_gas[i] > 1e-6:
+                            # Single-phase gas - use DU update
+                            U_total_specific = U_gas_end / self.m_gas[i]
+                            rho_total = self.mass_fluid[i] / self.vol
+                            self.fluid.update(CP.DmassUmass_INPUTS, rho_total, U_total_specific)
+                            P_solution = self.fluid.p()
+                        else:
+                            # Two-phase - solve for pressure equilibrium
+                            # Bounds for pressure
+                            P_min = max(self.P[i-1] * 0.5, 1e5)  # At least 1 bar
+                            P_max = self.P[i-1] * 2.0
+
+                            # Solve for pressure that gives correct volume
+                            P_solution = brentq(volume_residual, P_min, P_max, xtol=1e-6)
+
+                        # Store solved pressure
+                        self.P[i] = P_solution
+
+                        # Update gas state with solved pressure
+                        if self.m_gas[i] > 1e-6:
+                            U_gas_specific = U_gas_end / self.m_gas[i]
+                            self.fluid_gas.update(CP.PUmass_INPUTS, P_solution, U_gas_specific)
+                            self.rho_gas[i] = self.fluid_gas.rhomass()
+                            self.U_gas[i] = self.fluid_gas.umass()
+                            self.T_gas[i] = self.fluid_gas.T()
+                        else:
+                            self.rho_gas[i] = 0.0
+                            self.U_gas[i] = 0.0
+                            self.T_gas[i] = self.T_gas[i-1]
+
+                        # Update liquid state with solved pressure
+                        if self.m_liquid[i] > 1e-6:
+                            U_liquid_specific = U_liquid_end / self.m_liquid[i]
+                            self.fluid_liquid.update(CP.PUmass_INPUTS, P_solution, U_liquid_specific)
+                            self.rho_liquid[i] = self.fluid_liquid.rhomass()
+                            self.U_liquid[i] = self.fluid_liquid.umass()
+                            self.T_liquid[i] = self.fluid_liquid.T()
+                        else:
+                            self.rho_liquid[i] = 0.0
+                            self.U_liquid[i] = 0.0
+                            self.T_liquid[i] = self.T_liquid[i-1]
+
+                        # Update combined state for compatibility
+                        self.T_fluid[i] = self.T_gas[i] if self.m_gas[i] > 1e-6 else self.T_liquid[i]
+                        self.rho[i] = self.mass_fluid[i] / self.vol
+
+                        # Update main fluid object for compatibility
+                        total_U = (U_gas_end + U_liquid_end) / self.mass_fluid[i]
+                        self.fluid.update(CP.DmassUmass_INPUTS, self.rho[i], total_U)
+
+                        # Calculate liquid level for NEM
+                        if self.m_liquid[i] > 1e-6 and self.rho_liquid[i] > 1e-6:
+                            V_liquid = self.m_liquid[i] / self.rho_liquid[i]
+                            self.liquid_level[i] = self.inner_vol.h_from_V(V_liquid)
+                        else:
+                            self.liquid_level[i] = 0.0
+
+                        # Phase transfer already handled in mass balance step
+                        # No post-solver adjustments needed
+
+                    except Exception as e:
+                        # Fail hard - do not allow pressure equilibrium violations
+                        raise RuntimeError(
+                            f"NEM solver failed at t={self.time_array[i]:.2f}s: {e}\n"
+                            f"  P_guess range: [{P_min:.2f}, {P_max:.2f}] Pa\n"
+                            f"  m_gas: {self.m_gas[i]:.3f} kg, m_liquid: {self.m_liquid[i]:.3f} kg\n"
+                            f"  U_gas_end: {U_gas_end:.1f} J, U_liquid_end: {U_liquid_end:.1f} J\n"
+                            f"Solver must maintain strict pressure equilibrium. Check:\n"
+                            f"  1. Timestep may be too large (current: {self.tstep}s)\n"
+                            f"  2. Energy balance may have unphysical values\n"
+                            f"  3. Phase transfer rate may be too aggressive"
+                        ) from e
+
                 # Not pretty if-statement and a hack for fire relief area estimation. Most cases go directly to the first ...else... clause
-                if input["valve"]["type"] == "relief":
+                elif input["valve"]["type"] == "relief":
                     if self.Pset <= self.P[i - 1]:
                         if self.liquid_level[i - 1] > 0:
 
@@ -1972,12 +2847,22 @@ class HydDown:
                     except:
                         self.T_vent[i] = self.vent_fluid.T()
 
-            if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+            # For NEM: use gas phase properties for discharge calculations
+            # For equilibrium: use main fluid object
+            if self.non_equilibrium and self.m_gas[i] > 1e-6:
+                # NEM: Always use saturated vapor properties from gas phase
+                cpcv = self.fluid_gas.saturated_vapor_keyed_output(CP.iCpmolar) / (
+                    self.fluid_gas.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
+                )
+                Z = self.fluid_gas.saturated_vapor_keyed_output(CP.iZ)
+            elif self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                # Equilibrium two-phase: use saturated vapor properties
                 cpcv = self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) / (
                     self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
                 )
                 Z = self.fluid.saturated_vapor_keyed_output(CP.iZ)
             else:
+                # Single phase gas: use actual fluid properties
                 cpcv = self.fluid.cp0molar() / (self.fluid.cp0molar() - 8.314)
                 Z = self.fluid.compressibility_factor()
             # ====================================================================
@@ -2007,7 +2892,11 @@ class HydDown:
                         self.D_orifice**2 / 4 * math.pi,
                     )
                 else:
-                    if self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
+                    # For NEM: use gas phase density
+                    # For equilibrium two-phase: use saturated vapor density
+                    if self.non_equilibrium and self.m_gas[i] > 1e-6:
+                        rho = self.fluid_gas.saturated_vapor_keyed_output(CP.iDmass)
+                    elif self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
                         rho = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
                     else:
                         rho = self.rho[i]
@@ -2049,10 +2938,14 @@ class HydDown:
                 else:
                     Z = Z
                     MW = self.MW
+                    # For NEM: use gas temperature for discharge
+                    T_discharge = self.T_gas[i] if self.non_equilibrium and self.m_gas[i] > 1e-6 else self.T_fluid[i]
                     self.mass_rate[i] = tp.control_valve(
-                        self.P[i], self.p_back, self.T_fluid[i], Z, MW, cpcv, Cv
+                        self.P[i], self.p_back, T_discharge, Z, MW, cpcv, Cv
                     )
             elif input["valve"]["type"] == "psv":
+                # For NEM: use gas temperature for discharge
+                T_discharge = self.T_gas[i] if self.non_equilibrium and self.m_gas[i] > 1e-6 else self.T_fluid[i]
                 self.mass_rate[i] = tp.relief_valve(
                     self.P[i],
                     self.p_back,
@@ -2060,7 +2953,7 @@ class HydDown:
                     self.blowdown,
                     cpcv,
                     self.CD,
-                    self.T_fluid[i],
+                    T_discharge,
                     Z,
                     self.MW,
                     self.D_orifice**2 / 4 * math.pi,
@@ -2184,7 +3077,12 @@ class HydDown:
 
         plt.subplot(221)
 
-        plt.plot(self.time_array, self.T_fluid - 273.15, "b", label="Fluid")
+        # For NEM: plot gas and liquid temperatures separately
+        if self.non_equilibrium:
+            plt.plot(self.time_array, self.T_gas - 273.15, "r", label="Gas")
+            plt.plot(self.time_array, self.T_liquid - 273.15, "b", label="Liquid")
+        else:
+            plt.plot(self.time_array, self.T_fluid - 273.15, "b", label="Fluid")
         if "thermal_conductivity" not in self.input["vessel"].keys():
             plt.plot(
                 self.time_array, self.T_vessel - 273.15, "g", label="Vessel wall dry"
