@@ -372,6 +372,174 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
     return min(max(h_boil, h_conv), 3000)
 
 
+def h_gas_liquid_interface(T_gas, T_liquid, P, L_char, fluid_gas, fluid_liquid):
+    """
+    Calculate gas-liquid interfacial heat transfer coefficient for stratified two-phase flow.
+
+    Uses natural convection correlations for horizontal interface based on temperature
+    configuration:
+    - If T_gas > T_liquid (typical): Hot plate lower surface, liquid properties
+    - If T_liquid > T_gas (rare): Hot plate upper surface, gas properties
+
+    Physical situation:
+    - Horizontal interface area (vessel cross-section at liquid level)
+    - Natural convection driven by buoyancy from temperature difference
+    - Characteristic length typically vessel diameter
+
+    Parameters
+    ----------
+    T_gas : float
+        Gas phase bulk temperature [K]
+    T_liquid : float
+        Liquid phase bulk temperature [K]
+    P : float
+        System pressure [Pa]
+    L_char : float
+        Characteristic length for interface [m]
+        Typically vessel diameter for horizontal or vertical vessels
+    fluid_gas : obj
+        CoolProp fluid object for gas phase (already updated at current state)
+    fluid_liquid : obj
+        CoolProp fluid object for liquid phase (already updated at current state)
+
+    Returns
+    -------
+    h_gl : float
+        Gas-liquid interfacial heat transfer coefficient [W/m²K]
+
+    Notes
+    -----
+    - Correlation automatically handles both stable and unstable stratification
+    - Stable (T_gas > T_liquid): Modest h_gl, heat flows downward
+    - Unstable (T_liquid > T_gas): Higher h_gl, heat flows upward
+    - Can be extended to include forced/mixed convection effects
+    - Typical h_gl range: 20-500 W/m²K for natural convection
+
+    References
+    ----------
+    - Churchill and Chu (1975): Natural convection from horizontal surfaces
+    - Incropera & DeWitt: Fundamentals of Heat and Mass Transfer
+    - McAdams: Heat Transmission
+    """
+    # Temperature difference (driving force for heat transfer)
+    dT = abs(T_gas - T_liquid)
+
+    # Safety check: if temperatures are equal, return minimum value
+    if dT < 0.01:
+        return 100.0  # Minimum baseline (accounts for residual mixing/turbulence)
+
+    # =========================================================================
+    # SELECT CORRELATION BASED ON TEMPERATURE CONFIGURATION
+    # =========================================================================
+
+    if T_gas > T_liquid:
+        # TYPICAL CASE: Hot gas above cold liquid (stable stratification)
+        # Heat flows downward from gas to liquid
+        # Use correlation for LOWER surface of hot plate with LIQUID properties
+        # This is stable - reduced natural convection
+
+        try:
+            # Get liquid properties
+            k = fluid_liquid.conductivity()
+            mu = fluid_liquid.viscosity()
+            cp = fluid_liquid.cpmass()
+            rho = fluid_liquid.rhomass()
+            beta = fluid_liquid.isobaric_expansion_coefficient()
+
+            # Safety check: beta can be negative near saturation for liquids
+            # Use absolute value since we're interested in buoyancy magnitude
+            beta = abs(beta)
+
+            # Dimensionless numbers
+            Pr = cp * mu / k
+            nu = mu / rho
+            Gr = 9.81 * beta * dT * L_char**3 / nu**2
+            Ra = Gr * Pr
+
+            # Detailed check for invalid values
+            if math.isnan(Pr) or math.isnan(nu) or math.isnan(Gr) or math.isnan(Ra):
+                # NaN detected - property calculation issue
+                h_gl = 100.0
+            elif math.isinf(Ra) or Ra > 1e20:
+                # Extremely high Ra - cap at maximum
+                Nu = 0.15 * (1e15)**0.333  # Use very high but finite Ra
+                h_gl = Nu * k / L_char
+            elif Ra <= 0:
+                # Non-positive Ra (shouldn't happen with abs(beta), but safety check)
+                h_gl = 100.0
+            else:
+                # Nusselt number for LOWER surface of hot plate (stable)
+                # From Churchill & Chu / Incropera & DeWitt
+                if Ra < 1e7:
+                    Nu = 0.27 * Ra**0.25  # Laminar, stable
+                else:
+                    Nu = 0.15 * Ra**0.333  # Turbulent, stable
+
+                # Heat transfer coefficient
+                h_gl = Nu * k / L_char
+
+        except Exception as e:
+            # Fallback if calculation fails
+            h_gl = 50.0  # Conservative default for stable stratification
+
+    else:
+        # RARE CASE: Hot liquid below cold gas (unstable stratification)
+        # Heat flows upward from liquid to gas
+        # Use correlation for UPPER surface of hot plate with GAS properties
+        # This is unstable - enhanced natural convection
+
+        try:
+            # Get gas properties
+            k = fluid_gas.conductivity()
+            mu = fluid_gas.viscosity()
+            cp = fluid_gas.cpmass()
+            rho = fluid_gas.rhomass()
+            beta = fluid_gas.isobaric_expansion_coefficient()
+
+            # Safety check: use absolute value of beta
+            beta = abs(beta)
+
+            # Dimensionless numbers
+            Pr = cp * mu / k
+            nu = mu / rho
+            Gr = 9.81 * beta * dT * L_char**3 / nu**2
+            Ra = Gr * Pr
+
+            # Detailed check for invalid values
+            if math.isnan(Pr) or math.isnan(nu) or math.isnan(Gr) or math.isnan(Ra):
+                # NaN detected - property calculation issue
+                h_gl = 200.0
+            elif math.isinf(Ra) or Ra > 1e20:
+                # Extremely high Ra - cap at maximum
+                Nu = 0.15 * (1e15)**0.333  # Use very high but finite Ra
+                h_gl = Nu * k / L_char
+            elif Ra <= 0:
+                # Non-positive Ra (shouldn't happen with abs(beta), but safety check)
+                h_gl = 200.0
+            else:
+                # Nusselt number for UPPER surface of hot plate (unstable)
+                # From Churchill & Chu / Incropera & DeWitt
+                if Ra < 1e7:
+                    Nu = 0.54 * Ra**0.25  # Laminar, unstable
+                else:
+                    Nu = 0.15 * Ra**0.333  # Turbulent, unstable
+
+                # Heat transfer coefficient
+                h_gl = Nu * k / L_char
+
+        except Exception as e:
+            # Fallback if calculation fails
+            h_gl = 200.0  # Higher default for unstable stratification
+
+    # Final safety checks
+    if h_gl < 100.0:
+        h_gl = 100.0  # Minimum realistic value (accounts for residual mixing, turbulence)
+    if h_gl > 2000.0:
+        h_gl = 2000.0  # Maximum for natural convection
+
+    return h_gl
+
+
 def hem_release_rate(P1, Pback, Cd, area, fluid):
     """
     Fluid mass flow (kg/s) trough a hole at critical (sonic) or subcritical

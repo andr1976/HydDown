@@ -1,0 +1,28 @@
+vessel:
+  length: 4.64
+  diameter: 1.7
+  orientation: "horizontal"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.01185
+  liquid_level: 0.4668
+initial:
+  temperature: 279
+  pressure: 550000  # 5.5 bar
+  fluid: "propane"
+calculation:
+  type: "energybalance"
+  time_step: 1.0
+  end_time: 600.
+  non_equilibrium: true
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.040
+  discharge_coef: 0.85
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 350  # Hot environment to simulate fire heating
+  h_outer: 50  # External heat transfer coefficient
+  h_inner: 100  # Internal heat transfer coefficient

@@ -447,6 +447,7 @@ class HydDown:
         self.q_inner_wetted = np.zeros(data_len)
         self.h_inside = np.zeros(data_len)
         self.h_inside_wetted = np.zeros(data_len)
+        self.h_gas_liquid = np.zeros(data_len)  # Gas-liquid interfacial HTC for NEM
         # Initialize Biot arrays as NaN (will be calculated if thermal_conductivity_biot specified)
         self.Biot = np.full(
             data_len, np.nan
@@ -2489,16 +2490,52 @@ class HydDown:
                             A_interface = np.pi * (self.inner_vol.D / 2)**2
 
                         # Heat transfer coefficient (W/m²K)
-                        # Can be specified in input file, otherwise use default
+                        # Can be specified in input file, calculated, or use default
                         if "h_gas_liquid" in input["calculation"]:
-                            h_gl = input["calculation"]["h_gas_liquid"]
+                            h_gl_input = input["calculation"]["h_gas_liquid"]
+
+                            if isinstance(h_gl_input, str) and h_gl_input.lower() == "calc":
+                                # Calculate h_gl using natural convection correlation
+                                # Characteristic length for interface correlations
+                                if hasattr(self.inner_vol, 'L'):
+                                    # Horizontal cylinder - use diameter
+                                    L_char = self.inner_vol.D
+                                else:
+                                    # Vertical cylinder - use diameter
+                                    L_char = self.inner_vol.D
+
+                                # Calculate h_gl using correlation
+                                # Fluid objects already updated earlier in time step - just query properties
+                                try:
+                                    h_gl = tp.h_gas_liquid_interface(
+                                        self.T_gas[i-1],
+                                        self.T_liquid[i-1],
+                                        self.P[i-1],
+                                        L_char,
+                                        self.fluid_gas,
+                                        self.fluid_liquid
+                                    )
+                                except Exception as e:
+                                    # Fallback if calculation fails
+                                    # Print warning only on first few occurrences
+                                    if i == 1 or (i < 100 and i % 50 == 0):
+                                        import warnings
+                                        warnings.warn(f"h_gl correlation failed at t={self.time_array[i]:.1f}s: {str(e)[:80]}, using fallback h_gl=100 W/m²K")
+                                    h_gl = 100.0  # Conservative default
+                            else:
+                                # User-specified fixed value
+                                h_gl = float(h_gl_input)
                         else:
                             h_gl = 50.0  # Default value
+
+                        # Store h_gl in array for diagnostics
+                        self.h_gas_liquid[i] = h_gl
 
                         # Heat transfer rate (W)
                         Q_gas_liquid = h_gl * A_interface * (self.T_gas[i-1] - self.T_liquid[i-1])
                     else:
                         Q_gas_liquid = 0.0
+                        self.h_gas_liquid[i] = 0.0
 
                     # ====================================================================
                     # ENERGY BALANCE
@@ -2560,7 +2597,7 @@ class HydDown:
 
                     # Solve for pressure P such that volume constraint is satisfied
                     # Given P and U, CoolProp directly gives T and ρ (no nested iteration needed!)
-                    from scipy.optimize import brentq
+                    from scipy.optimize import brentq, ridder, bisect
 
                     def volume_residual(P):
                         """
@@ -2611,7 +2648,38 @@ class HydDown:
                             P_max = self.P[i-1] * 2.0
 
                             # Solve for pressure that gives correct volume
-                            P_solution = brentq(volume_residual, P_min, P_max, xtol=1e-6)
+                            # Use fallback solver chain for robustness
+                            P_solution = None
+                            solver_method = None
+
+                            try:
+                                # Method 1: Try brentq (fastest)
+                                P_solution = brentq(volume_residual, P_min, P_max, xtol=1e-5, maxiter=100)
+                                solver_method = "brentq"
+                            except ValueError:
+                                # Root not bracketed - try ridder (more robust)
+                                try:
+                                    P_solution = ridder(volume_residual, P_min, P_max, xtol=1e-5, maxiter=100)
+                                    solver_method = "ridder"
+                                except ValueError:
+                                    # Still not bracketed - expand bounds and try bisect
+                                    P_min_expanded = max(P_min * 0.2, 1e5)  # Expand to 0.2x
+                                    P_max_expanded = min(P_max * 5.0, 100e5)  # Expand to 5x (max 1000 bar)
+
+                                    try:
+                                        P_solution = bisect(volume_residual, P_min_expanded, P_max_expanded, xtol=1e-5, maxiter=200)
+                                        solver_method = "bisect_expanded"
+                                    except ValueError:
+                                        # Last resort: check if previous pressure gives acceptable residual
+                                        res_prev = volume_residual(self.P[i-1])
+                                        if abs(res_prev) < 0.05:  # Within 5% of target volume
+                                            P_solution = self.P[i-1]
+                                            solver_method = "prev_pressure"
+                                        else:
+                                            # Give up - cannot find solution
+                                            raise ValueError(
+                                                f"All solvers failed. Residual at P_prev={self.P[i-1]/1e5:.2f} bar: {res_prev:.4f}"
+                                            )
 
                         # Store solved pressure
                         self.P[i] = P_solution
