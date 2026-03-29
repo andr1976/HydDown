@@ -2469,25 +2469,13 @@ class HydDown:
                     # Q_gl = h_gl * A_interface * (T_gas - T_liquid)
                     # Positive = heat from gas to liquid
                     if self.m_liquid[i-1] > 1e-6 and self.m_gas[i-1] > 1e-6:
-                        # Calculate interface area from liquid level
-                        # For horizontal cylinder, interface area is the cross-sectional area at liquid level
+                        # Calculate interface area from liquid level using TANK geometry
                         V_liquid_prev = self.m_liquid[i-1] / self.rho_liquid[i-1]
                         ll_prev = self.inner_vol.h_from_V(V_liquid_prev)
 
-                        # For horizontal cylinder: interface is rectangular (length × width at that height)
-                        # Approximation: use vessel diameter × length as characteristic area
-                        # Better: calculate actual cross-sectional area at liquid level
-                        # For now, use a simple approximation based on vessel geometry
-                        if hasattr(self.inner_vol, 'L'):
-                            # Horizontal cylinder
-                            D = self.inner_vol.D
-                            L = self.inner_vol.L
-                            # Interface area ≈ L × chord_width
-                            # For simplicity, use L × D as upper bound
-                            A_interface = L * D * 0.5  # Rough estimate
-                        else:
-                            # Vertical cylinder
-                            A_interface = np.pi * (self.inner_vol.D / 2)**2
+                        # Use fluids.TANK.A_cross_sectional for exact interface area
+                        # Handles horizontal/vertical, all head types (hemispherical, F&D, etc.)
+                        A_interface = self.inner_vol.A_cross_sectional(ll_prev)
 
                         # Heat transfer coefficient (W/m²K)
                         # Can be specified in input file, calculated, or use default
@@ -2597,7 +2585,7 @@ class HydDown:
 
                     # Solve for pressure P such that volume constraint is satisfied
                     # Given P and U, CoolProp directly gives T and ρ (no nested iteration needed!)
-                    from scipy.optimize import brentq, ridder, bisect
+                    from scipy.optimize import brentq, brenth, ridder, bisect, minimize, newton
 
                     def volume_residual(P):
                         """
@@ -2622,7 +2610,7 @@ class HydDown:
                             V_total = V_gas + V_liquid
 
                             # Return normalized volume residual
-                            return (V_total - self.vol) / self.vol
+                            return ((V_total - self.vol) / self.vol)
 
                         except Exception:
                             return 1.0  # High residual if update fails
@@ -2654,7 +2642,9 @@ class HydDown:
 
                             try:
                                 # Method 1: Try brentq (fastest)
+                                #P_solution = newton(volume_residual, bracket=[P_min, P_max], x0 = self.P[i-1], tol=1e-5, maxiter=100)
                                 P_solution = brentq(volume_residual, P_min, P_max, xtol=1e-5, maxiter=100)
+                                #P_solution = minimize(lambda x: volume_residual(x)**4,self.P[i-1],bounds=((P_min,P_max),))['x']
                                 solver_method = "brentq"
                             except ValueError:
                                 # Root not bracketed - try ridder (more robust)
@@ -2918,11 +2908,18 @@ class HydDown:
             # For NEM: use gas phase properties for discharge calculations
             # For equilibrium: use main fluid object
             if self.non_equilibrium and self.m_gas[i] > 1e-6:
-                # NEM: Always use saturated vapor properties from gas phase
-                cpcv = self.fluid_gas.saturated_vapor_keyed_output(CP.iCpmolar) / (
-                    self.fluid_gas.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
-                )
-                Z = self.fluid_gas.saturated_vapor_keyed_output(CP.iZ)
+                # NEM: check if gas phase is two-phase or superheated
+                Q_gas = self.fluid_gas.Q()
+                if Q_gas >= 0 and Q_gas <= 1:
+                    # Two-phase: use saturated vapor properties
+                    cpcv = self.fluid_gas.saturated_vapor_keyed_output(CP.iCpmolar) / (
+                        self.fluid_gas.saturated_vapor_keyed_output(CP.iCpmolar) - 8.314
+                    )
+                    Z = self.fluid_gas.saturated_vapor_keyed_output(CP.iZ)
+                else:
+                    # Superheated gas: use actual gas phase properties
+                    cpcv = self.fluid_gas.cp0molar() / (self.fluid_gas.cp0molar() - 8.314)
+                    Z = self.fluid_gas.compressibility_factor()
             elif self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
                 # Equilibrium two-phase: use saturated vapor properties
                 cpcv = self.fluid.saturated_vapor_keyed_output(CP.iCpmolar) / (
@@ -2960,10 +2957,14 @@ class HydDown:
                         self.D_orifice**2 / 4 * math.pi,
                     )
                 else:
-                    # For NEM: use gas phase density
+                    # For NEM: use gas phase density (actual state, not always saturated)
                     # For equilibrium two-phase: use saturated vapor density
                     if self.non_equilibrium and self.m_gas[i] > 1e-6:
-                        rho = self.fluid_gas.saturated_vapor_keyed_output(CP.iDmass)
+                        Q_gas = self.fluid_gas.Q()
+                        if Q_gas >= 0 and Q_gas <= 1:
+                            rho = self.fluid_gas.saturated_vapor_keyed_output(CP.iDmass)
+                        else:
+                            rho = self.fluid_gas.rhomass()
                     elif self.fluid.Q() >= 0 and self.fluid.Q() <= 1:
                         rho = self.fluid.saturated_vapor_keyed_output(CP.iDmass)
                     else:
@@ -3542,19 +3543,17 @@ class HydDown:
 
         from matplotlib import pyplot as plt
 
-        plt.figure(1)
-        if self.liquid_level.all() != 0:
+        plt.figure()
+        if np.any(self.liquid_level > 0):
             plt.plot(peak_times, T_wetted_wall - 273.15, label="T wetted wall")
         plt.plot(peak_times, T_unwetted_wall - 273.15, label="T unwetted wall")
         plt.xlabel("Time (s)")
         plt.ylabel("Wall temperature (C)")
         plt.legend(loc="best")
         if filename is not None:
-            plt.savefig(
-                filename + "_peak_wall_temp.png",
-            )
+            plt.savefig(filename + "_peak_wall_temp.pdf")
 
-        plt.figure(2)
+        plt.figure()
         plt.plot(
             peak_times,
             np.array([pres(time) for time in peak_times]) / 1e5,
@@ -3563,20 +3562,20 @@ class HydDown:
         plt.xlabel("Time (s)")
         plt.ylabel("Pressure (bar)")
         plt.legend(loc="best")
+        if filename is not None:
+            plt.savefig(filename + "_peak_pressure.pdf")
 
-        plt.figure(3)
+        plt.figure()
         plt.plot(peak_times, von_mises_wetted / 1e6, label="von Mises stress")
 
         plt.plot(peak_times, ATS_unwetted / 1e6, label="ATS unwetted wall")
-        if self.liquid_level.all() != 0:
+        if np.any(self.liquid_level > 0):
             plt.plot(peak_times, ATS_wetted / 1e6, label="ATS wetted wall")
         plt.xlabel("Time (s)")
         plt.ylabel("Allowable Tensile Strength / von Mises Stress (MPa)")
         plt.legend(loc="best")
         if filename is not None:
-            plt.savefig(
-                filename + "_ATS_vonmises.png",
-            )
+            plt.savefig(filename + "_ATS_vonmises.pdf")
 
         if filename is None:
             plt.show()

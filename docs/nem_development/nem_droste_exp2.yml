@@ -1,7 +1,7 @@
-# Droste & Schoen (1988) - Experiment 1 (October 1982)
+# Droste & Schoen (1988) - Experiment 2 (November 1983)
 # Uninsulated 4.85 m³ propane tank exposed to surrounding pool fire
-# 50% fill level, initial T=10°C, P=5.5 bar
-# Expected PSV opening: 340s, Expected rupture: 720s
+# 50% fill level, initial T=37°C, P=13.5 bar (preheated)
+# Expected PSV opening: 100s, Expected rupture: 440s
 
 vessel:
   length: 3.6  # m (cylindrical part only)
@@ -10,34 +10,34 @@ vessel:
   type: "DIN"  # Korbbogen-type (DIN 28013) - torispherical
   heat_capacity: 500  # J/kg·K
   density: 7700  # kg/m³
-  thickness: 0.0059  # m (cylindrical part, Test 1)
+  thickness: 0.0064  # m (cylindrical part, Tests 2&3)
   liquid_level: 0.5  # 50% fill
 
 initial:
-  temperature: 283  # K (10°C)
-  pressure: 550000  # Pa (5.5 bar)
+  temperature: 310  # K (37°C)
+  pressure: 1350000  # Pa (13.5 bar)
   fluid: "propane"
 
 calculation:
   type: "energybalance"
   time_step: 0.1  # s
-  end_time: 800  # s (past expected rupture at 720s)
+  end_time: 600  # s (past expected rupture at 440s)
   non_equilibrium: true
   h_gas_liquid: "calc"  # Automatic gas-liquid interface HTC
 
 valve:
   flow: "discharge"
   type: "psv"
-  diameter: 0.016  # m - Slightly smaller for better pressure rise
+  diameter: 0.016  # m - Tuned from Experiment 1
   discharge_coef: 0.975
-  set_pressure: 1560000  # Pa (15.6 bar)
-  blowdown: 0.25  # Typical value
+  set_pressure: 1730000  # Pa (17.3 bar - actual measured opening pressure)
+  blowdown: 0.10  # Reduced to avoid PSV cycling issue with high initial pressure
   back_pressure: 101325  # Pa (atmospheric)
 
 heat_transfer:
   type: "s-b"  # Stefan-Boltzmann fire model
   fire: "scandpower_pool"  # Scandpower pool fire (100 kW/m²)
-  scaling: 0.5  # Reduced to delay PSV opening and match experiment better
+  scaling: 0.5  # Tuned from Experiment 1
 
 rupture:
   material: "CS_360LT"  # StE 36 steel (360 N/mm² yield strength)

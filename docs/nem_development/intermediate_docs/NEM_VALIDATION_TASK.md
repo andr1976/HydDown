@@ -14,9 +14,9 @@ The NEM (Non-Equilibrium Model) has been fully implemented in HydDown with the f
 - Integration with rupture analysis for fire scenarios
 
 **Key implementation files:**
-- `src/hyddown/hdclass.py` - NEM solver (lines 2300-2700)
-- `src/hyddown/transport.py` - h_gas_liquid_interface() correlation (lines 375-520)
-- `src/hyddown/validator.py` - Input validation for NEM parameters
+- `src/hyddown/hdclass.py` - NEM solver (search for `non_equilibrium`)
+- `src/hyddown/transport.py` - `h_gas_liquid_interface()` correlation
+- `src/hyddown/validator.py` - Input validation for NEM parameters (`non_equilibrium`, `h_gas_liquid` under `calculation`)
 
 **Core documentation:**
 - `NEM_IMPLEMENTATION_METHODOLOGY.md` - Complete methodology

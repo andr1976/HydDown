@@ -1,0 +1,34 @@
+vessel:
+  length: 3.5
+  diameter: 1.6763
+  orientation: "horizontal"
+  type: "Hemispherical"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.01185
+  liquid_level: 0.4668
+initial:
+  temperature: 279
+  pressure: 550000  # 5.5 bar
+  fluid: "propane"
+calculation:
+  type: "energybalance"
+  time_step: 0.1
+  end_time: 900.
+  non_equilibrium: true
+  h_gas_liquid: "calc"  # Automatic gas-liquid interface HTC correlation
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.03359  # 0.0475 * sqrt(0.5) = 50% area reduction
+  discharge_coef: 0.975
+  set_pressure: 1430000  # 14.3 bar
+  blowdown: 0.24
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"
+  scaling: 0.8  # 80% engulfment
+rupture:
+  material: "CS_360LT"
+  fire: "scandpower_pool_peak"

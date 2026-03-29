@@ -1,7 +1,7 @@
-# Droste & Schoen (1988) - Experiment 2 (November 1983)
+# Droste & Schoen (1988) - Experiment 3 (December 1983)
 # Uninsulated 4.85 m³ propane tank exposed to surrounding pool fire
-# 50% fill level, initial T=37°C, P=13.5 bar (preheated)
-# Expected PSV opening: 100s, Expected rupture: 440s
+# 50% fill level, initial T=26°C, P=9.8 bar
+# Expected PSV opening: 150s, Expected rupture: 540s
 
 vessel:
   length: 3.6  # m (cylindrical part only)
@@ -14,14 +14,14 @@ vessel:
   liquid_level: 0.5  # 50% fill
 
 initial:
-  temperature: 310  # K (37°C)
-  pressure: 1350000  # Pa (13.5 bar)
+  temperature: 299  # K (26°C)
+  pressure: 980000  # Pa (9.8 bar)
   fluid: "propane"
 
 calculation:
   type: "energybalance"
   time_step: 0.1  # s
-  end_time: 600  # s (past expected rupture at 440s)
+  end_time: 700  # s (past expected rupture at 540s)
   non_equilibrium: true
   h_gas_liquid: "calc"  # Automatic gas-liquid interface HTC
 
@@ -30,7 +30,7 @@ valve:
   type: "psv"
   diameter: 0.016  # m - Tuned from Experiment 1
   discharge_coef: 0.975
-  set_pressure: 1560000  # Pa (15.6 bar)
+  set_pressure: 1600000  # Pa (16.0 bar - actual measured opening pressure)
   blowdown: 0.25  # Typical value
   back_pressure: 101325  # Pa (atmospheric)
 

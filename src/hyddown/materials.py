@@ -82,7 +82,7 @@ T = (
             1100,
         ]
     )
-    + 273.17
+    + 273.15
 )
 
 # Duplex stainless steel ultimate tensile strength [Pa] at temperatures in T
@@ -266,7 +266,7 @@ def von_mises(p, d, wt, sigma_a=30e6):
 
     D = d + 2 * wt
 
-    sigma_e = math.sqrt(3 * ((p * D**2) / (D**2 - d**2)) ** 2 + sigma_a)
+    sigma_e = math.sqrt(3 * ((p * D**2) / (D**2 - d**2)) ** 2 + sigma_a**2)
     return sigma_e
 
 
@@ -356,7 +356,7 @@ def steel_Cp(temperature, material):
     Return
     ----------
     Cp : float
-        Ultimate Tensile Strength (Pa)
+        Heat capacity (J/(kg·K))
 
     """
     if material == "CS_235LT":

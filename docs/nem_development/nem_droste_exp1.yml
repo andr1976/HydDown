@@ -1,7 +1,7 @@
-# Droste & Schoen (1988) - Experiment 3 (December 1983)
+# Droste & Schoen (1988) - Experiment 1 (October 1982)
 # Uninsulated 4.85 m³ propane tank exposed to surrounding pool fire
-# 50% fill level, initial T=26°C, P=9.8 bar
-# Expected PSV opening: 150s, Expected rupture: 540s
+# 50% fill level, initial T=10°C, P=5.5 bar
+# Expected PSV opening: 340s, Expected rupture: 720s
 
 vessel:
   length: 3.6  # m (cylindrical part only)
@@ -10,35 +10,35 @@ vessel:
   type: "DIN"  # Korbbogen-type (DIN 28013) - torispherical
   heat_capacity: 500  # J/kg·K
   density: 7700  # kg/m³
-  thickness: 0.0064  # m (cylindrical part, Tests 2&3)
+  thickness: 0.0059  # m (cylindrical part, Test 1)
   liquid_level: 0.5  # 50% fill
 
 initial:
-  temperature: 299  # K (26°C)
-  pressure: 980000  # Pa (9.8 bar)
+  temperature: 283  # K (10°C)
+  pressure: 550000  # Pa (5.5 bar)
   fluid: "propane"
 
 calculation:
   type: "energybalance"
-  time_step: 0.5  # s
-  end_time: 700  # s (past expected rupture at 540s)
+  time_step: 0.1  # s
+  end_time: 800  # s (past expected rupture at 720s)
   non_equilibrium: true
   h_gas_liquid: "calc"  # Automatic gas-liquid interface HTC
 
 valve:
   flow: "discharge"
   type: "psv"
-  diameter: 0.0111  # m - API 526 "D" orifice (ADJUSTABLE PARAMETER)
+  diameter: 0.016  # m - Tuned
   discharge_coef: 0.975
-  set_pressure: 1560000  # Pa (15.6 bar)
+  set_pressure: 1640000  # Pa (16.4 bar - actual measured opening pressure)
   blowdown: 0.25  # Typical value
   back_pressure: 101325  # Pa (atmospheric)
 
 heat_transfer:
   type: "s-b"  # Stefan-Boltzmann fire model
-  fire: "api_pool"  # API 521 pool fire (60 kW/m²) - ADJUSTABLE PARAMETER
-  scaling: 0.8  # Partial engulfment correction - ADJUSTABLE PARAMETER
+  fire: "scandpower_pool"  # Scandpower pool fire (100 kW/m²)
+  scaling: 0.5  # Reduced to delay PSV opening and match experiment better
 
 rupture:
   material: "CS_360LT"  # StE 36 steel (360 N/mm² yield strength)
-  fire: "api_pool_peak"  # Should match heat_transfer fire type
+  fire: "scandpower_jet_peak_small"  # Should match heat_transfer fire type

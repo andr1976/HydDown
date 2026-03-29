@@ -345,23 +345,27 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
     mul = fluid.viscosity()
     sigma = master_fluid.surface_tension()
 
-    h_boil = Rohsenow(
-        rhol=master_fluid.saturated_liquid_keyed_output(CP.iDmass),
-        rhog=master_fluid.saturated_vapor_keyed_output(CP.iDmass),
-        mul=mul,
-        kl=kl,
-        Cpl=fluid.cpmass(),
-        Hvap=(
-            master_fluid.saturated_vapor_keyed_output(CP.iHmass)
-            - master_fluid.saturated_liquid_keyed_output(CP.iHmass)
-        ),
-        sigma=sigma,
-        Te=max((Tvessel - Tfluid), 0),
-        Csf=0.013,
-        # n=1.3,
-        # Csf=0.018,
-        n=1.7,
-    )
+    # Check if sigma is very small (near critical point) to avoid division by zero
+    if sigma < 1e-6:
+        h_boil = 0
+    else:
+        h_boil = Rohsenow(
+            rhol=master_fluid.saturated_liquid_keyed_output(CP.iDmass),
+            rhog=master_fluid.saturated_vapor_keyed_output(CP.iDmass),
+            mul=mul,
+            kl=kl,
+            Cpl=fluid.cpmass(),
+            Hvap=(
+                master_fluid.saturated_vapor_keyed_output(CP.iHmass)
+                - master_fluid.saturated_liquid_keyed_output(CP.iHmass)
+            ),
+            sigma=sigma,
+            Te=max((Tvessel - Tfluid), 0),
+            Csf=0.013,
+            # n=1.3,
+            # Csf=0.018,
+            n=1.7,
+        )
 
     if math.isnan(h_boil):
         h_boil = 0

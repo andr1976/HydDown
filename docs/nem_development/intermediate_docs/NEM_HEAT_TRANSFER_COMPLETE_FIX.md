@@ -19,10 +19,11 @@ The Rohsenow nucleate boiling correlation for wetted wall heat transfer had thre
 - Heat transfer to liquid collapsed to **2.9 kW/m²** (should be ~66 kW/m²)
 
 ### Fix Locations in `hdclass.py`
-- Lines 1246-1302: Boiling check and hiw calculation (branch 1)
-- Lines 1328-1380: Boiling check and hiw calculation (branch 2)
-- Lines 1814-1866: Boiling check and hiw calculation (1D heat transfer)
-- Lines 1876-1895: Wetted heat transfer Q and q calculation
+Search for `if self.non_equilibrium:` within heat transfer coefficient sections:
+- Filling branch: hiw calculation with `h_inside_wetted` using `self.fluid_liquid`
+- Discharge branch: hiw calculation with `h_inside_wetted` using `self.fluid_liquid`
+- S-B fire branch: hiw calculation with `h_inside_wetted` using `self.fluid_liquid`
+- Wetted heat transfer Q and q calculation using `self.T_liquid`
 
 ### Fix Details
 ```python
@@ -70,11 +71,11 @@ For NEM, the unwetted (dry) wall is in contact with the **gas phase**, but code 
 - **Inconsistent** with explicit use of T_liquid for wetted wall
 
 ### Fix Locations in `hdclass.py`
-- Lines 1230-1250: h_inside_mixed calculation
-- Lines 1310-1340: h_inside calculation
-- Lines 1805-1820: h_inner calculation
-- Lines 1424-1440: Q_inner and q_inner (unwetted) calculation
-- Lines 1875-1890: Q_inner and q_inner (unwetted) calculation
+Search for `T_for_gas_side` within heat transfer sections:
+- h_inside_mixed calculation (filling branch)
+- h_inside calculation (discharge branch)
+- h_inner calculation (S-B fire branch)
+- Q_inner and q_inner (unwetted) calculation in all branches
 
 ### Fix Details
 ```python
@@ -135,7 +136,7 @@ Q_inner = ... * hi * (T_wall - T_for_gas_side)
 
 ## Files Modified
 
-- **`src/hyddown/hdclass.py`**: Main implementation (lines 1230-1895)
+- **`src/hyddown/hdclass.py`**: Main implementation (heat transfer coefficient sections)
 
 ## Files Created (Documentation)
 

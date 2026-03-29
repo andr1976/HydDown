@@ -298,3 +298,4 @@ validation:
 - **Citation**: Andreasen, A., (2021). JOSS, 6(66), 3695, https://doi.org/10.21105/joss.03695
 - **Streamlit demo**: https://hyddown-jltaqjxtrsflh2famtkgsj.streamlit.app/
 - **CoolProp documentation**: http://www.coolprop.org/
+- Always store figures and plots as PDF

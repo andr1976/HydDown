@@ -158,13 +158,31 @@ Q_inner_wetted[i] = wetted_area * h_inside_wetted * (T_wall_wetted - T_fluid_wet
 #### 3.3 Gas-Liquid Interfacial Heat Transfer
 
 ```
-A_interface = calculate_interface_area(liquid_level, geometry)
-Q_gas_liquid[i] = h_gl * A_interface * (T_gas[i-1] - T_liquid[i-1])
+A_interface = inner_vol.A_cross_sectional(liquid_level)
+Q_gas_liquid = h_gl * A_interface * (T_gas[i-1] - T_liquid[i-1])
 ```
 
-where `h_gl` is specified by user (typical range: 50-5000 W/m²K).
+where `h_gl` is either specified by user or auto-calculated via
+`h_gas_liquid_interface()` natural convection correlation (typical range: 100-2000 W/m²K).
+Default if omitted: 50 W/m²K.
 
 ### Step 4: Energy Balance
+
+#### Phase Transfer Energy
+
+Energy carried by phase-changing mass uses an average of enthalpy and internal
+energy at saturation as a compromise between open-system (enthalpy) and
+closed-system (internal energy) formulations:
+
+```
+# Evaporation: energy carried by mass leaving liquid as vapor
+e_vap_sat = (h_vap_sat + u_vap_sat) / 2
+E_evap = dm_evap * e_vap_sat
+
+# Condensation: energy carried by mass leaving gas as liquid
+e_liq_sat = (h_liq_sat + u_liq_sat) / 2
+E_cond = dm_cond * e_liq_sat
+```
 
 #### 4.1 Gas Phase Energy Balance
 
@@ -173,7 +191,7 @@ U_gas_start = U_gas[i-1] * m_gas[i-1]
 
 # Enthalpy flow (discharge/filling through gas phase)
 if discharge:
-    h_out = h_gas_discharge  # Vapor enthalpy
+    h_out = h_gas_discharge  # Vapor enthalpy at current state
     H_flow = -mdot[i-1] * h_out * dt
 else:
     h_in = h_reservoir
@@ -181,7 +199,7 @@ else:
 
 # Heat transfers
 Q_wall_to_gas = Q_inner[i] * dt
-Q_interface = Q_gas_liquid[i] * dt  (positive = gas to liquid)
+Q_interface = Q_gas_liquid * dt  (positive = gas to liquid)
 E_phase_change = E_evap - E_cond  (energy from evaporation/condensation)
 
 U_gas_end = U_gas_start + H_flow + Q_wall_to_gas - Q_interface + E_phase_change
@@ -195,7 +213,7 @@ U_liquid_start = U_liquid[i-1] * m_liquid[i-1]
 
 # Heat transfers
 Q_wall_to_liquid = Q_inner_wetted[i] * dt
-Q_interface = Q_gas_liquid[i] * dt  (positive = liquid receives heat from gas)
+Q_interface = Q_gas_liquid * dt  (positive = liquid receives heat from gas)
 E_phase_change = -E_evap + E_cond  (opposite sign from gas)
 
 U_liquid_end = U_liquid_start + Q_wall_to_liquid + Q_interface + E_phase_change
@@ -232,25 +250,36 @@ def volume_residual(P):
 P[i] = brentq(volume_residual, P_min, P_max)
 ```
 
-**Pressure bounds**: Guided by ideal gas approximation
+**Pressure bounds**: Based on previous timestep pressure
 ```
-P_guess = (m_gas * R * T_gas[i-1] / MW + m_liquid * rho_sat * U_liquid_specific) / V_total
-P_min = 0.25 * P_guess
-P_max = 4.0 * P_guess
+P_min = max(P[i-1] * 0.5, 1e5)   # At least 1 bar
+P_max = P[i-1] * 2.0
 ```
 
+**Fallback solver chain**: brentq → ridder → bisect (with expanded bounds 0.2x to 5x)
+
 ### Step 6: Geometric Calculations
+
+All geometric calculations use the `fluids.TANK` object (`self.inner_vol`).
 
 **Liquid level** (from liquid density and mass):
 ```
 V_liquid = m_liquid[i] / rho_liquid[i]
-liquid_level[i] = calculate_level_from_volume(V_liquid, geometry)
+liquid_level[i] = inner_vol.h_from_V(V_liquid)
 ```
 
 **Wetted area** (liquid contact with wall):
 ```
-wetted_area = calculate_wetted_area(liquid_level[i], geometry)
+wetted_area = inner_vol.SA_from_h(liquid_level[i])
 ```
+
+**Gas-liquid interface area** (cross-sectional area at liquid surface):
+```
+A_interface = inner_vol.A_cross_sectional(liquid_level[i])
+```
+
+These methods handle all supported head types (hemispherical, ASME F&D, DIN,
+semi-elliptical, flat-end) and both horizontal/vertical orientations.
 
 ### Step 7: Wall Temperature Update
 
@@ -329,26 +358,35 @@ This ensures equilibrium calculations remain identical to pre-NEM implementation
 ```yaml
 calculation:
   type: "energybalance"
-  non_equilibrium: True  # Enable NEM
+  non_equilibrium: true     # Enable NEM
+  h_gas_liquid: 500         # Gas-liquid HTC [W/m²K] - fixed value
+  # or
+  h_gas_liquid: "calc"      # Auto-calculate using natural convection correlation
+
+vessel:
+  liquid_level: 0.4668      # Initial liquid level [m] (required for two-phase)
+  # ... other vessel geometry parameters ...
 
 initial:
-  temperature: 278  # Bulk temperature (K)
-  temperature_gas: 283  # Gas phase initial temperature (K)
-  temperature_liquid: 278  # Liquid phase initial temperature (K)
-
-heat_transfer:
-  h_gas_liquid: 500  # Gas-liquid HTC (W/m²K) - USER MUST SPECIFY
-  # or
-  h_gas_liquid: "calc"  # Auto-calculate (not yet implemented)
+  temperature: 278          # Bulk/saturation temperature [K]
+  pressure: 550000          # Initial pressure [Pa]
+  fluid: "propane"          # Single component only
 ```
+
+**Note on initial temperatures:** Gas is automatically initialized at `T_sat + 5 K`
+(slight superheat) and liquid at `T_sat` at the given pressure.
+There are no separate `temperature_gas`/`temperature_liquid` input parameters.
 
 ### Optional Parameters
 
 ```yaml
-heat_transfer:
-  wetted_area_correlation: "horizontal_cylinder"  # Geometry-based wetted area
-  phase_transfer_relax: 0.8  # Relaxation factor for evap/cond (default: 0.8)
+calculation:
+  h_gas_liquid: "calc"      # Auto-calculate h_gl (default if omitted: 50 W/m²K)
 ```
+
+**Note:** The phase transfer relaxation factor is hardcoded at 0.8 and is not
+configurable via the input file. The wetted area and interface area are computed
+automatically from the vessel geometry using `fluids.TANK`.
 
 ## Validation and Diagnostics
 
@@ -369,28 +407,31 @@ heat_transfer:
 ### Diagnostic Outputs
 
 Key arrays for analysis:
-- `hd.T_gas`, `hd.T_liquid`: Phase temperatures
-- `hd.m_gas`, `hd.m_liquid`: Phase masses
-- `hd.Q_inner`, `hd.Q_inner_wetted`: Wall heat transfers
-- `hd.Q_gas_liquid`: Interfacial heat transfer
-- `hd.h_inside`, `hd.h_inside_wetted`: Heat transfer coefficients
-- `hd.liquid_level`: Liquid level history
+- `hd.T_gas`, `hd.T_liquid`: Phase temperatures [K]
+- `hd.m_gas`, `hd.m_liquid`: Phase masses [kg]
+- `hd.U_gas`, `hd.U_liquid`: Phase specific internal energies [J/kg]
+- `hd.rho_gas`, `hd.rho_liquid`: Phase densities [kg/m³]
+- `hd.Q_inner`, `hd.Q_inner_wetted`: Wall heat transfer rates [W]
+- `hd.h_gas_liquid`: Gas-liquid interfacial HTC [W/m²K]
+- `hd.h_inside`, `hd.h_inside_wetted`: Wall heat transfer coefficients [W/m²K]
+- `hd.mdot_phase_transfer`: Phase transfer rate [kg/s] (positive = condensation)
+- `hd.liquid_level`: Liquid level height [m]
 
 ## Limitations and Future Work
 
 ### Current Limitations
 
-1. **h_gl specification**: User must provide gas-liquid heat transfer coefficient (no auto-calculation yet)
-2. **Single component only**: Multi-component mixtures not supported with NEM
-3. **No slip assumption**: Phases share same volume, no sloshing/entrainment
-4. **Simplified phase transfer**: Evaporation/condensation uses relaxation factor, not rate-limited
+1. **Single component only**: Multi-component mixtures not supported with NEM
+2. **No slip assumption**: Phases share same volume, no sloshing/entrainment
+3. **Simplified phase transfer**: Evaporation/condensation uses relaxation factor (0.8), not rate-limited
+4. **Natural convection only for h_gl**: Auto-calculated h_gl uses natural convection correlation; forced convection effects (jetting, sloshing) are not included
 
 ### Potential Enhancements
 
-1. **Auto-calculate h_gl**: Correlations based on geometry, flow regime, stratification
-2. **Multi-component NEM**: Extend to mixtures with different phase compositions
-3. **Superheating/subcooling limits**: Physical bounds on temperature excursions
-4. **Enhanced phase transfer**: Rate-limited models based on interfacial area and mass transfer coefficient
+1. **Multi-component NEM**: Extend to mixtures with different phase compositions
+2. **Superheating/subcooling limits**: Physical bounds on temperature excursions
+3. **Enhanced phase transfer**: Rate-limited models based on interfacial area and mass transfer coefficient
+4. **Forced/mixed convection for h_gl**: Account for PSV discharge jetting and sloshing effects
 
 ## Summary
 

@@ -4,7 +4,7 @@ vessel:
   orientation: "horizontal"
   heat_capacity: 500
   density: 7700
-  thickness: 0.01185
+  thickness: 0.0095
   liquid_level: 1.5 #1.15
 initial:
   temperature: 288
@@ -13,11 +13,13 @@ initial:
 calculation:
   type: "energybalance"
   time_step: 0.1
-  end_time: 660.
+  end_time: 600.
+  non_equilibrium: true
+  h_gas_liquid: 500.
 valve:
   flow: "discharge"
   type: "psv"
-  diameter: 0.06
+  diameter: 0.04
   discharge_coef: 0.975
   set_pressure: 2500000
   blowdown: 0.10
@@ -25,3 +27,6 @@ valve:
 heat_transfer:
   type: "s-b"
   fire: "scandpower_pool" 
+rupture:
+  material: "CS_360LT"
+  fire: "scandpower_jet_peak_large"
