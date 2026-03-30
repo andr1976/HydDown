@@ -136,7 +136,7 @@ def validate_mandatory_ruleset(input):
                 "material": {
                     "required": True,
                     "type": "string",
-                    "allowed": ["CS_235LT", "CS_360LT", "SS316", "Duplex", "6Mo"],
+                    "allowed": ["CS_235LT", "CS_360LT", "SA455", "SS316", "Duplex", "6Mo"],
                 },
                 "fire": {"required": False, "type": "string"},
             },

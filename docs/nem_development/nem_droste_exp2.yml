@@ -20,7 +20,7 @@ initial:
 
 calculation:
   type: "energybalance"
-  time_step: 0.1  # s
+  time_step: 1  # s
   end_time: 600  # s (past expected rupture at 440s)
   non_equilibrium: true
   h_gas_liquid: "calc"  # Automatic gas-liquid interface HTC

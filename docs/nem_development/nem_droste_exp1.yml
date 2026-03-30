@@ -20,7 +20,7 @@ initial:
 
 calculation:
   type: "energybalance"
-  time_step: 0.1  # s
+  time_step: 1  # s
   end_time: 800  # s (past expected rupture at 720s)
   non_equilibrium: true
   h_gas_liquid: "calc"  # Automatic gas-liquid interface HTC
@@ -41,4 +41,4 @@ heat_transfer:
 
 rupture:
   material: "CS_360LT"  # StE 36 steel (360 N/mm² yield strength)
-  fire: "scandpower_jet_peak_small"  # Should match heat_transfer fire type
+  fire: "scandpower_pool"  # Should match heat_transfer fire type

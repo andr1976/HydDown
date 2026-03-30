@@ -2613,7 +2613,16 @@ class HydDown:
                             return ((V_total - self.vol) / self.vol)
 
                         except Exception:
-                            return 1.0  # High residual if update fails
+                            # CoolProp PUmass_INPUTS can fail near the critical point.
+                            # Return a sign-consistent residual based on physical behavior:
+                            #   low P → expanded gas → V_total > V_vessel → positive
+                            #   high P → compressed gas → V_total < V_vessel → negative
+                            # Using +1.0 for all failures creates false sign changes
+                            # that mislead bracket-based solvers (brentq/bisect).
+                            if P > self.P[i-1]:
+                                return -10.0  # High P side: compressed → negative
+                            else:
+                                return 10.0   # Low P side: expanded → positive
 
                     try:
                         # Check if we're essentially single-phase
@@ -2631,9 +2640,13 @@ class HydDown:
                             P_solution = self.fluid.p()
                         else:
                             # Two-phase - solve for pressure equilibrium
-                            # Bounds for pressure
+                            # Two-phase VLE physically cannot exist above P_crit,
+                            # so capping bounds at P_crit*0.95 is correct here.
+                            # (When liquid depletes, code switches to single-phase
+                            # DU path above, which has no pressure cap.)
+                            P_crit = self.fluid_gas.p_critical()
                             P_min = max(self.P[i-1] * 0.5, 1e5)  # At least 1 bar
-                            P_max = self.P[i-1] * 2.0
+                            P_max = min(self.P[i-1] * 2.0, P_crit * 0.95)
 
                             # Solve for pressure that gives correct volume
                             # Use fallback solver chain for robustness
@@ -2642,9 +2655,7 @@ class HydDown:
 
                             try:
                                 # Method 1: Try brentq (fastest)
-                                #P_solution = newton(volume_residual, bracket=[P_min, P_max], x0 = self.P[i-1], tol=1e-5, maxiter=100)
                                 P_solution = brentq(volume_residual, P_min, P_max, xtol=1e-5, maxiter=100)
-                                #P_solution = minimize(lambda x: volume_residual(x)**4,self.P[i-1],bounds=((P_min,P_max),))['x']
                                 solver_method = "brentq"
                             except ValueError:
                                 # Root not bracketed - try ridder (more robust)
@@ -2654,7 +2665,7 @@ class HydDown:
                                 except ValueError:
                                     # Still not bracketed - expand bounds and try bisect
                                     P_min_expanded = max(P_min * 0.2, 1e5)  # Expand to 0.2x
-                                    P_max_expanded = min(P_max * 5.0, 100e5)  # Expand to 5x (max 1000 bar)
+                                    P_max_expanded = min(P_max * 5.0, P_crit * 0.95)
 
                                     try:
                                         P_solution = bisect(volume_residual, P_min_expanded, P_max_expanded, xtol=1e-5, maxiter=200)
