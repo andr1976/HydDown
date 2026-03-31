@@ -138,7 +138,7 @@ def validate_mandatory_ruleset(input):
                     "type": "string",
                     "allowed": ["CS_235LT", "CS_360LT", "SA455", "SS316", "Duplex", "6Mo"],
                 },
-                "fire": {"required": False, "type": "string"},
+                "fire": {"required": False, "type": "string", "allowed": ["api_jet_peak_large","api_jet_peak_small", "api_pool_peak","scandpower_jet_peak_small", "scandpower_jet_peak_large"]},
             },
         },
         "valve": {
