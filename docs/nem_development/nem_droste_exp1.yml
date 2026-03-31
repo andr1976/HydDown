@@ -40,5 +40,5 @@ heat_transfer:
   scaling: 0.5  # Reduced to delay PSV opening and match experiment better
 
 rupture:
-  material: "CS_360LT"  # StE 36 steel (360 N/mm² yield strength)
-  fire: "scandpower_pool"  # Should match heat_transfer fire type
+  material: "SA455"  # StE 36 steel (360 N/mm² yield strength)
+  fire: "scandpower_pool_peak"  # Should match heat_transfer fire type
