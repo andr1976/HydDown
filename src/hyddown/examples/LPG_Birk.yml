@@ -16,7 +16,7 @@ calculation:
   time_step: 1
   end_time: 600.
   non_equilibrium: true
-  h_gas_liquid: 250 #"calc"
+  h_gas_liquid: "calc_two_sided" #"calc"
 valve:
   flow: "discharge"
   type: "psv"
@@ -31,4 +31,4 @@ heat_transfer:
   scaling: 0.25
 rupture:
   material: "SA455"
-  fire: "scandpower_pool_peak"
+  fire: "api_pool_peak"

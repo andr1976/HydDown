@@ -2482,34 +2482,34 @@ class HydDown:
                         if "h_gas_liquid" in input["calculation"]:
                             h_gl_input = input["calculation"]["h_gas_liquid"]
 
-                            if isinstance(h_gl_input, str) and h_gl_input.lower() == "calc":
+                            if isinstance(h_gl_input, str) and h_gl_input.lower() in ("calc", "calc_two_sided"):
                                 # Calculate h_gl using natural convection correlation
-                                # Characteristic length for interface correlations
-                                if hasattr(self.inner_vol, 'L'):
-                                    # Horizontal cylinder - use diameter
-                                    L_char = self.inner_vol.D
-                                else:
-                                    # Vertical cylinder - use diameter
-                                    L_char = self.inner_vol.D
+                                L_char = self.inner_vol.D
 
-                                # Calculate h_gl using correlation
-                                # Fluid objects already updated earlier in time step - just query properties
                                 try:
-                                    h_gl = tp.h_gas_liquid_interface(
-                                        self.T_gas[i-1],
-                                        self.T_liquid[i-1],
-                                        self.P[i-1],
-                                        L_char,
-                                        self.fluid_gas,
-                                        self.fluid_liquid
-                                    )
+                                    if h_gl_input.lower() == "calc_two_sided":
+                                        h_gl = tp.h_gas_liquid_interface_two_sided(
+                                            self.T_gas[i-1],
+                                            self.T_liquid[i-1],
+                                            self.P[i-1],
+                                            L_char,
+                                            self.fluid_gas,
+                                            self.fluid_liquid
+                                        )
+                                    else:
+                                        h_gl = tp.h_gas_liquid_interface(
+                                            self.T_gas[i-1],
+                                            self.T_liquid[i-1],
+                                            self.P[i-1],
+                                            L_char,
+                                            self.fluid_gas,
+                                            self.fluid_liquid
+                                        )
                                 except Exception as e:
-                                    # Fallback if calculation fails
-                                    # Print warning only on first few occurrences
                                     if i == 1 or (i < 100 and i % 50 == 0):
                                         import warnings
                                         warnings.warn(f"h_gl correlation failed at t={self.time_array[i]:.1f}s: {str(e)[:80]}, using fallback h_gl=100 W/m²K")
-                                    h_gl = 100.0  # Conservative default
+                                    h_gl = 100.0
                             else:
                                 # User-specified fixed value
                                 h_gl = float(h_gl_input)

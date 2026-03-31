@@ -544,6 +544,136 @@ def h_gas_liquid_interface(T_gas, T_liquid, P, L_char, fluid_gas, fluid_liquid):
     return h_gl
 
 
+def h_gas_liquid_interface_two_sided(T_gas, T_liquid, P, L_char, fluid_gas, fluid_liquid):
+    """
+    Calculate gas-liquid interfacial heat transfer coefficient using a two-sided
+    (series resistance) model.
+
+    Computes natural convection HTCs for both the gas side and liquid side of
+    the interface independently, then combines them as resistances in series:
+
+        1/h_overall = 1/h_gas + 1/h_liquid
+
+    This captures the thermal resistance of both boundary layers at the interface.
+
+    Parameters
+    ----------
+    T_gas : float
+        Gas phase bulk temperature [K]
+    T_liquid : float
+        Liquid phase bulk temperature [K]
+    P : float
+        System pressure [Pa]
+    L_char : float
+        Characteristic length for interface [m]
+    fluid_gas : obj
+        CoolProp fluid object for gas phase
+    fluid_liquid : obj
+        CoolProp fluid object for liquid phase
+
+    Returns
+    -------
+    h_gl : float
+        Overall gas-liquid interfacial heat transfer coefficient [W/m²K]
+
+    Notes
+    -----
+    For stable stratification (T_gas > T_liquid, typical):
+    - Gas side: hot gas above interface, stable (lower surface of hot plate)
+    - Liquid side: cold liquid below interface, stable (lower surface of hot plate)
+
+    For unstable stratification (T_liquid > T_gas, rare):
+    - Both sides use upper surface of hot plate correlations (enhanced convection)
+
+    References
+    ----------
+    - Churchill and Chu (1975): Natural convection from horizontal surfaces
+    - Incropera & DeWitt: Fundamentals of Heat and Mass Transfer
+    """
+    dT = abs(T_gas - T_liquid)
+
+    if dT < 0.01:
+        return 100.0
+
+    stable = T_gas > T_liquid
+
+    # --- Gas side HTC ---
+    h_gas = _natconv_htc(dT, L_char, fluid_gas, stable)
+
+    # --- Liquid side HTC ---
+    h_liquid = _natconv_htc(dT, L_char, fluid_liquid, stable)
+
+    # Series resistance: 1/h_overall = 1/h_gas + 1/h_liquid
+    if h_gas > 0 and h_liquid > 0:
+        h_gl = 1.0 / (1.0 / h_gas + 1.0 / h_liquid)
+    else:
+        h_gl = min(h_gas, h_liquid) if max(h_gas, h_liquid) > 0 else 50.0
+
+    # Safety bounds
+    if h_gl < 5.0:
+        h_gl = 5.0
+    if h_gl > 2000.0:
+        h_gl = 2000.0
+
+    return h_gl
+
+
+def _natconv_htc(dT, L_char, fluid, stable):
+    """
+    Calculate natural convection HTC for one side of a horizontal interface.
+
+    Parameters
+    ----------
+    dT : float
+        Temperature difference across interface [K]
+    L_char : float
+        Characteristic length [m]
+    fluid : obj
+        CoolProp fluid object (already updated at current state)
+    stable : bool
+        True for stable stratification (lower surface of hot plate correlations),
+        False for unstable (upper surface of hot plate correlations)
+
+    Returns
+    -------
+    h : float
+        Heat transfer coefficient [W/m²K]
+    """
+    try:
+        k = fluid.conductivity()
+        mu = fluid.viscosity()
+        cp = fluid.cpmass()
+        rho = fluid.rhomass()
+        beta = abs(fluid.isobaric_expansion_coefficient())
+
+        Pr = cp * mu / k
+        nu = mu / rho
+        Gr = 9.81 * beta * dT * L_char**3 / nu**2
+        Ra = Gr * Pr
+
+        if math.isnan(Ra) or math.isinf(Ra) or Ra <= 0:
+            return 50.0
+
+        if stable:
+            # Lower surface of hot plate (stable, reduced convection)
+            if Ra < 1e7:
+                Nu = 0.27 * Ra**0.25
+            else:
+                Nu = 0.15 * Ra**0.333
+        else:
+            # Upper surface of hot plate (unstable, enhanced convection)
+            if Ra < 1e7:
+                Nu = 0.54 * Ra**0.25
+            else:
+                Nu = 0.15 * Ra**0.333
+
+        h = Nu * k / L_char
+        return h
+
+    except Exception:
+        return 50.0
+
+
 def hem_release_rate(P1, Pback, Cd, area, fluid):
     """
     Fluid mass flow (kg/s) trough a hole at critical (sonic) or subcritical

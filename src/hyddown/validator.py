@@ -78,7 +78,7 @@ def validate_mandatory_ruleset(input):
                     "required": False,
                     "anyof": [
                         {"type": "number", "min": 0},
-                        {"type": "string", "allowed": ["calc"]}
+                        {"type": "string", "allowed": ["calc", "calc_two_sided"]}
                     ]
                 },
             },
@@ -211,6 +211,7 @@ def validate_mandatory_ruleset(input):
                     "type": "string",
                     "allowed": [
                         "api_pool",
+                        "api_pool_peak",
                         "api_jet",
                         "scandpower_pool",
                         "scandpower_jet",
@@ -703,6 +704,7 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": [
                                 "api_pool",
+                                "api_pool_peak",
                                 "api_jet",
                                 "scandpower_pool",
                                 "scandpower_jet",
