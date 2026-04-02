@@ -13,7 +13,11 @@ sys.path.insert(0, os.path.join(_REPO_ROOT, 'src'))
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
+import scienceplots  # noqa: F401
 from hyddown import HydDown
+
+plt.style.use(['science', 'ieee'])
+plt.rcParams['font.size'] = 9
 
 TIME_SHIFT = -120  # seconds
 
@@ -79,43 +83,40 @@ print(f"  Mass loss:   MAE = {m_mae:.1f} kg")
 print()
 
 # Create publication figure (3 panels)
-fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(14, 13))
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(7.5, 8))
 
 # Pressure
-ax1.plot(sim_time, sim_pres, 'b-', linewidth=2, label='HydDown NEM')
-ax1.plot(exp_pres_time, exp_pres_val, 'ro', markersize=6, alpha=0.7, label='Moodie et al. (1988)')
-ax1.set_xlabel('Time [s]', fontsize=16)
-ax1.set_ylabel('Pressure [bara]', fontsize=16)
-ax1.set_title('Moodie et al. (1988) 22% Fill - Pressure', fontsize=17, fontweight='bold')
+ax1.plot(sim_time, sim_pres, 'b-', linewidth=1.5, label='HydDown NEM')
+ax1.plot(exp_pres_time, exp_pres_val, 'ro', markersize=4, alpha=0.7, label='Moodie et al. (1988)')
+ax1.set_xlabel('Time [s]')
+ax1.set_ylabel('Pressure [bara]')
+ax1.set_title('Moodie et al. (1988) 22% Fill - Pressure')
 ax1.set_xlim(0, 800)
 ax1.grid(True, alpha=0.3)
-ax1.legend(loc='best', fontsize=14)
-ax1.tick_params(axis='both', labelsize=14)
+ax1.legend(loc='best')
 
 # Temperatures
-ax2.plot(sim_time, sim_gas_temp, 'r-', linewidth=2.5, label='NEM Gas Temperature', alpha=0.8)
-ax2.plot(sim_time, sim_liq_temp, 'b-', linewidth=2.5, label='NEM Liquid Temperature', alpha=0.8)
-ax2.plot(exp_gas_time, exp_gas_val, 'rs', markersize=6, alpha=0.6,
+ax2.plot(sim_time, sim_gas_temp, 'r-', linewidth=1.5, label='NEM Gas Temperature', alpha=0.8)
+ax2.plot(sim_time, sim_liq_temp, 'b-', linewidth=1.5, label='NEM Liquid Temperature', alpha=0.8)
+ax2.plot(exp_gas_time, exp_gas_val, 'rs', markersize=4, alpha=0.6,
          label='Exp Gas Temp', markerfacecolor='none', markeredgewidth=1.5)
-ax2.plot(exp_liq_time, exp_liq_val, 'bs', markersize=6, alpha=0.6,
+ax2.plot(exp_liq_time, exp_liq_val, 'bs', markersize=4, alpha=0.6,
          label='Exp Liquid Temp', markerfacecolor='none', markeredgewidth=1.5)
-ax2.set_ylabel('Temperature [\u00b0C]', fontsize=16)
-ax2.set_title('Moodie et al. (1988) 22% Fill - Temperatures', fontsize=17, fontweight='bold')
+ax2.set_ylabel(r'Temperature [$^\circ$C]')
+ax2.set_title('Moodie et al. (1988) 22% Fill - Temperatures')
 ax2.set_xlim(0, 800)
 ax2.grid(True, alpha=0.3)
-ax2.legend(loc='best', fontsize=13)
-ax2.tick_params(axis='both', labelsize=14)
+ax2.legend(loc='best')
 
 # Mass discharge
-ax3.plot(sim_time, sim_mass_loss, 'b-', linewidth=2.5, label='HydDown NEM', alpha=0.8)
-ax3.plot(exp_mass_time, exp_mass_val, 'ro', markersize=6, alpha=0.7, label='Moodie et al. (1988)')
-ax3.set_xlabel('Time [s]', fontsize=16)
-ax3.set_ylabel('Accumulated Mass Loss [kg]', fontsize=16)
-ax3.set_title('Moodie et al. (1988) 22% Fill - Mass Discharge', fontsize=17, fontweight='bold')
+ax3.plot(sim_time, sim_mass_loss, 'b-', linewidth=1.5, label='HydDown NEM', alpha=0.8)
+ax3.plot(exp_mass_time, exp_mass_val, 'ro', markersize=4, alpha=0.7, label='Moodie et al. (1988)')
+ax3.set_xlabel('Time [s]')
+ax3.set_ylabel('Accumulated Mass Loss [kg]')
+ax3.set_title('Moodie et al. (1988) 22% Fill - Mass Discharge')
 ax3.set_xlim(0, 800)
 ax3.grid(True, alpha=0.3)
-ax3.legend(loc='best', fontsize=14)
-ax3.tick_params(axis='both', labelsize=14)
+ax3.legend(loc='best')
 
 plt.tight_layout()
 

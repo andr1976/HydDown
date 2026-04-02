@@ -403,12 +403,10 @@ class HydDown:
             # Initialize at saturation conditions (equilibrium at t=0)
             if "liquid_level" in self.input["vessel"]:
                 # Two-phase initial condition
-                # Initialize gas slightly superheated to avoid PT_INPUTS failing at exact saturation
-                # Liquid stays at saturation temperature
                 self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)
                 self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)
-                self.T_gas0 = self.fluid_gas.T() + 5.0  # Superheat gas by 5 K
-                self.T_liquid0 = self.fluid_liquid.T()  # Liquid at saturation
+                self.T_gas0 = self.fluid_gas.T()  # Saturated vapour
+                self.T_liquid0 = self.fluid_liquid.T()  # Saturated liquid
 
                 # Calculate initial masses
                 ll = self.input["vessel"]["liquid_level"]
@@ -1013,13 +1011,26 @@ class HydDown:
             self.T_liquid[0] = self.T_liquid0
             self.m_gas[0] = self.m_gas0
             self.m_liquid[0] = self.m_liquid0
-            # Use PQ_INPUTS for saturation conditions (avoids PT issues)
             if self.m_liquid0 > 0:
-                # Two-phase: initialize at saturation
-                self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)  # Saturated vapor
-                self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)  # Saturated liquid
+                # Two-phase: try saturation, fall back to +1°C superheat
+                self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)
                 self.U_liquid[0] = self.fluid_liquid.umass()
                 self.rho_liquid[0] = self.fluid_liquid.rhomass()
+                try:
+                    self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)
+                    _rho = self.fluid_gas.rhomass()
+                    _U = self.fluid_gas.umass()
+                    # Verify DmassUmass round-trip at saturation
+                    self.fluid_gas.update(CP.DmassUmass_INPUTS, _rho, _U)
+                    # Verify quality is valid (Q=1 at saturation boundary)
+                    _Q = self.fluid_gas.Q()
+                    if _Q < 0 or _Q > 1:
+                        raise ValueError("Invalid quality at saturation")
+                except Exception:
+                    # Saturation boundary unstable - add slight superheat
+                    self.T_gas0 += 1.0
+                    self.T_gas[0] = self.T_gas0
+                    self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T_gas0)
             else:
                 # Single-phase gas
                 self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T_gas0)
