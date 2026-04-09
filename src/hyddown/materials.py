@@ -232,6 +232,36 @@ CS_360LT_UTS = (
     * 1e6
 )
 
+# P460/630 carbon steel ultimate tensile strength [Pa] at temperatures in T
+# Based on CS_360LT scaled to 630 MPa at 20°C (scale factor 630/545)
+P460_630_UTS = (
+    np.array(
+        [
+            630,
+            621,
+            612,
+            605,
+            595,
+            586,
+            573,
+            568,
+            555,
+            529,
+            462,
+            378,
+            283,
+            208,
+            139,
+            88,
+            69,
+            57,
+            44,  # Manual hand-interpolation
+            31,  # Manual hand-interpolation
+        ]
+    )
+    * 1e6
+)
+
 # SA-455 (ASTM A455) carbon steel ultimate tensile strength [Pa]
 # Source: Birk, A.M. (2006) - digitized UTS vs temperature data
 # Note: SA-455 has its own temperature axis (different from Scandpower data)
@@ -375,6 +405,8 @@ def UTS(temperature, material):
         return np.interp(temperature, T, CS_235LT_UTS)
     elif material == "CS_360LT":
         return np.interp(temperature, T, CS_360LT_UTS)
+    elif material == "P460/630":
+        return np.interp(temperature, T, P460_630_UTS)
     elif material == "SA455":
         return np.interp(temperature, T_SA455, SA455_UTS)
     elif material == "SS316":
@@ -411,6 +443,8 @@ def steel_Cp(temperature, material):
     if material == "CS_235LT":
         return np.interp(temperature, T_Cp, CS_LT_Cp)
     elif material == "CS_360LT":
+        return np.interp(temperature, T_Cp, CS_LT_Cp)
+    elif material == "P460/630":
         return np.interp(temperature, T_Cp, CS_LT_Cp)
     elif material == "SA455":
         return np.interp(temperature, T_Cp, CS_LT_Cp)

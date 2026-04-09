@@ -1,32 +1,34 @@
 vessel:
-  length: 11.94
-  diameter: 2.4
+  length: 14.1
+  diameter: 2.55
   orientation: "horizontal"
   heat_capacity: 500
   density: 7700
-  thickness: 0.0095
-  liquid_level: 1.5 #1.15
+  thickness: 0.0102
+  liquid_level: 2.25 #1.15
 initial:
-  temperature: 288
-  pressure: 728521.
+  temperature: 293.15
+  pressure: 836461.
   fluid: "propane" 
 calculation:
   type: "energybalance"
-  time_step: 0.1
-  end_time: 600.
+  time_step: 0.2
+  end_time: 320
   non_equilibrium: true
-  h_gas_liquid: 500.
+  h_gas_liquid: "calc_two_sided"
 valve:
   flow: "discharge"
   type: "psv"
-  diameter: 0.04
+  diameter: 0.0445
   discharge_coef: 0.975
   set_pressure: 2500000
   blowdown: 0.10
   back_pressure: 101300.
 heat_transfer:
   type: "s-b"
-  fire: "scandpower_pool" 
+  fire: "api_jet" 
+  scaling: 0.667
 rupture:
-  material: "CS_360LT"
-  fire: "scandpower_jet_peak_large"
+  material: "P460/630"
+  fire: "api_jet_peak_small"
+  k_s: 1.0

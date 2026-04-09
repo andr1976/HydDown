@@ -32,3 +32,4 @@ heat_transfer:
 rupture:
   material: "SA455"
   fire: "api_pool_peak"
+  k_s: 1.0

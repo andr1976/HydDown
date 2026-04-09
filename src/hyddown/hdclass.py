@@ -267,6 +267,7 @@ class HydDown:
                 self.rupture_fire = self.input["rupture"]["fire"]
             else:
                 self.rupture_fire = "api_jet"
+            self.rupture_k_s = self.input["rupture"].get("k_s", 0.85)
 
         # Reading heat transfer related data/information
         if "heat_transfer" in self.input:
@@ -3534,9 +3535,9 @@ class HydDown:
                 q_fire_unwetted - q_unwetted(peak_times[i])
             ) * dt / (thk * rho * steel_Cp(T_unwetted_wall[i], self.rupture_material))
 
-        ATS_wetted = np.array([ATS(T, self.rupture_material) for T in T_wetted_wall])
+        ATS_wetted = np.array([ATS(T, self.rupture_material, k_s=self.rupture_k_s) for T in T_wetted_wall])
         ATS_unwetted = np.array(
-            [ATS(T, self.rupture_material) for T in T_unwetted_wall]
+            [ATS(T, self.rupture_material, k_s=self.rupture_k_s) for T in T_unwetted_wall]
         )
         von_mises_wetted = von_mises_unwetted = np.array(
             [von_mises(pres(time), inner_diameter, thk) for time in peak_times]
