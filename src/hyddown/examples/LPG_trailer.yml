@@ -1,3 +1,4 @@
+
 vessel:
   length: 14.1
   diameter: 2.55
@@ -13,7 +14,7 @@ initial:
 calculation:
   type: "energybalance"
   time_step: 0.2
-  end_time: 320
+  end_time: 330
   non_equilibrium: true
   h_gas_liquid: "calc_two_sided"
 valve:
