@@ -1006,6 +1006,30 @@ $$
 
 In the present study a value of the Rohsenow coefficient of 0.013 is applied and the exponent $n$ is set to 1.7. See also {cite}`pioro_experimental_1999,jabardo_evaluation_2004`.
 
+### Gas-liquid interfacial heat transfer
+
+In the non-equilibrium model, the gas and liquid phases may have different temperatures. Heat transfer between the gas and liquid phases across the interface is modelled using a two-sided series resistance approach. Natural convection heat transfer coefficients are computed independently for both the gas side and the liquid side of the interface and combined as thermal resistances in series:
+
+```{math}
+:label: eq-h_gl
+
+\frac{1}{h_{gl}} = \frac{1}{h_\mathrm{gas}} + \frac{1}{h_\mathrm{liquid}}
+```
+
+where $h_\mathrm{gas}$ and $h_\mathrm{liquid}$ are the natural convection heat transfer coefficients evaluated at the gas-side and liquid-side boundary layers respectively. This model captures the thermal resistance of both boundary layers and naturally limits the overall heat transfer rate by the gas-side resistance (which is typically dominant due to the lower thermal conductivity of gas).
+
+The resulting heat transfer rate at the interface is:
+
+```{math}
+:label: eq-Q_gl
+
+\dot{Q}_{gl} = h_{gl} A_{gl} (T_\mathrm{gas} - T_\mathrm{liquid})
+```
+
+where $A_{gl}$ is the interfacial area between the gas and liquid phases, calculated from the vessel geometry and liquid level.
+
+This interfacial heat transfer drives the gas and liquid temperatures towards each other and influences the rate of evaporation and condensation. The gas-side resistance is typically dominant because of the relatively low thermal conductivity and density of the gas phase.
+
 ### Conduction
 For accurate prediction of the outer and especially the inner wall temperature for correct estimation of internal convective heat transfer and the average material temperature, the general equation of 1-D unsteady heat transfer shall be solved:
 
@@ -1291,6 +1315,85 @@ The remaining steps are update of temperature and pressure:
 $$ P(i+1) = EOS(D(i+1),U(i+1)) $$
 $$ T(i+1) = EOS(D(i+1),U(i+1)) $$
 
+### Non-equilibrium model (NEM)
+
+The standard energy balance described above assumes that the gas and liquid phases are in thermal equilibrium, i.e. they share a common temperature at all times. While this is a reasonable approximation for many scenarios, it can be inadequate for systems where significant temperature differences develop between phases, such as LPG vessels subject to fire heat loads. In such cases the gas phase heats rapidly while the liquid remains near saturation temperature, a thermal bifurcation that equilibrium models cannot capture.
+
+The non-equilibrium model (NEM) --- equivalent to the partial phase equilibrium (PPE) approach introduced by Speranza and Terenzi {cite}`speranza_blowdown_2005` and further developed by Ricci *et al.* {cite}`ricci_unsteady_2015` and D'Alessandro *et al.* {cite}`dalessandro_modelling_2015` --- addresses this limitation by dividing the vessel fluid into two zones: zone V (vapour phase) and zone L (liquid phase), each at a common pressure but potentially different temperatures. Further details are provided in {cite}`Andreasen2025`.
+
+#### Phase transfer mechanism
+
+To account for mass and energy exchange between the phases, two "child" phases are introduced:
+
+- Phase "v" (bubbles formed by evaporation from the parent liquid L)
+- Phase "l" (droplets formed by condensation from the parent vapour V)
+
+It is assumed that each child phase is in phase equilibrium with its parent: the evaporated liquid "v" is in equilibrium with L, and the condensed vapour "l" is in equilibrium with V.
+
+While the child phases physically appear as droplets in the gas and bubbles in the liquid with finite settling/rising times, for modelling purposes they are assumed to form and immediately homogenise in their corresponding bulk phase within each time step. Thus, the condensed vapour droplets immediately join the bulk liquid, and the evaporated liquid bubbles immediately join the bulk vapour. The whole system is consequently split into two partial sub-systems, "V+l" and "L+v", each constituted of one parent (bulk) phase and one child phase. This enables mass and energy exchange between the parent phases while accounting for thermal non-equilibrium.
+
+#### Mass conservation
+
+The mass conservation for each component $j$ in the vapour and liquid phases is:
+
+```{math}
+:label: eq-nem_mass_V
+
+\frac{dN_{V,j}}{dt} = -\dot{N}_{D,j} + \dot{N}_{EL,j} - \dot{N}_{CV,j}
+```
+
+```{math}
+:label: eq-nem_mass_L
+
+\frac{dN_{L,j}}{dt} = -\dot{N}_{EL,j} + \dot{N}_{CV,j}
+```
+
+where $N_{V,j}$ and $N_{L,j}$ are the moles of component $j$ in the vapour and liquid phases, $\dot{N}_{D,j}$ is the discharge rate of component $j$, $\dot{N}_{EL,j}$ is the rate of evaporation from the parent liquid (L$\rightarrow$v), and $\dot{N}_{CV,j}$ is the rate of condensation from the parent vapour (V$\rightarrow$l).
+
+#### Energy balance
+
+The energy balance for each phase is:
+
+```{math}
+:label: eq-nem_energy_V
+
+\frac{d}{dt}(N_V u_V) = -h_V \dot{N}_D - h_V \dot{N}_{CV} + h_L \dot{N}_{EL} + \dot{Q}_{wV}
+```
+
+```{math}
+:label: eq-nem_energy_L
+
+\frac{d}{dt}(N_L u_L) = +h_V \dot{N}_{CV} - h_L \dot{N}_{EL} + \dot{Q}_{wL}
+```
+
+where $u_V$/$h_V$ and $u_L$/$h_L$ are the molar specific internal energy and enthalpy of the vapour and liquid phases respectively, $\dot{N}_D$ is the total molar discharge rate, and $\dot{Q}_{wV}$ and $\dot{Q}_{wL}$ are the heat transfer rates from the wall to the vapour and liquid phases respectively.
+
+The exchange of energy between the phases via condensation and evaporation involves enthalpy (rather than internal energy alone), thereby including $pV$ work to "push" the condensed vapour into the liquid phase and the evaporated liquid into the vapour phase. The equations of the PPE have been written in the literature both with enthalpy and internal energy as the means of energy transfer between the phases {cite}`ricci_unsteady_2015,dalessandro_modelling_2015,park_numerical_2018` with no universally established convention.
+
+#### Vessel wall energy balance
+
+The vessel wall energy balance is formulated separately for the wetted and unwetted regions:
+
+```{math}
+:label: eq-wall_V
+
+\frac{dT_{wV}}{dt} = \frac{\dot{Q}_{Aw,V} - \dot{Q}_{wV}}{m_{wV} c_{p,w}}
+```
+
+```{math}
+:label: eq-wall_L
+
+\frac{dT_{wL}}{dt} = \frac{\dot{Q}_{Aw,L} - \dot{Q}_{wL}}{m_{wL} c_{p,w}}
+```
+
+where $T_{wV}$ and $T_{wL}$ are the wall temperatures in the vapour-contact and liquid-contact regions, $\dot{Q}_{Aw}$ is the ambient (or fire) heat transfer to the wall, $m_{wV}$ and $m_{wL}$ are the wall material masses in each region, and $c_{p,w}$ is the wall material heat capacity.
+
+#### Implementation
+
+In HydDown's NEM implementation (single-component systems), the condensation and evaporation rates are determined by performing a UV-flash of each parent phase at the current system state: if the flash of the vapour phase produces liquid, that liquid constitutes the condensed vapour "l"; if the flash of the liquid phase produces vapour, that vapour constitutes the evaporated liquid "v". For numerical stability, a relaxation factor of 0.8 is applied to the computed phase transfer rates.
+
+The NEM is activated in the input file by setting `non_equilibrium: true` in the `calculation` section. The gas-liquid interfacial heat transfer coefficient can be specified as a fixed value or computed using the two-sided series resistance model (see equation {eq}`eq-h_gl`) by setting `h_gas_liquid` to `"calc"` or `"calc_two_sided"`.
+
 ## Multicomponent mixtures
 Although not an initial requirement, the code can handle multi-component gas mixtures. When calculations are done for multicomponent mixtures, the code runs significantly slower.
 Please note, that in case that liquid condensate is formed during discharge calculations and even if the calculations does not stop, the results cannot be considered reliable.
@@ -1345,7 +1448,12 @@ These cases are all for Type I (steel) cylinders and the simple heat transfer / 
 
 Details on Type III experiments are sparse but some general observations are made for the difference between type III and type IV cylinders and a single type III filling experiment is modelled.
 
-Furthermore, HydDown has also been benchmarked against external code by Ruiz and Moscardelli {cite}`maraggi`, who compared their GeoH2 app against HydDown and found excellent agreement for both pressure, mass flow rate and gas temperature for three different cases of discharge and filling.
+Furthermore, the non-equilibrium model (NEM) for two-phase systems has been validated against propane tank fire experiments:
+
+- LPG fire engulfment (Moodie *et al.*)
+- LPG partial fire engulfment with rupture prediction (Birk *et al.*)
+
+HydDown has also been benchmarked against external code by Ruiz and Moscardelli {cite}`maraggi`, who compared their GeoH2 app against HydDown and found excellent agreement for both pressure, mass flow rate and gas temperature for three different cases of discharge and filling.
 
 ## Hydrogen discharge (Type I)
 Calculations with HydDown for high pressure hydrogen vessel discharge have been compared to three experiments from {cite}`byrnes`.
@@ -1743,7 +1851,120 @@ Calculation of vessel pressure as a function of time for a steel vessel subject 
 Calculation of vessl temperature as a function of time for a steel vessel subject to a jet fire back-gorund heat load with an incident heat flux of 100 W/m$^2$.
 ```
 
-# Example use cases 
+## Validation of non-equilibrium model (NEM) against LPG fire experiments
+
+To evaluate the non-equilibrium model (NEM) for liquefied petroleum gas (LPG) systems, HydDown predictions have been compared against two independent experimental datasets: full-scale fire engulfment tests by Moodie *et al.* {cite}`moodie` and partial engulfment rupture tests by Birk *et al.* {cite}`Birk2006`. These cases are critical for assessing a model's ability to predict the thermal-hydraulic response and potential for boiling liquid expanding vapour explosion (BLEVE). Further details are provided in {cite}`Andreasen2025`.
+
+```{table} Parameters for LPG fire validation cases
+:name: tbl-lpg-nem-validation
+
+| Parameter | Moodie (10.25 m$^3$) | Birk (1.89 m$^3$) |
+|-----------|----------------------|--------------------|
+| Wall thickness (mm) | 11.85 | 7.4 (shell) / 5.3 (head) |
+| Initial fill (%) | 22 | 80 |
+| Fluid | Propane | Propane |
+| Fire model | Scandpower pool | API pool peak |
+| Engulfment (%) | 80 | 25 |
+| PSV set pressure (bara) | 14.3 | 27.3 (did not open) |
+```
+
+### Moodie *et al.* - Full-scale fire engulfment
+
+The Moodie *et al.* experiments {cite}`moodie` involved a 5-tonne horizontal cylindrical propane tank (10.25 m$^3$) initially at 22% liquid fill and 5.5 bara, subjected to an engulfing kerosene pool fire. The NEM simulation uses a Scandpower pool fire model with 80% engulfment scaling and a PSV with set pressure of 14.3 bara. The key input parameters are:
+
+```yaml
+vessel:
+  length: 3.5
+  diameter: 1.6763
+  orientation: "horizontal"
+  type: "Hemispherical"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.01185
+  liquid_level: 0.4668
+initial:
+  temperature: 279
+  pressure: 550000
+  fluid: "propane"
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 900.
+  non_equilibrium: true
+  h_gas_liquid: "calc"
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.03358
+  discharge_coef: 0.975
+  set_pressure: 1430000
+  blowdown: 0.24
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"
+  scaling: 0.8
+```
+
+{numref}`fig-moodie_nem_validation` shows that the NEM accurately captures the pressure rise and subsequent PSV cycling. Most importantly, the model reproduces the significant thermal bifurcation between phases: while the liquid remains near saturation (below 50$^\circ$C), the gas heats rapidly to approximately 300$^\circ$C. This approximately 250$^\circ$C temperature difference, which is physically driven by the two-sided interfacial heat transfer (mean $h_{gl} \approx 71$ W/(m$^2$ K)), cannot be captured by standard equilibrium models.
+
+```{figure} img/moodie_propane_fire_validation.png
+:name: fig-moodie_nem_validation
+
+Validation against Moodie *et al.* {cite}`moodie` propane tank fire experiments. Top: pressure and PSV cycling. Middle: gas (red) and liquid (blue) temperatures. Bottom: mass discharge. Solid lines: HydDown; circles: experimental.
+```
+
+### Birk *et al.* - Partial engulfment rupture test
+
+The Birk *et al.* experiments {cite}`Birk2006` focused on the thermal rupture of a 500 gallon (1.89 m$^3$) propane tank under 25% partial fire engulfment (Test 04-6). The tank was initially at 80% liquid fill and 7.8 bara. Unlike the Moodie case, the PSV set pressure of 27.3 bara was never reached before vessel failure. The key input parameters are:
+
+```yaml
+vessel:
+  length: 2.121
+  diameter: 0.953
+  orientation: "horizontal"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.0074
+  liquid_level: 0.71
+  type: "Hemispherical"
+initial:
+  temperature: 287
+  pressure: 780000
+  fluid: "propane"
+calculation:
+  type: "energybalance"
+  time_step: 1
+  end_time: 600.
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.015
+  discharge_coef: 0.975
+  set_pressure: 2730000
+  blowdown: 0.10
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"
+  scaling: 0.25
+rupture:
+  material: "SA455"
+  fire: "api_pool_peak"
+  k_s: 1.0
+```
+
+As shown in {numref}`fig-birk_nem_validation`, the simulated pressure and peak wall temperatures align closely with experimental observations, reaching 24 bar and 713$^\circ$C respectively at the point of failure. By coupling the peak pool fire model with temperature-dependent ultimate tensile strength (UTS) for SA-455 steel, HydDown predicts rupture at 465 s (7.8 min) --- within 3% of the experimental failure time of approximately 480 s. This confirms that the model accurately captures the critical mechanism of thermal weakening before overpressure activation.
+
+```{figure} img/birk_propane_fire_validation.png
+:name: fig-birk_nem_validation
+
+Validation against Birk *et al.* {cite}`Birk2006` Test 04-6. (a) Pressure. (b) Phase temperatures. (c) Wall temperatures (average and peak). (d) Rupture analysis: stress (blue) vs. ATS (red). Failure predicted at 465 s (dotted red) vs. experimental ~480 s (dotted green).
+```
+
+# Example use cases
 
 ## LPG vessel subject to fire heat load
 A vessel containing LPG (propane liquified by pressure) is subject to a back-gorund pool fire heat load. The input data are shown below and the results are shown in {numref}`fig-LPG`.
