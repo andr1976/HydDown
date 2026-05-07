@@ -73,6 +73,14 @@ def validate_mandatory_ruleset(input):
                 },
                 "time_step": {"required": True, "type": "number", "min": 0.000001},
                 "end_time": {"required": True, "type": "number", "min": 0},
+                "non_equilibrium": {"required": False, "type": "boolean"},
+                "h_gas_liquid": {
+                    "required": False,
+                    "anyof": [
+                        {"type": "number", "min": 0},
+                        {"type": "string", "allowed": ["calc", "calc_two_sided"]}
+                    ]
+                },
             },
         },
         "vessel": {
@@ -128,9 +136,10 @@ def validate_mandatory_ruleset(input):
                 "material": {
                     "required": True,
                     "type": "string",
-                    "allowed": ["CS_235LT", "CS_360LT", "SS316", "Duplex", "6Mo"],
+                    "allowed": ["CS_235LT", "CS_360LT", "P460/630", "SA455", "SS316", "Duplex", "6Mo"],
                 },
-                "fire": {"required": False, "type": "string"},
+                "fire": {"required": False, "type": "string", "allowed": ["api_jet", "api_pool", "scandpower_pool", "scandpower_jet", "api_pool_peak", "api_jet_peak_large", "api_jet_peak_small", "scandpower_pool_peak", "scandpower_jet_peak_small", "scandpower_jet_peak_large"]},
+                "k_s": {"required": False, "type": "float", "allowed": [0.85, 1.0]},
             },
         },
         "valve": {
@@ -203,6 +212,7 @@ def validate_mandatory_ruleset(input):
                     "type": "string",
                     "allowed": [
                         "api_pool",
+                        "api_pool_peak",
                         "api_jet",
                         "scandpower_pool",
                         "scandpower_jet",
@@ -695,6 +705,7 @@ def heat_transfer_validation(input):
                             "type": "string",
                             "allowed": [
                                 "api_pool",
+                                "api_pool_peak",
                                 "api_jet",
                                 "scandpower_pool",
                                 "scandpower_jet",

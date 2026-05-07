@@ -1,0 +1,29 @@
+calculation:
+  end_time: 600.0
+  h_gas_liquid: 50000
+  non_equilibrium: true
+  time_step: 0.5
+  type: energybalance
+heat_transfer:
+  fire: api_pool
+  type: s-b
+initial:
+  fluid: propane
+  pressure: 550000
+  temperature: 279
+valve:
+  back_pressure: 101300.0
+  blowdown: 0.2
+  diameter: 0.04
+  discharge_coef: 0.975
+  flow: discharge
+  set_pressure: 1430000
+  type: psv
+vessel:
+  density: 7700
+  diameter: 1.7
+  heat_capacity: 500
+  length: 4.64
+  liquid_level: 0.4668
+  orientation: horizontal
+  thickness: 0.01185

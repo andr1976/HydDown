@@ -345,23 +345,27 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
     mul = fluid.viscosity()
     sigma = master_fluid.surface_tension()
 
-    h_boil = Rohsenow(
-        rhol=master_fluid.saturated_liquid_keyed_output(CP.iDmass),
-        rhog=master_fluid.saturated_vapor_keyed_output(CP.iDmass),
-        mul=mul,
-        kl=kl,
-        Cpl=fluid.cpmass(),
-        Hvap=(
-            master_fluid.saturated_vapor_keyed_output(CP.iHmass)
-            - master_fluid.saturated_liquid_keyed_output(CP.iHmass)
-        ),
-        sigma=sigma,
-        Te=max((Tvessel - Tfluid), 0),
-        Csf=0.013,
-        # n=1.3,
-        # Csf=0.018,
-        n=1.7,
-    )
+    # Check if sigma is very small (near critical point) to avoid division by zero
+    if sigma < 1e-6:
+        h_boil = 0
+    else:
+        h_boil = Rohsenow(
+            rhol=master_fluid.saturated_liquid_keyed_output(CP.iDmass),
+            rhog=master_fluid.saturated_vapor_keyed_output(CP.iDmass),
+            mul=mul,
+            kl=kl,
+            Cpl=fluid.cpmass(),
+            Hvap=(
+                master_fluid.saturated_vapor_keyed_output(CP.iHmass)
+                - master_fluid.saturated_liquid_keyed_output(CP.iHmass)
+            ),
+            sigma=sigma,
+            Te=max((Tvessel - Tfluid), 0),
+            Csf=0.013,
+            # n=1.3,
+            # Csf=0.018,
+            n=1.7,
+        )
 
     if math.isnan(h_boil):
         h_boil = 0
@@ -370,6 +374,304 @@ def h_inside_wetted(L, Tvessel, Tfluid, fluid, master_fluid):
     # return min(h_boil, h_conv)
     # return h_conv
     return min(max(h_boil, h_conv), 3000)
+
+
+def h_gas_liquid_interface(T_gas, T_liquid, P, L_char, fluid_gas, fluid_liquid):
+    """
+    Calculate gas-liquid interfacial heat transfer coefficient for stratified two-phase flow.
+
+    Uses natural convection correlations for horizontal interface based on temperature
+    configuration:
+    - If T_gas > T_liquid (typical): Hot plate lower surface, liquid properties
+    - If T_liquid > T_gas (rare): Hot plate upper surface, gas properties
+
+    Physical situation:
+    - Horizontal interface area (vessel cross-section at liquid level)
+    - Natural convection driven by buoyancy from temperature difference
+    - Characteristic length typically vessel diameter
+
+    Parameters
+    ----------
+    T_gas : float
+        Gas phase bulk temperature [K]
+    T_liquid : float
+        Liquid phase bulk temperature [K]
+    P : float
+        System pressure [Pa]
+    L_char : float
+        Characteristic length for interface [m]
+        Typically vessel diameter for horizontal or vertical vessels
+    fluid_gas : obj
+        CoolProp fluid object for gas phase (already updated at current state)
+    fluid_liquid : obj
+        CoolProp fluid object for liquid phase (already updated at current state)
+
+    Returns
+    -------
+    h_gl : float
+        Gas-liquid interfacial heat transfer coefficient [W/m²K]
+
+    Notes
+    -----
+    - Correlation automatically handles both stable and unstable stratification
+    - Stable (T_gas > T_liquid): Modest h_gl, heat flows downward
+    - Unstable (T_liquid > T_gas): Higher h_gl, heat flows upward
+    - Can be extended to include forced/mixed convection effects
+    - Typical h_gl range: 20-500 W/m²K for natural convection
+
+    References
+    ----------
+    - Churchill and Chu (1975): Natural convection from horizontal surfaces
+    - Incropera & DeWitt: Fundamentals of Heat and Mass Transfer
+    - McAdams: Heat Transmission
+    """
+    # Temperature difference (driving force for heat transfer)
+    dT = abs(T_gas - T_liquid)
+
+    # Safety check: if temperatures are equal, return minimum value
+    if dT < 0.01:
+        return 100.0  # Minimum baseline (accounts for residual mixing/turbulence)
+
+    # =========================================================================
+    # SELECT CORRELATION BASED ON TEMPERATURE CONFIGURATION
+    # =========================================================================
+
+    if T_gas > T_liquid:
+        # TYPICAL CASE: Hot gas above cold liquid (stable stratification)
+        # Heat flows downward from gas to liquid
+        # Use correlation for LOWER surface of hot plate with LIQUID properties
+        # This is stable - reduced natural convection
+
+        try:
+            # Get liquid properties
+            k = fluid_liquid.conductivity()
+            mu = fluid_liquid.viscosity()
+            cp = fluid_liquid.cpmass()
+            rho = fluid_liquid.rhomass()
+            beta = fluid_liquid.isobaric_expansion_coefficient()
+
+            # Safety check: beta can be negative near saturation for liquids
+            # Use absolute value since we're interested in buoyancy magnitude
+            beta = abs(beta)
+
+            # Dimensionless numbers
+            Pr = cp * mu / k
+            nu = mu / rho
+            Gr = 9.81 * beta * dT * L_char**3 / nu**2
+            Ra = Gr * Pr
+
+            # Detailed check for invalid values
+            if math.isnan(Pr) or math.isnan(nu) or math.isnan(Gr) or math.isnan(Ra):
+                # NaN detected - property calculation issue
+                h_gl = 100.0
+            elif math.isinf(Ra) or Ra > 1e20:
+                # Extremely high Ra - cap at maximum
+                Nu = 0.15 * (1e15)**0.333  # Use very high but finite Ra
+                h_gl = Nu * k / L_char
+            elif Ra <= 0:
+                # Non-positive Ra (shouldn't happen with abs(beta), but safety check)
+                h_gl = 100.0
+            else:
+                # Nusselt number for LOWER surface of hot plate (stable)
+                # From Churchill & Chu / Incropera & DeWitt
+                if Ra < 1e7:
+                    Nu = 0.27 * Ra**0.25  # Laminar, stable
+                else:
+                    Nu = 0.15 * Ra**0.333  # Turbulent, stable
+
+                # Heat transfer coefficient
+                h_gl = Nu * k / L_char
+
+        except Exception as e:
+            # Fallback if calculation fails
+            h_gl = 50.0  # Conservative default for stable stratification
+
+    else:
+        # RARE CASE: Hot liquid below cold gas (unstable stratification)
+        # Heat flows upward from liquid to gas
+        # Use correlation for UPPER surface of hot plate with GAS properties
+        # This is unstable - enhanced natural convection
+
+        try:
+            # Get gas properties
+            k = fluid_gas.conductivity()
+            mu = fluid_gas.viscosity()
+            cp = fluid_gas.cpmass()
+            rho = fluid_gas.rhomass()
+            beta = fluid_gas.isobaric_expansion_coefficient()
+
+            # Safety check: use absolute value of beta
+            beta = abs(beta)
+
+            # Dimensionless numbers
+            Pr = cp * mu / k
+            nu = mu / rho
+            Gr = 9.81 * beta * dT * L_char**3 / nu**2
+            Ra = Gr * Pr
+
+            # Detailed check for invalid values
+            if math.isnan(Pr) or math.isnan(nu) or math.isnan(Gr) or math.isnan(Ra):
+                # NaN detected - property calculation issue
+                h_gl = 200.0
+            elif math.isinf(Ra) or Ra > 1e20:
+                # Extremely high Ra - cap at maximum
+                Nu = 0.15 * (1e15)**0.333  # Use very high but finite Ra
+                h_gl = Nu * k / L_char
+            elif Ra <= 0:
+                # Non-positive Ra (shouldn't happen with abs(beta), but safety check)
+                h_gl = 200.0
+            else:
+                # Nusselt number for UPPER surface of hot plate (unstable)
+                # From Churchill & Chu / Incropera & DeWitt
+                if Ra < 1e7:
+                    Nu = 0.54 * Ra**0.25  # Laminar, unstable
+                else:
+                    Nu = 0.15 * Ra**0.333  # Turbulent, unstable
+
+                # Heat transfer coefficient
+                h_gl = Nu * k / L_char
+
+        except Exception as e:
+            # Fallback if calculation fails
+            h_gl = 200.0  # Higher default for unstable stratification
+
+    # Final safety checks
+    if h_gl < 100.0:
+        h_gl = 100.0  # Minimum realistic value (accounts for residual mixing, turbulence)
+    if h_gl > 2000.0:
+        h_gl = 2000.0  # Maximum for natural convection
+
+    return h_gl
+
+
+def h_gas_liquid_interface_two_sided(T_gas, T_liquid, P, L_char, fluid_gas, fluid_liquid):
+    """
+    Calculate gas-liquid interfacial heat transfer coefficient using a two-sided
+    (series resistance) model.
+
+    Computes natural convection HTCs for both the gas side and liquid side of
+    the interface independently, then combines them as resistances in series:
+
+        1/h_overall = 1/h_gas + 1/h_liquid
+
+    This captures the thermal resistance of both boundary layers at the interface.
+
+    Parameters
+    ----------
+    T_gas : float
+        Gas phase bulk temperature [K]
+    T_liquid : float
+        Liquid phase bulk temperature [K]
+    P : float
+        System pressure [Pa]
+    L_char : float
+        Characteristic length for interface [m]
+    fluid_gas : obj
+        CoolProp fluid object for gas phase
+    fluid_liquid : obj
+        CoolProp fluid object for liquid phase
+
+    Returns
+    -------
+    h_gl : float
+        Overall gas-liquid interfacial heat transfer coefficient [W/m²K]
+
+    Notes
+    -----
+    For stable stratification (T_gas > T_liquid, typical):
+    - Gas side: hot gas above interface, stable (lower surface of hot plate)
+    - Liquid side: cold liquid below interface, stable (lower surface of hot plate)
+
+    For unstable stratification (T_liquid > T_gas, rare):
+    - Both sides use upper surface of hot plate correlations (enhanced convection)
+
+    References
+    ----------
+    - Churchill and Chu (1975): Natural convection from horizontal surfaces
+    - Incropera & DeWitt: Fundamentals of Heat and Mass Transfer
+    """
+    dT = abs(T_gas - T_liquid)
+
+    if dT < 0.01:
+        return 100.0
+
+    stable = T_gas > T_liquid
+
+    # --- Gas side HTC ---
+    h_gas = _natconv_htc(dT, L_char, fluid_gas, stable)
+
+    # --- Liquid side HTC ---
+    h_liquid = _natconv_htc(dT, L_char, fluid_liquid, stable)
+
+    # Series resistance: 1/h_overall = 1/h_gas + 1/h_liquid
+    if h_gas > 0 and h_liquid > 0:
+        h_gl = 1.0 / (1.0 / h_gas + 1.0 / h_liquid)
+    else:
+        h_gl = min(h_gas, h_liquid) if max(h_gas, h_liquid) > 0 else 50.0
+
+    # Safety bounds
+    if h_gl < 5.0:
+        h_gl = 5.0
+    if h_gl > 2000.0:
+        h_gl = 2000.0
+
+    return h_gl
+
+
+def _natconv_htc(dT, L_char, fluid, stable):
+    """
+    Calculate natural convection HTC for one side of a horizontal interface.
+
+    Parameters
+    ----------
+    dT : float
+        Temperature difference across interface [K]
+    L_char : float
+        Characteristic length [m]
+    fluid : obj
+        CoolProp fluid object (already updated at current state)
+    stable : bool
+        True for stable stratification (lower surface of hot plate correlations),
+        False for unstable (upper surface of hot plate correlations)
+
+    Returns
+    -------
+    h : float
+        Heat transfer coefficient [W/m²K]
+    """
+    try:
+        k = fluid.conductivity()
+        mu = fluid.viscosity()
+        cp = fluid.cpmass()
+        rho = fluid.rhomass()
+        beta = abs(fluid.isobaric_expansion_coefficient())
+
+        Pr = cp * mu / k
+        nu = mu / rho
+        Gr = 9.81 * beta * dT * L_char**3 / nu**2
+        Ra = Gr * Pr
+
+        if math.isnan(Ra) or math.isinf(Ra) or Ra <= 0:
+            return 50.0
+
+        if stable:
+            # Lower surface of hot plate (stable, reduced convection)
+            if Ra < 1e7:
+                Nu = 0.27 * Ra**0.25
+            else:
+                Nu = 0.15 * Ra**0.333
+        else:
+            # Upper surface of hot plate (unstable, enhanced convection)
+            if Ra < 1e7:
+                Nu = 0.54 * Ra**0.25
+            else:
+                Nu = 0.15 * Ra**0.333
+
+        h = Nu * k / L_char
+        return h
+
+    except Exception:
+        return 50.0
 
 
 def hem_release_rate(P1, Pback, Cd, area, fluid):

@@ -20,6 +20,7 @@ calculation:
   type: "energybalance"
   time_step: 10
   end_time: 40000
+  #non_equilibrium: true
 valve:
   flow: "discharge"
   type: "relief"

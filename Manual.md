@@ -1643,7 +1643,7 @@ if __name__ == "__main__":
     hdown.run()
     hdown.verbose=1
     hdown.plot()
-    hddown.analyze_rupture()
+    hdown.analyze_rupture()
 ~~~
 
 ## Composite cylinder subject to blowdown

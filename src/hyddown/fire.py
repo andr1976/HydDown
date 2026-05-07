@@ -16,6 +16,7 @@ The Stefan-Boltzmann equation accounts for:
 
 Available fire scenarios:
 - API 521 pool fire: 60 kW/m² incident heat flux
+- API 521 pool fire peak: elevated temperature peak pool fire
 - API 521 jet fire: 100 kW/m² incident heat flux
 - Scandpower pool fire: 100 kW/m² incident heat flux
 - Scandpower jet fire: 100 kW/m² incident heat flux
@@ -277,6 +278,88 @@ def jet_fire_peak_large_scandpower(Tvessel):
     Tradiative = 1429.61
     return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
 
+def jet_fire_peak_large_api521(Tvessel):
+    """
+    Calculate heat flux for API521 large peak jet fire scenario.
+
+    Implements severe jet fire scenario with very high incident heat flux of 350 kW/m².
+    This represents peak impingement conditions from large high-pressure gas releases
+    in close proximity to vessel surfaces.
+
+    Parameters
+    ----------
+    Tvessel : float
+        Temperature of the vessel surface [K]
+
+    Returns
+    -------
+    float
+        Net heat flux to vessel surface [W/m²]
+
+    Notes
+    -----
+    Fire parameters:
+    - Absorptivity (α): 0.75
+    - Flame emissivity (ε_flame): 0.87
+    - Surface emissivity (ε_surface): 0.75
+    - Convective heat transfer coefficient (h): 100 W/(m²·K)
+    - Flame temperature: 1473.15 K
+    - Radiative temperature: 1473.15 K
+
+    References
+    ----------
+    API Standard 521, Pressure-relieving and Depressuring Systems
+  
+    """
+    alpha = 0.75
+    e_flame = 0.87
+    e_surface = 0.75
+    h = 100
+    Tflame = 1473.15
+    Tradiative = 1473.15
+    return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
+
+def jet_fire_peak_small_api521(Tvessel):
+    """
+    Calculate heat flux for API521 small peak jet fire scenario.
+
+    Implements severe jet fire scenario with an incident heat flux of 250 kW/m².
+    This represents peak impingement conditions from large high-pressure gas releases
+    in close proximity to vessel surfaces.
+
+    Parameters
+    ----------
+    Tvessel : float
+        Temperature of the vessel surface [K]
+
+    Returns
+    -------
+    float
+        Net heat flux to vessel surface [W/m²]
+
+    Notes
+    -----
+    Fire parameters:
+    - Absorptivity (α): 0.75
+    - Flame emissivity (ε_flame): 0.75
+    - Surface emissivity (ε_surface): 0.75
+    - Convective heat transfer coefficient (h): 90 W/(m²·K)
+    - Flame temperature: 1373.15 K
+    - Radiative temperature: 1373.15 K
+
+    References
+    ----------
+    API Standard 521, Pressure-relieving and Depressuring Systems
+  
+    """
+    alpha = 0.75
+    e_flame = 0.75
+    e_surface = 0.75
+    h = 90
+    Tflame = 1373.15
+    Tradiative = 1373.15
+    return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
+
 
 def jet_fire_peak_small_scandpower(Tvessel):
     """
@@ -316,6 +399,47 @@ def jet_fire_peak_small_scandpower(Tvessel):
     h = 100
     Tflame = 1279.29
     Tradiative = 1279.29
+    return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
+
+
+def pool_fire_peak_api521(Tvessel):
+    """
+    Calculate heat flux for API 521 peak pool fire scenario.
+
+    Implements a peak pool fire based on API 521 parameters with elevated
+    flame and radiative temperatures representing localized hot-spot
+    conditions or large fully-engulfing pool fires.
+
+    Parameters
+    ----------
+    Tvessel : float
+        Temperature of the vessel surface [K]
+
+    Returns
+    -------
+    float
+        Net heat flux to vessel surface [W/m²]
+
+    Notes
+    -----
+    Fire parameters:
+    - Absorptivity (α): 0.75
+    - Flame emissivity (ε_flame): 0.75
+    - Surface emissivity (ε_surface): 0.75
+    - Convective heat transfer coefficient (h): 20 W/(m²·K)
+    - Flame temperature: 1050°C (1323.15 K)
+    - Radiative temperature: 1050°C (1323.15 K)
+
+    References
+    ----------
+    API Standard 521, Pressure-relieving and Depressuring Systems
+    """
+    alpha = 0.75
+    e_flame = 0.75
+    e_surface = 0.75
+    h = 20
+    Tflame = 1050 + 273.15
+    Tradiative = 1050 + 273.15
     return stefan_boltzmann(alpha, e_flame, e_surface, h, Tflame, Tradiative, Tvessel)
 
 
@@ -376,6 +500,7 @@ def sb_fire(T_vessel, fire_type):
         Fire scenario type. Valid options:
         - "api_jet": API 521 jet fire (100 kW/m²)
         - "api_pool": API 521 pool fire (60 kW/m²)
+        - "api_pool_peak": API 521 peak pool fire
         - "scandpower_pool": Scandpower pool fire (100 kW/m²)
         - "scandpower_jet": Scandpower jet fire (100 kW/m²)
         - "scandpower_jet_peak_large": Scandpower large peak jet fire (350 kW/m²)
@@ -410,8 +535,14 @@ def sb_fire(T_vessel, fire_type):
         Q = jet_fire_peak_large_scandpower(T_vessel)
     elif fire_type == "scandpower_jet_peak_small":
         Q = jet_fire_peak_small_scandpower(T_vessel)
+    elif fire_type == "api_pool_peak":
+        Q = pool_fire_peak_api521(T_vessel)
     elif fire_type == "scandpower_pool_peak":
         Q = pool_fire_peak_scandpower(T_vessel)
+    elif fire_type == "api_jet_peak_large":
+        Q = jet_fire_peak_large_api521(T_vessel)
+    elif fire_type == "api_jet_peak_small":
+        Q = jet_fire_peak_small_api521(T_vessel)
     else:
         raise ValueError("Unknown Stefan-Bolzmann fire heat load")
     return Q

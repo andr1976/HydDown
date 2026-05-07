@@ -1,0 +1,28 @@
+vessel:
+  length: 2.0
+  diameter: 0.5
+  orientation: "vertical"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.005
+  liquid_level: 0.3
+initial:
+  temperature: 25  # Will be overridden by saturation temp at pressure
+  pressure: 200000  # 2 bar
+  fluid: "Hydrogen"
+calculation:
+  type: "energybalance"
+  time_step: 0.1
+  end_time: 60.
+  non_equilibrium: true
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter: 0.01
+  discharge_coef: 0.85
+  back_pressure: 101300.
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 298
+  h_outer: 10
+  h_inner: 100

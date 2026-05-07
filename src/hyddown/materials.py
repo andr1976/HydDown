@@ -82,7 +82,7 @@ T = (
             1100,
         ]
     )
-    + 273.17
+    + 273.15
 )
 
 # Duplex stainless steel ultimate tensile strength [Pa] at temperatures in T
@@ -232,6 +232,83 @@ CS_360LT_UTS = (
     * 1e6
 )
 
+# P460/630 carbon steel ultimate tensile strength [Pa] at temperatures in T
+# Based on CS_360LT scaled to 630 MPa at 20°C (scale factor 630/545)
+P460_630_UTS = (
+    np.array(
+        [
+            630,
+            621,
+            612,
+            605,
+            595,
+            586,
+            573,
+            568,
+            555,
+            529,
+            462,
+            378,
+            283,
+            208,
+            139,
+            88,
+            69,
+            57,
+            44,  # Manual hand-interpolation
+            31,  # Manual hand-interpolation
+        ]
+    )
+    * 1e6
+)
+
+# SA-455 (ASTM A455) carbon steel ultimate tensile strength [Pa]
+# Source: Birk, A.M. (2006) - digitized UTS vs temperature data
+# Note: SA-455 has its own temperature axis (different from Scandpower data)
+T_SA455 = (
+    np.array(
+        [
+            -1.23,
+            98.52,
+            200.74,
+            299.26,
+            399.01,
+            481.53,
+            523.40,
+            566.50,
+            608.37,
+            649.01,
+            700.74,
+            751.23,
+            800.49,
+            901.48,
+        ]
+    )
+    + 273.15
+)
+
+SA455_UTS = (
+    np.array(
+        [
+            617.42,
+            617.42,
+            616.15,
+            617.42,
+            547.55,
+            449.73,
+            398.91,
+            349.36,
+            283.30,
+            218.51,
+            151.18,
+            110.53,
+            80.036,
+            60.98,
+        ]
+    )
+    * 1e6
+)
+
 
 def von_mises(p, d, wt, sigma_a=30e6):
     """
@@ -266,7 +343,7 @@ def von_mises(p, d, wt, sigma_a=30e6):
 
     D = d + 2 * wt
 
-    sigma_e = math.sqrt(3 * ((p * D**2) / (D**2 - d**2)) ** 2 + sigma_a)
+    sigma_e = math.sqrt(3 * ((p * D**2) / (D**2 - d**2)) **2) # + sigma_a**2)
     return sigma_e
 
 
@@ -328,6 +405,10 @@ def UTS(temperature, material):
         return np.interp(temperature, T, CS_235LT_UTS)
     elif material == "CS_360LT":
         return np.interp(temperature, T, CS_360LT_UTS)
+    elif material == "P460/630":
+        return np.interp(temperature, T, P460_630_UTS)
+    elif material == "SA455":
+        return np.interp(temperature, T_SA455, SA455_UTS)
     elif material == "SS316":
         return np.interp(temperature, T, SS_UTS)
     elif material == "Duplex":
@@ -356,12 +437,16 @@ def steel_Cp(temperature, material):
     Return
     ----------
     Cp : float
-        Ultimate Tensile Strength (Pa)
+        Heat capacity (J/(kg·K))
 
     """
     if material == "CS_235LT":
         return np.interp(temperature, T_Cp, CS_LT_Cp)
     elif material == "CS_360LT":
+        return np.interp(temperature, T_Cp, CS_LT_Cp)
+    elif material == "P460/630":
+        return np.interp(temperature, T_Cp, CS_LT_Cp)
+    elif material == "SA455":
         return np.interp(temperature, T_Cp, CS_LT_Cp)
     elif material == "SS316":
         return np.interp(temperature, T_Cp, SS316_Cp)

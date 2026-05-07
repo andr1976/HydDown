@@ -1,0 +1,28 @@
+vessel:
+  length: 4.64
+  diameter: 1.7
+  orientation: "horizontal"
+  heat_capacity: 500
+  density: 7700
+  thickness: 0.01185
+  liquid_level: 0.4668
+initial:
+  temperature: 279  # Will be overridden by saturation temperature
+  pressure: 550000  # 5.5 bar
+  fluid: "propane"
+calculation:
+  type: "energybalance"
+  time_step: 0.5
+  end_time: 300.
+  non_equilibrium: true
+valve:
+  flow: "discharge"
+  type: "psv"
+  diameter: 0.040
+  discharge_coef: 0.975
+  set_pressure: 1430000
+  blowdown: 0.20
+  back_pressure: 101300.
+heat_transfer:
+  type: "s-b"
+  fire: "scandpower_pool"
