@@ -22,7 +22,10 @@ src/hyddown/transport.py
 src/hyddown/validator.py
 src/hyddown/examples/LPG.yml
 src/hyddown/examples/LPG_1d.yml
+src/hyddown/examples/LPG_Birk.yml
+src/hyddown/examples/LPG_Droste_1.yml
 src/hyddown/examples/LPG_small.yml
+src/hyddown/examples/LPG_specified_q.yml
 src/hyddown/examples/LPG_trailer.yml
 src/hyddown/examples/bdv_sb.yml
 src/hyddown/examples/controlvalve.yml
@@ -33,6 +36,10 @@ src/hyddown/examples/input.yml
 src/hyddown/examples/isenthalpic.yml
 src/hyddown/examples/isentropic.yml
 src/hyddown/examples/mdot_filling.yml
+src/hyddown/examples/nem_propane_fire.yml
+src/hyddown/examples/nem_propane_psv_fire.yml
+src/hyddown/examples/nem_propane_simple.yml
+src/hyddown/examples/nem_test_h2.yml
 src/hyddown/examples/ng.yml
 src/hyddown/examples/ng_inlet.yml
 src/hyddown/examples/ng_outlet.yml
