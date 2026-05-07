@@ -13,7 +13,7 @@ initial:
 calculation:
   type: "energybalance"
   time_step: 1
-  end_time: 1500.
+  end_time: 900.
 valve:
   flow: "discharge"
   type: "relief"
