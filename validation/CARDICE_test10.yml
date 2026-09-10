@@ -1,0 +1,62 @@
+# Validation case: CARDICE JIP - 2 m3 CO2 sphere blowdown, TEST 10 (folder cardice-10).
+# Ref: Vaillant et al., GHGT-15 (2021), SSRN 3823308 (test matrix Table 1); rig details
+#      Jamois et al., Int. J. Greenhouse Gas Control 129 (2023) 103974. Open 1 Hz dataset
+#      Zenodo DOI 10.5281/zenodo.17257910 (folder cardice-10). Experiments by Ineris.
+#
+# Test 10: pure CO2 at vapour/liquid equilibrium, 10 bar / -40 C, LIQUID (bottom) release.
+# The lowest-pressure liquid release (with T6 20 bar and T8 15 bar). Like the others: a LIQUID
+# release forms essentially NO in-vessel dry ice (retained ~5 kg model vs ~0 measured).
+#
+# DISCHARGE MODEL (single physical Cd + non-equilibrium liquid): orifice inferred from the GAS
+# tail via HEM (reliable), single Cd 0.68 for both phases. The measured gas tail (0.02 kg/s @6 bar)
+# -> a 4.37 mm orifice. NOTE: at 10 bar the liquid needs NO non-equilibrium boost
+# (liquid_nonequilibrium 0) - the equilibrium HEM liquid flux already matches the data. The
+# metastable/delayed-flashing boost is pressure dependent and fades at low pressure
+# (T6 20 bar N=0.267, T8 15 bar N=0.195, T10 10 bar N=0).
+#
+# CALIBRATION (against cardice-10 1 Hz data):
+#   - liquid_level 0.582 -> initial CoolProp mass 743.4 kg vs measured 743.3 kg (load cells)
+#   - gas_temperature 239.38 K (-33.8 C): gas zone starts superheated per the top thermocouples
+#   - orifice 4.37 mm from the gas tail (HEM); Cd 0.68; liquid_nonequilibrium 0.0
+#   - h_gas_liquid 2.0, h_outer 0.4, wall 0.072 m (shell-corrected ~4.82 t = measured 4.80 t).
+# MATCH: initial mass; gas-tail rate (0.020 vs 0.020); liquid rate ~0.108 vs 0.096 (HEM slightly
+# high at N=0); retained mass (~no dry ice). Duration ~2.5 vs 2.9 h.
+vessel:
+  length: 0.0                  # sphere: two hemispherical heads, no cylindrical section
+  diameter: 1.58               # ~1556-1580 mm ID
+  thickness: 0.072             # shell-corrected wall mass ~4.82 t = measured 4.80 t (incl flanges)
+  heat_capacity: 450           # P355GH cp (Jamois Table 1)
+  density: 7800.
+  orientation: "horizontal"
+  liquid_level: 0.582          # CALIBRATED to measured initial mass 743.3 kg
+  type: "Hemispherical"
+initial:
+  temperature: 233.15          # -40 C (overridden: two-phase T set by P + liquid level)
+  pressure: 1026000            # 10.26 bar (measured initial P sphere)
+  fluid: "CO2"
+  gas_temperature: 239.38      # -33.8 C: superheated gas zone per top thermocouples at t0
+calculation:
+  type: "energybalance"
+  time_step: 5
+  end_time: 12000              # blowdown reaches ~2 bar at ~2.9 h
+  non_equilibrium: true
+  h_gas_liquid: 2.0            # fixed low gas-liquid interphase HTC (near-adiabatic drain)
+valve:
+  flow: "discharge"
+  type: "none"
+  back_pressure: 101325.
+release:
+  type: "liquid"               # Test 10 is a liquid-space (bottom) release
+  diameter: 0.00437            # TRUE orifice from the GAS tail via HEM (~0.020 kg/s @6 bar)
+  discharge_coef: 0.68         # single physical Cd for BOTH phases (gas = HEM at 4.37 mm)
+  liquid_nonequilibrium: 0.0   # no non-equilibrium boost at 10 bar - HEM already matches the liquid
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "tcPR"
+  solid_in_vessel: true        # crosses the triple point only at the very end (little/no solid)
+  solid_h_inner: 20.0
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 283.15
+  h_outer: 0.4                 # Jamois: measured insulation ~0.39 W/m2K
+  h_inner: "calc"
