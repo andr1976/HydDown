@@ -1,0 +1,48 @@
+# Validation case: CARDICE JIP - 2 m3 CO2 sphere blowdown, Batch 6.
+# Ref: Vaillant et al., "Vessel Blowdown of CO2-Rich Fluids: Experiments and Simulations",
+#      GHGT-15 (2021), SSRN 3823308; open dataset Zenodo DOI 10.5281/zenodo.17257910.
+#
+# Batch 6: pure CO2 at vapour/liquid equilibrium, ~20 bar / -19 C, LIQUID release, 3 mm orifice.
+# The sphere is modelled with hemispherical heads and length -> 0 (V = 2.065 m3, D = 1.58 m).
+# solid_in_vessel is enabled: the blowdown crosses the CO2 triple point, so dry ice forms.
+#
+# CALIBRATION NOTES (to fit against the Zenodo data):
+#   - liquid_level: set from the measured initial mass (load cells). Nominal here.
+#   - discharge_coef: calibrate to match the measured depressurisation rate.
+vessel:
+  length: 0.0                  # sphere: two hemispherical heads, no cylindrical section
+  diameter: 1.58               # 1580 mm internal diameter
+  thickness: 0.06              # ~60 mm steel wall
+  heat_capacity: 490
+  density: 7800.
+  orientation: "horizontal"
+  liquid_level: 0.9            # NOMINAL fill (~55 %) - confirm from measured initial mass
+  type: "Hemispherical"
+initial:
+  temperature: 254.15          # -19 C (overridden: two-phase T set by P + liquid level)
+  pressure: 2000000            # 20 bar (saturated)
+  fluid: "CO2"
+calculation:
+  type: "energybalance"
+  time_step: 5
+  end_time: 12000
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "none"
+  back_pressure: 101325.
+release:
+  type: "liquid"               # Batch 6 is a liquid-space release
+  diameter: 0.003              # 3 mm orifice
+  discharge_coef: 0.8          # CALIBRATE against the measured rate
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "tcPR"
+  solid_in_vessel: true        # blowdown crosses the triple point -> dry ice in-vessel
+  solid_h_inner: 20.0
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 283.15         # ~10 C ambient
+  h_outer: 2                   # insulated vessel (low external HTC)
+  h_inner: "calc"

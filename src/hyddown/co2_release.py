@@ -92,8 +92,9 @@ class CO2ReleaseModel:
         self.M = self.eos.compmoleweight(1) / 1000.0  # g/mol -> kg/mol
         self.p_back = back_pressure
         self.p_atm = atm_pressure
-        self.P_TRIPLE = P_TRIPLE  # convenience: the solid-in-vessel validity floor
+        self.P_TRIPLE = P_TRIPLE  # convenience: the (literature) validity-floor constant
         self._init_atm_endpoints()
+        self._init_triple_point()
 
     # ------------------------------------------------------------------ setup
     def _init_atm_endpoints(self):
@@ -213,7 +214,16 @@ class CO2ReleaseModel:
             (``h0`` [J/kg], ``s0`` [J/mol/K], ``rho0`` [kg/m3], ``T0`` [K]).
         """
         h0, s0, rho0, T0 = self.stagnation(P0, phase)
+        return self.hem_rate_from_stagnation(h0, s0, rho0, T0, P0, Cd, area)
 
+    def hem_rate_from_stagnation(self, h0, s0, rho0, T0, P0, Cd, area):
+        """HEM mass flow from an explicit stagnation state (see :meth:`hem_rate`).
+
+        Used when the stagnation is not a simple saturated liquid/vapour at ``P0`` -
+        e.g. a vapour leak on the sublimation line below the triple point, where
+        ``bubble_temperature`` is undefined. ``h0`` [J/kg], ``s0`` [J/mol/K],
+        ``rho0`` [kg/m3], ``T0`` [K], ``P0`` [Pa] describe the upstream state.
+        """
         stag = {"h0": h0, "s0": s0, "rho0": rho0, "T0": T0}
         if P0 <= self.p_back:
             return {"mdot": 0.0, "G": 0.0, "P_throat": P0, "T_throat": T0,
@@ -302,6 +312,181 @@ class CO2ReleaseModel:
         rate = self.hem_rate(P0, phase, Cd, area)
         atm = self.atm_split(rate["h0"])
         return rate, atm
+
+    def gas_leak_rate(self, T, P, Cd, area):
+        """HEM rate for a vapour leak from an explicit vessel state (T, P).
+
+        Used in the solid-in-vessel regime (below the triple point), where the leaking
+        gas sits on the sublimation line and ``stagnation()`` (which needs a bubble
+        point) does not apply. Returns the usual hem_rate dict.
+        """
+        h0 = _scal(self.eos.enthalpy(T, P, self.z, self.VAP)) / self.M
+        s0 = _scal(self.eos.entropy(T, P, self.z, self.VAP))  # molar
+        v0 = _scal(self.eos.specific_volume(T, P, self.z, self.VAP))
+        return self.hem_rate_from_stagnation(h0, s0, self.M / v0, T, P, Cd, area)
+
+    # =====================================================================
+    # Solid-in-vessel regime (below the triple point) - opt-in fallback
+    # =====================================================================
+    # Once the tank itself reaches the triple point, Gibbs' phase rule pins the
+    # state: with three phases (solid+liquid+gas) the invariant point fixes T and
+    # P, and the leak/heat only shift the phase amounts (regime B); with two
+    # phases (solid+gas) the state rides the sublimation line (regime C). Both are
+    # solved from the mass / volume / internal-energy balances against the
+    # pure-phase properties - no flash iteration through the degenerate triple
+    # point. All properties are in thermopack's own basis (no CoolProp mixing).
+
+    def _g_fluid(self, T, P, ph):
+        """Mass-specific Gibbs energy of a fluid phase [J/kg]."""
+        h = _scal(self.eos.enthalpy(T, P, self.z, ph)) / self.M
+        s = _scal(self.eos.entropy(T, P, self.z, ph)) / self.M
+        return h - T * s
+
+    def _g_solid(self, T, P):
+        """Mass-specific Gibbs energy of solid CO2 [J/kg]."""
+        h = _scal(self.eos.solid_enthalpy(T, P, self.z)) / self.M
+        s = _scal(self.eos.solid_entropy(T, P, self.z)) / self.M
+        return h - T * s
+
+    def _init_triple_point(self):
+        """Locate the tcPR self-consistent triple point and the three pure-phase
+        (v, u, h) vertices used by the invariant lever.
+
+        The triple point is where g_solid = g_liquid along the fluid saturation
+        line (on which g_liquid = g_vapour already, for a pure component).
+        """
+        def gap(T):
+            P = _scal(self.eos.bubble_pressure(T, self.z))
+            return self._g_solid(T, P) - self._g_fluid(T, P, self.LIQ)
+
+        self.T_TRIPLE_EOS = optimize.brentq(gap, 208.0, 220.0)
+        self.P_TRIPLE_EOS = _scal(self.eos.bubble_pressure(self.T_TRIPLE_EOS, self.z))
+        T, P = self.T_TRIPLE_EOS, self.P_TRIPLE_EOS
+        # pure-phase mass-specific volume, enthalpy, internal energy at the triple point
+        self.v_s = _scal(self.eos.solid_volume(T, P, self.z)) / self.M
+        self.h_s = _scal(self.eos.solid_enthalpy(T, P, self.z)) / self.M
+        self.v_l = _scal(self.eos.specific_volume(T, P, self.z, self.LIQ)) / self.M
+        self.h_l = _scal(self.eos.enthalpy(T, P, self.z, self.LIQ)) / self.M
+        self.v_g = _scal(self.eos.specific_volume(T, P, self.z, self.VAP)) / self.M
+        self.h_g = _scal(self.eos.enthalpy(T, P, self.z, self.VAP)) / self.M
+        self.u_s = self.h_s - P * self.v_s
+        self.u_l = self.h_l - P * self.v_l
+        self.u_g = self.h_g - P * self.v_g
+        # Coldest physical vessel state on the sublimation line: the leak stops once the
+        # vessel reaches the back pressure, so it cannot cool below the sublimation
+        # temperature at p_back.
+        self.T_subl_floor = optimize.brentq(
+            lambda T: self._sublimation_pressure(T) - self.p_back,
+            185.0, self.T_TRIPLE_EOS - 1e-4,
+        )
+
+    def triple_point_U(self, m_liquid, m_gas, m_solid=0.0):
+        """Total internal energy [J] in thermopack basis for a phase split *at the
+        triple point*. Used to re-base the vessel energy at the CoolProp->thermopack
+        hand-off (masses are basis-independent; energy is not)."""
+        return m_solid * self.u_s + m_liquid * self.u_l + m_gas * self.u_g
+
+    def triple_LG_from_MV(self, M, V):
+        """Liquid+vapour split at the triple point consistent with total mass ``M`` [kg]
+        and vessel volume ``V`` [m3] (no solid yet). Returns (m_l, m_g, U).
+
+        This is the physically-consistent way to place the vessel *on* the triple point at
+        the CoolProp->thermopack hand-off (and to clamp back to it if it warms up): the
+        volume constraint fixes the liquid/vapour split, and the internal energy follows.
+        """
+        m_g = (V - M * self.v_l) / (self.v_g - self.v_l)
+        m_g = min(max(m_g, 0.0), M)
+        m_l = M - m_g
+        return m_l, m_g, m_l * self.u_l + m_g * self.u_g
+
+    def triple_lever(self, M, U, V):
+        """Invariant three-phase lever at the triple point (regime B).
+
+        Solves the linear system (volume / internal-energy / mass) for the three
+        phase masses at fixed T, P:
+
+            [v_s v_l v_g] [m_s]   [V]
+            [u_s u_l u_g] [m_l] = [U]
+            [ 1   1   1 ] [m_g]   [M]
+
+        Returns m_s, m_l, m_g [kg] (may be negative if the state is outside the
+        three-phase triangle), plus the invariant T, P.
+        """
+        A = np.array([[self.v_s, self.v_l, self.v_g],
+                      [self.u_s, self.u_l, self.u_g],
+                      [1.0, 1.0, 1.0]])
+        m = np.linalg.solve(A, np.array([V, U, M]))
+        return {"m_s": m[0], "m_l": m[1], "m_g": m[2],
+                "T": self.T_TRIPLE_EOS, "P": self.P_TRIPLE_EOS}
+
+    def _sublimation_pressure(self, T):
+        """Solid+gas equilibrium (sublimation) pressure at temperature T [Pa]."""
+        return optimize.brentq(
+            lambda P: self._g_fluid(T, P, self.VAP) - self._g_solid(T, P),
+            1.0, self.P_TRIPLE_EOS * 1.0001,
+        )
+
+    def _sublimation_props(self, T):
+        """(P, v_g, u_g, v_s, u_s) on the sublimation line at temperature T (mass basis)."""
+        P = self._sublimation_pressure(T)
+        vg = _scal(self.eos.specific_volume(T, P, self.z, self.VAP)) / self.M
+        hg = _scal(self.eos.enthalpy(T, P, self.z, self.VAP)) / self.M
+        vs = _scal(self.eos.solid_volume(T, P, self.z)) / self.M
+        hs = _scal(self.eos.solid_enthalpy(T, P, self.z)) / self.M
+        return P, vg, hg - P * vg, vs, hs - P * vs
+
+    def sublimation_state(self, M, U, V, T_floor=None):
+        """Solid+gas state on the sublimation line below the triple point (regime C).
+
+        With liquid gone the system has one degree of freedom, so T (hence P and the
+        pure-phase properties) is found by matching the internal energy; the solid/gas
+        split follows from the mass and volume balances. T is clamped to the physical
+        window [sublimation temperature at p_back, triple point].
+        """
+        lo = T_floor if T_floor is not None else self.T_subl_floor
+        hi = self.T_TRIPLE_EOS - 1e-4
+
+        def split(T):
+            P, vg, ug, vs, us = self._sublimation_props(T)
+            m_g = (V - M * vs) / (vg - vs)
+            m_s = M - m_g
+            return m_s, m_g, us, ug, P
+
+        def energy_residual(T):
+            m_s, m_g, us, ug, _P = split(T)
+            return m_s * us + m_g * ug - U
+
+        f_lo, f_hi = energy_residual(lo), energy_residual(hi)
+        if f_lo * f_hi > 0:
+            # U outside the bracketable window: clamp to the nearer physical bound
+            T = lo if abs(f_lo) < abs(f_hi) else hi
+        else:
+            T = optimize.brentq(energy_residual, lo, hi)
+        m_s, m_g, _us, _ug, P = split(T)
+        return {"m_s": m_s, "m_g": m_g, "m_l": 0.0, "T": T, "P": P}
+
+    def vessel_state_below_triple(self, M, U, V, tol=1e-9):
+        """Dispatch a below-/at-triple-point vessel state (M [kg], U [J], V [m3]).
+
+        Returns a dict with ``regime`` in {"above", "triple", "sublimation"} and the
+        phase masses (m_s, m_l, m_g), temperature and pressure. ``"above"`` signals the
+        state has warmed back onto the liquid+vapour saturation line above the triple
+        point (hand control back to the CoolProp model).
+        """
+        tl = self.triple_lever(M, U, V)
+        if tl["m_s"] < -tol:
+            # warmer than the triple point: liquid+vapour above it
+            return {"regime": "above", **tl}
+        if tl["m_l"] < -tol:
+            # colder than the triple point, liquid exhausted: solid+gas
+            st = self.sublimation_state(M, U, V)
+            st["regime"] = "sublimation"
+            return st
+        # genuine three-phase point (clamp tiny negatives from round-off)
+        tl["m_s"] = max(tl["m_s"], 0.0)
+        tl["m_l"] = max(tl["m_l"], 0.0)
+        tl["regime"] = "triple"
+        return tl
 
 
 # --------------------------------------------------------------------------- self-test

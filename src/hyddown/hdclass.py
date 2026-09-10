@@ -273,6 +273,11 @@ class HydDown:
                 "atm_pressure", self.release_back_pressure
             )
             self.release_eos = rel.get("eos", "tcPR")
+            # Opt-in solid-in-vessel fallback: once the tank reaches the triple point,
+            # continue with a thermopack three-phase / sublimation model instead of
+            # freezing. solid_h_inner is the (simplified) internal HTC used there.
+            self.solid_in_vessel = rel.get("solid_in_vessel", False)
+            self.solid_h_inner = rel.get("solid_h_inner", 20.0)
 
         # valve type
         # - constant_mass
@@ -526,6 +531,11 @@ class HydDown:
             self.m_dryice_cum = np.zeros(data_len)  # cumulative dry-ice mass released [kg]
             self.release_choked = np.zeros(data_len)  # 1.0 if choked flow, else 0.0
             self.release_rate = np.zeros(data_len)  # release-hole mass flow only [kg/s]
+            # Solid-in-vessel fallback (below the triple point)
+            self.m_solid = np.zeros(data_len)  # in-vessel dry-ice (solid CO2) mass [kg]
+            self.solid_regime = False  # True once handed off to the solid-in-vessel model
+            self.M_vessel = 0.0  # total vessel mass [kg] (thermopack-basis state)
+            self.U_vessel = 0.0  # total vessel internal energy [J] (thermopack basis)
 
     def calc_liquid_level(self):
         """
@@ -600,6 +610,97 @@ class HydDown:
         self.release_choked[i] = 1.0 if rate["choked"] else 0.0
         self.release_rate[i] = rate["mdot"]
         return rate["mdot"]
+
+    def _solid_regime_step(self, i):
+        """One timestep of the opt-in solid-in-vessel model (below the triple point).
+
+        Integrates the vessel total mass and internal energy (thermopack basis) under the
+        continuing leak and a simplified lumped-wall heat transfer, then resolves the
+        state analytically: a three-phase invariant point (T, P pinned at the triple
+        point, dry ice accumulating) or a solid+gas point riding the sublimation line
+        once the liquid is exhausted. All thermodynamics come from the release model.
+
+        Simplifications (documented): a lumped wall with a fixed internal HTC
+        (``release.solid_h_inner``); gas/liquid held at a common temperature (near
+        equilibrium here); phase equilibrium assumed instantaneous.
+        """
+        rm = self.release_model
+        dt = self.tstep
+        V = self.vol
+        area = self.D_release ** 2 / 4 * math.pi
+
+        T_prev = self.T_fluid[i - 1]
+        P_prev = self.P[i - 1]
+
+        # --- leak from the previous state (explicit Euler) ---
+        if self.m_liquid[i - 1] <= 1e-3 and self.release_phase == "liquid":
+            self.release_phase = "gas"  # liquid exhausted -> vapour leak (regime C)
+        if P_prev <= self.release_back_pressure * 1.002:
+            rate = {"mdot": 0.0, "h0": rm.h_g, "solid_frac_throat": 0.0, "choked": False}
+            atm = {"T": 0.0, "vapour_frac": 0.0, "solid_frac": 0.0}
+        elif self.release_phase == "liquid" and self.m_liquid[i - 1] > 1e-3:
+            # regime B: saturated-liquid leak at the triple point
+            rate = rm.hem_rate(rm.P_TRIPLE_EOS, "liquid", self.CD_release, area)
+            atm = rm.atm_split(rate["h0"])
+        else:
+            # vapour leak from the current vessel state (triple point or sublimation line)
+            rate = rm.gas_leak_rate(T_prev, P_prev, self.CD_release, area)
+            atm = rm.atm_split(rate["h0"])
+        mdot = rate["mdot"]
+        h_leak = rate["h0"]
+
+        # --- simplified lumped-wall heat transfer ---
+        m_wall = getattr(self, "vessel_density", 0.0) * self.vol_solid
+        cp_wall = getattr(self, "vessel_cp", 500.0)
+        h_out = getattr(self, "h_out", 0.0)
+        Tamb = getattr(self, "Tamb", T_prev)
+        Twall_prev = self.T_vessel[i - 1]
+        Q_out = h_out * self.surf_area_outer * (Tamb - Twall_prev)  # W into the wall
+        Q_in = self.solid_h_inner * self.surf_area_inner * (Twall_prev - T_prev)  # W into fluid
+        if m_wall > 0:
+            self.T_vessel[i] = Twall_prev + dt * (Q_out - Q_in) / (m_wall * cp_wall)
+        else:
+            self.T_vessel[i] = Twall_prev
+
+        # --- overall mass & energy balance (thermopack basis) ---
+        self.M_vessel = self.M_vessel - mdot * dt
+        self.U_vessel = self.U_vessel + dt * (Q_in - mdot * h_leak)
+
+        # --- resolve the phase state ---
+        st = rm.vessel_state_below_triple(self.M_vessel, self.U_vessel, V)
+        if st["regime"] == "above":
+            # Warmed back onto the L+G saturation at the triple point: clamp there with
+            # the volume-consistent split (mass-conserving).
+            m_l, m_g, self.U_vessel = rm.triple_LG_from_MV(self.M_vessel, V)
+            st = {"m_s": 0.0, "m_l": m_l, "m_g": m_g,
+                  "T": rm.T_TRIPLE_EOS, "P": rm.P_TRIPLE_EOS}
+
+        m_s = max(st["m_s"], 0.0)
+        m_l = max(st["m_l"], 0.0)
+        m_g = max(st["m_g"], 0.0)
+
+        # --- store results ---
+        self.P[i] = st["P"]
+        self.T_fluid[i] = st["T"]
+        self.T_gas[i] = st["T"]
+        self.T_liquid[i] = st["T"]
+        self.T_vessel_wetted[i] = self.T_vessel[i]
+        self.m_solid[i] = m_s
+        self.m_liquid[i] = m_l
+        self.m_gas[i] = m_g
+        self.mass_fluid[i] = self.M_vessel
+        self.rho[i] = self.M_vessel / V
+        self.mass_rate[i] = mdot
+        self.release_rate[i] = mdot
+        self.solid_frac_throat[i] = rate.get("solid_frac_throat", 0.0)
+        self.release_choked[i] = 1.0 if rate.get("choked", False) else 0.0
+        self.liquid_level[i] = (
+            self.inner_vol.h_from_V(m_l * rm.v_l) if m_l > 1e-6 else 0.0
+        )
+        # atmospheric (released-stream) dry ice
+        self.T_atm[i] = atm["T"]
+        self.x_vap_atm[i] = atm["vapour_frac"]
+        self.x_solid_atm[i] = atm["solid_frac"]
 
     def PHres(self, T, P, H):
         """
@@ -1275,13 +1376,30 @@ class HydDown:
         ):
             self.time_array[i] = self.time_array[i - 1] + self.tstep
 
-            # Triple-point floor guard (CO2 release): once the tank pressure approaches the
-            # triple point, freeze the release so the vessel state never crosses below it
-            # (solid-in-vessel regime, out of scope - and where the CoolProp vessel solver
-            # fails). The 15% margin covers a single step's pressure drop so the state stays
-            # strictly above the triple point. Once frozen the tank simply holds/relaxes
-            # under heat transfer for the remainder of the run.
-            if self.has_release and not self.release_frozen:
+            # ---- CO2 triple-point handling (release) ----
+            # The CoolProp vessel solver fails once the tank drops below the triple point.
+            # Two behaviours: the default freezes the release there; the opt-in
+            # solid_in_vessel model hands off to a thermopack three-phase / sublimation
+            # model and keeps going (dry ice forms in the vessel).
+            if self.has_release and self.solid_in_vessel:
+                if (
+                    not self.solid_regime
+                    and self.P[i - 1] <= self.release_model.P_TRIPLE_EOS * 1.05
+                ):
+                    # Hand off: place the vessel on the triple point with the L+G split
+                    # fixed by the volume constraint (re-based into thermopack's energy
+                    # basis; masses are basis-free).
+                    self.solid_regime = True
+                    self.M_vessel = self.m_liquid[i - 1] + self.m_gas[i - 1]
+                    _ml, _mg, self.U_vessel = self.release_model.triple_LG_from_MV(
+                        self.M_vessel, self.vol
+                    )
+                if self.solid_regime:
+                    self._solid_regime_step(i)
+                    continue
+            elif self.has_release and not self.release_frozen:
+                # Default freeze: the 15% margin covers a single step's pressure drop so
+                # the state never crosses below the triple point. The tank then holds.
                 if self.P[i - 1] <= self.release_model.P_TRIPLE * 1.15:
                     self.release_frozen = True
                     self.mass_rate[i - 1] = 0.0

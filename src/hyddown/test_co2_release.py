@@ -17,6 +17,7 @@ Covers:
 import math
 import os
 
+import numpy as np
 import pytest
 
 # The whole module needs thermopack; skip cleanly if it is not installed.
@@ -158,5 +159,101 @@ def test_release_liquid_to_gas_switch_and_triple_point_floor():
     assert hd.x_solid_atm.max() > 0.0
 
 
+# --------------------------------------------------------------------------------------
+# Solid-in-vessel fallback (below the triple point)
+# --------------------------------------------------------------------------------------
+
+def test_triple_point_self_consistent(model):
+    # tcPR triple point near the literature 216.6 K / 5.18 bar
+    assert model.T_TRIPLE_EOS == pytest.approx(216.6, abs=0.5)
+    assert model.P_TRIPLE_EOS == pytest.approx(5.2e5, rel=0.05)
+
+
+def test_triple_lever_roundtrip(model):
+    # build (M, U, V) from a chosen phase split, recover it
+    ms, ml, mg = 300.0, 5000.0, 400.0
+    M = ms + ml + mg
+    U = ms * model.u_s + ml * model.u_l + mg * model.u_g
+    V = ms * model.v_s + ml * model.v_l + mg * model.v_g
+    r = model.triple_lever(M, U, V)
+    assert r["m_s"] == pytest.approx(ms, abs=1e-6)
+    assert r["m_l"] == pytest.approx(ml, abs=1e-6)
+    assert r["m_g"] == pytest.approx(mg, abs=1e-6)
+
+
+def test_sublimation_state_roundtrip(model):
+    P, vg, ug, vs, us = model._sublimation_props(205.0)
+    ms, mg = 200.0, 150.0
+    M, U, V = ms + mg, ms * us + mg * ug, ms * vs + mg * vg
+    st = model.sublimation_state(M, U, V)
+    assert st["T"] == pytest.approx(205.0, abs=0.2)
+    assert st["m_s"] == pytest.approx(ms, rel=0.02)
+    assert st["m_g"] == pytest.approx(mg, rel=0.02)
+    assert st["P"] < model.P_TRIPLE_EOS  # below the triple point
+
+
+def test_triple_LG_from_MV_volume(model):
+    M, V = 300.0, 20.0
+    m_l, m_g, U = model.triple_LG_from_MV(M, V)
+    assert m_l + m_g == pytest.approx(M, abs=1e-9)
+    assert m_l * model.v_l + m_g * model.v_g == pytest.approx(V, rel=1e-6)
+    assert U == pytest.approx(m_l * model.u_l + m_g * model.u_g)
+
+
+def test_dispatcher_regimes(model):
+    V = 20.0
+    # three-phase: an interior (v,u) point -> "triple"
+    ms, ml, mg = 100.0, 100.0, 100.0
+    M = ms + ml + mg
+    st = model.vessel_state_below_triple(
+        M, ms * model.u_s + ml * model.u_l + mg * model.u_g,
+        ms * model.v_s + ml * model.v_l + mg * model.v_g)
+    assert st["regime"] == "triple"
+    # solid+gas (colder, no liquid) -> "sublimation"
+    P, vg, ug, vs, us = model._sublimation_props(200.0)
+    ms2, mg2 = 150.0, 120.0
+    st2 = model.vessel_state_below_triple(ms2 + mg2, ms2 * us + mg2 * ug, ms2 * vs + mg2 * vg)
+    assert st2["regime"] == "sublimation"
+
+
+def test_solid_in_vessel_run_accumulates_dry_ice():
+    from hyddown import HydDown
+
+    inp = get_example_input("co2_solid_in_vessel.yml")
+    inp["calculation"]["end_time"] = 1500  # reaches the triple point (~700 s) and forms ice
+    hd = HydDown(inp)
+    hd.run(disable_pbar=True)  # must not raise
+
+    assert hd.solid_regime is True
+    # dry ice accumulated inside the vessel
+    assert hd.m_solid.max() > 100.0
+    # the tank descended below the (frozen) triple point instead of freezing there
+    assert hd.P[hd.P > 0].min() < model_triple_P() * 1.02
+    # solid-regime mass conservation: M[handoff] - leaked == M[end]
+    solid = np.where(hd.m_solid > 0)[0]
+    h0 = solid[0] - 1
+    last = np.where(hd.mass_fluid > 0)[0][-1]
+    leaked = float(np.sum(hd.release_rate[h0 + 1:last + 1]) * hd.tstep)
+    assert hd.mass_fluid[h0] - leaked == pytest.approx(hd.mass_fluid[last], rel=1e-3)
+
+
+def test_default_freezes_without_solid_in_vessel():
+    from hyddown import HydDown
+
+    inp = get_example_input("co2_gas_release.yml")
+    inp["calculation"]["end_time"] = 1000  # long enough to hit the floor
+    hd = HydDown(inp)
+    hd.run(disable_pbar=True)
+    # default behaviour: freeze at the floor, never enter the solid regime
+    assert getattr(hd, "solid_regime", False) is False
+    assert hd.release_frozen is True
+    assert hd.m_solid.max() == 0.0
+    assert hd.P[hd.P > 0].min() > P_TRIPLE  # never crossed below the triple point
+
+
 def model_frost():
     return CO2ReleaseModel().T_frost
+
+
+def model_triple_P():
+    return CO2ReleaseModel().P_TRIPLE_EOS

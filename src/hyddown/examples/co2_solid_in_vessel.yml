@@ -1,0 +1,45 @@
+# CO2 vapour-space release with the opt-in SOLID-IN-VESSEL fallback.
+#
+# Same 20 bar gas release as co2_gas_release.yml, but release.solid_in_vessel = true: once
+# the tank reaches the CO2 triple point the model no longer freezes. It hands off to a
+# thermopack three-phase / sublimation model and keeps going - the retained liquid freezes
+# into dry ice at the invariant triple point (T, P pinned at 216.6 K / 5.26 bar), then the
+# solid+gas mixture rides the sublimation line down to atmospheric pressure. Several tonnes
+# of dry ice accumulate inside the vessel. See DRY_ICE_HANDOVER.md sec. 5.5 / 8.2.
+vessel:
+  length: 6.0
+  diameter: 2.0
+  thickness: 0.05
+  heat_capacity: 490
+  density: 7800.
+  orientation: "horizontal"
+  liquid_level: 1.0
+  type: "Flat-end"
+initial:
+  temperature: 253.15
+  pressure: 2000000            # 20 bar
+  fluid: "CO2"
+calculation:
+  type: "energybalance"
+  time_step: 5
+  end_time: 4000
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "none"
+  back_pressure: 101325.
+release:
+  type: "gas"                  # vapour-space hole
+  diameter: 0.05
+  discharge_coef: 0.62
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "tcPR"
+  solid_in_vessel: true        # continue below the triple point (dry ice forms in-vessel)
+  solid_h_inner: 20.0          # simplified internal HTC used in the solid regime [W/m2 K]
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 288.15
+  h_outer: 5
+  h_inner: "calc"

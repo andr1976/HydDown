@@ -1,0 +1,62 @@
+# Validation case: CARDICE JIP - 2 m3 CO2 sphere blowdown, TEST 5 (the paper's benchmark).
+# Ref: Vaillant et al., "Vessel Blowdown of CO2-Rich Fluids: Experiments and Simulations",
+#      GHGT-15 (2021), SSRN 3823308; open dataset Zenodo DOI 10.5281/zenodo.17257910.
+#      Experiments by Ineris (2 m3 sphere, insulated, 200 bara / -60 C design).
+#
+# Test 5: pure CO2 at vapour/liquid equilibrium, 20 bar / -20 C, GAS (vapour-space) release.
+# Paper Fig. 5 shows P(t), mass rate, fluid T and wall T vs the VessFire simulation. The paper
+# describes exactly the three-phase behaviour this model implements:
+#   blowdown at G/L equilibrium -> triple-point PLATEAU (gas+liquid+solid coexist) -> all
+#   liquid converts to solid -> blowdown at gas/solid (sublimation) equilibrium.
+# Gas-release tests produced > 450 kg of solid CO2 inside the sphere.
+#
+# Vessel filled with liquid to the MIDDLE of the sphere (half the volume).
+# Orifice diameter is NOT given in the paper -> CALIBRATED to the measured mass rate.
+#
+# HydDown vs Test 5 (Fig. 5) after calibrating the 3 mm orifice:
+#   initial mass rate   0.0385 kg/s   vs measured ~0.040   (match)
+#   plateau mass rate   0.0101 kg/s   vs measured ~0.010   (match)
+#   pressure plateau    5.26 bar      vs measured ~5 bar   (triple point, match)
+#   liquid/solid plateau temperature  -56.6 C  vs ~-56 C   (match)
+#   gas warmer than liquid on the way down (reproduces EXPERIMENT_MIDDLE vs _BOTTOM)
+#   peak in-vessel dry ice  ~300 kg   vs paper > 450 kg    (same order; the gap is the
+#     boil-off/freeze split during the 20->5.26 bar descent - path/heat-transfer dependent)
+# The absolute timescale (~16 h) is consistent with ~800 kg of gas leaving at ~0.01 kg/s;
+# a precise time-axis overlay needs the Zenodo 1 Hz data (DOI 10.5281/zenodo.17257910).
+vessel:
+  length: 0.0                  # sphere (two hemispherical heads, no cylinder): V = 2.065 m3
+  diameter: 1.58               # 1580 mm internal diameter
+  thickness: 0.06              # ~60 mm steel wall
+  heat_capacity: 490
+  density: 7800.
+  orientation: "horizontal"
+  liquid_level: 0.635          # CALIBRATED to the measured initial mass 822.9 kg (load cells)
+  type: "Hemispherical"
+initial:
+  temperature: 253.15          # -20 C (overridden: two-phase T set by P + liquid level)
+  pressure: 2000000            # 20 bar (saturated)
+  fluid: "CO2"
+calculation:
+  type: "energybalance"
+  time_step: 20
+  end_time: 60000
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "none"
+  back_pressure: 101325.
+release:
+  type: "gas"                  # Test 5: vapour-space (mid-side) release
+  diameter: 0.003              # CALIBRATED: gives ~0.039 kg/s initial rate vs measured ~0.040
+  discharge_coef: 0.85         # (orifice not reported; 3 mm is within the CARDICE 3-6 mm range)
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "tcPR"
+  solid_in_vessel: true        # crosses the triple point -> dry ice forms in-vessel
+  solid_h_inner: 20.0
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 283.15         # ~10 C ambient
+  h_outer: 2                   # insulated sphere (low external HTC)
+  h_inner: "calc"

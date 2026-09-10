@@ -1113,6 +1113,8 @@ def release_validation(input):
         "back_pressure": {"required": False, "type": "number", "min": 0},
         "atm_pressure": {"required": False, "type": "number", "min": 0},
         "eos": {"required": False, "type": "string", "allowed": ["tcPR"]},
+        "solid_in_vessel": {"required": False, "type": "boolean"},
+        "solid_h_inner": {"required": False, "type": "number", "min": 0},
     }
     v = Validator(schema_release)
     retval = v.validate(input["release"])
