@@ -79,7 +79,8 @@ class CO2ReleaseModel:
         Peng-Robinson) because the solid CO2 model is calibrated against it.
     """
 
-    def __init__(self, back_pressure=P_ATM_DEFAULT, atm_pressure=P_ATM_DEFAULT, eos="tcPR"):
+    def __init__(self, back_pressure=P_ATM_DEFAULT, atm_pressure=P_ATM_DEFAULT, eos="tcPR",
+                 liquid_nonequilibrium=0.0):
         if str(eos).lower().replace("-", "") != "tcpr":
             raise ValueError(
                 f"Unsupported eos '{eos}'. Only 'tcPR' is supported for CO2 dry-ice modelling."
@@ -92,6 +93,14 @@ class CO2ReleaseModel:
         self.M = self.eos.compmoleweight(1) / 1000.0  # g/mol -> kg/mol
         self.p_back = back_pressure
         self.p_atm = atm_pressure
+        # Non-equilibrium factor N in [0,1] for a LIQUID discharge (delayed / metastable
+        # flashing through a short orifice). N=0 -> equilibrium HEM; N=1 -> frozen all-liquid
+        # (metastable Bernoulli) flux. The liquid flux is blended as
+        #   G = sqrt((1-N)*G_HEM**2 + N*G_frozen**2).
+        # A saturated liquid through a SHORT sharp orifice has no time to flash and discharges
+        # well above equilibrium HEM (toward the frozen liquid); N captures how far. Gas
+        # discharge is unaffected (single phase, nothing to flash).
+        self.liquid_nonequilibrium = float(liquid_nonequilibrium)
         self.P_TRIPLE = P_TRIPLE  # convenience: the (literature) validity-floor constant
         self._init_atm_endpoints()
         self._init_triple_point()
@@ -344,7 +353,20 @@ class CO2ReleaseModel:
             (``h0`` [J/kg], ``s0`` [J/mol/K], ``rho0`` [kg/m3], ``T0`` [K]).
         """
         h0, s0, rho0, T0 = self.stagnation(P0, phase)
-        return self.hem_rate_from_stagnation(h0, s0, rho0, T0, P0, Cd, area)
+        r = self.hem_rate_from_stagnation(h0, s0, rho0, T0, P0, Cd, area)
+        if phase == "liquid" and self.liquid_nonequilibrium > 0.0 and r["mdot"] > 0.0:
+            # Non-equilibrium (delayed-flashing) boost: blend the equilibrium HEM flux with
+            # the frozen all-liquid Bernoulli flux G_frozen = sqrt(2*rho_l*(P0 - p_back)),
+            # the metastable limit where the liquid never flashes. rho0 is the saturated
+            # liquid density at P0.
+            N = self.liquid_nonequilibrium
+            G_frozen = math.sqrt(2.0 * rho0 * max(P0 - self.p_back, 0.0))
+            G_ne = math.sqrt((1.0 - N) * r["G"] ** 2 + N * G_frozen ** 2)
+            r["G_HEM"] = r["G"]
+            r["G_frozen"] = G_frozen
+            r["G"] = G_ne
+            r["mdot"] = Cd * area * G_ne
+        return r
 
     def hem_rate_from_stagnation(self, h0, s0, rho0, T0, P0, Cd, area):
         """HEM mass flow from an explicit stagnation state (see :meth:`hem_rate`).

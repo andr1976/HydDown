@@ -303,6 +303,9 @@ class HydDown:
             self.solid_h_gas_liquid = rel.get("solid_h_gas_liquid", 0.0)  # plateau (gas<->liquid)
             self.solid_h_gas_solid = rel.get("solid_h_gas_solid", 0.0)  # descent (gas<->dry ice)
             self.solid_gas_wall_frac = rel.get("solid_gas_wall_frac", 0.5)
+            # Non-equilibrium factor for a LIQUID discharge (delayed/metastable flashing
+            # through a short orifice): 0 = equilibrium HEM, 1 = frozen all-liquid.
+            self.liquid_nonequilibrium = rel.get("liquid_nonequilibrium", 0.0)
 
         # valve type
         # - constant_mass
@@ -549,6 +552,7 @@ class HydDown:
                 back_pressure=self.release_back_pressure,
                 atm_pressure=self.release_atm_pressure,
                 eos=self.release_eos,
+                liquid_nonequilibrium=self.liquid_nonequilibrium,
             )
             # A 'liquid' release switches to 'gas' once the liquid inventory is exhausted.
             self.release_phase = self.release_type
