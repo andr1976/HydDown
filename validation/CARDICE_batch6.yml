@@ -20,10 +20,13 @@
 #   - liquid_level 0.6238 -> initial CoolProp mass 801.8 kg  vs measured 801.6 kg (load cells)
 #   - gas_temperature 256.65 K (-16.5 C): the gas zone starts superheated per the top
 #     thermocouples at t0 (Tc in 5,6 ~ -16 C) vs saturated liquid at -19.5 C
-#   - orifice 4 mm (documented pure-CO2 orifice, Jamois; per-test size not reported)
-#   - discharge_coef 0.62: matched to the SUSTAINED (smoothed) dMass/dt ~ 0.13 kg/s over the
-#     first hour, NOT the 0-120 s opening spike (~0.176 kg/s). This reconciles the blowdown
-#     duration (model 2.81 h vs measured 2.93 h to 2 bar).
+#   - orifice 2.66 mm, discharge_coef 0.68, liquid_nonequilibrium 0.267 (single physical Cd +
+#     non-equilibrium liquid model): the per-test orifice is inferred from the GAS discharge,
+#     which is reliable HEM (matches a choked orifice + CoolProp HEM). T6's gas tail (~0.012 kg/s
+#     @10 bar) -> 2.66 mm at Cd 0.68. The LIQUID then discharges ~2x above equilibrium HEM
+#     (metastable/delayed flashing through the short orifice), captured by liquid_nonequilibrium
+#     N=0.267 (HEM<->frozen blend). One Cd fits both phases. (The earlier 4 mm/Cd 0.62 fit made
+#     the gas tail ~2x too fast - an over-sized orifice absorbing the liquid non-equilibrium boost.)
 #   - h_gas_liquid 2.0 (fixed, low interphase HTC) instead of "calc_two_sided": a liquid drain
 #     is near-adiabatic between the warm gas and the cold boiling liquid.
 #   - h_outer 0.4 W/m2K: Jamois measured overall insulation loss 4.3 W/K over 11 m2 ~ 0.39.
@@ -32,11 +35,14 @@
 #     heavy flanges/nozzles). cp 450, k 44, rho 7800 (Jamois Table 1).
 #
 # RECONCILIATION STATUS:
-#   MATCH: initial mass, initial+sustained mass rate, pressure and inventory through the first
-#          ~1.5 h (~85% of the inventory), blowdown duration, retained mass (no in-vessel dry ice).
-#   GAP:   gas-zone temperature runs too cold (model ~-29 C vs measured -16..-20 C) and the tail
-#          pressure (>2 h) drops faster than measured. Both point to too little wall->gas heat /
-#          gas cushion late in the drain - the next thermal-tuning target.
+#   MATCH: initial mass, liquid + gas discharge rates (single Cd), and pressure + inventory track
+#          the data almost exactly down to ~8 bar / 2.5 h (~90% of the blowdown), retained mass
+#          (no in-vessel dry ice).
+#   GAP:   the measured vessel collapses abruptly at ~2.9 h (38->4 kg, 8->1 bar in ~0.4 h) while
+#          the model discharges the residual gas gradually (empties ~4.0 h). That abrupt end is
+#          faster than any physical orifice for the remaining gas (~3x the 2.66 mm rate) - it looks
+#          like a non-orifice end-effect (blowdown valve fully opening / final venting / below-
+#          triple change), not something a steady HEM/orifice model reproduces.
 vessel:
   length: 0.0                  # sphere: two hemispherical heads, no cylindrical section
   diameter: 1.58               # ~1556-1580 mm ID (Jamois: r=778mm -> 1556; V used here 2.065 m3)
@@ -63,8 +69,10 @@ valve:
   back_pressure: 101325.
 release:
   type: "liquid"               # Test 6 is a liquid-space (bottom) release
-  diameter: 0.004              # documented pure-CO2 orifice (Jamois); per-test size not reported
-  discharge_coef: 0.62         # CALIBRATED to sustained dMass/dt ~0.13 kg/s (not the opening spike)
+  diameter: 0.00266            # TRUE orifice from the GAS tail via HEM (~0.012 kg/s @10 bar)
+  discharge_coef: 0.68         # single physical Cd for BOTH phases (gas = HEM at 2.66 mm)
+  liquid_nonequilibrium: 0.267 # delayed/metastable flashing boost for the liquid: G blended
+                               # HEM<->frozen; 0.267 -> sustained ~0.13 kg/s (see header)
   back_pressure: 101325.
   atm_pressure: 101325.
   eos: "tcPR"
