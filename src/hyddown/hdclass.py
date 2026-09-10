@@ -451,11 +451,19 @@ class HydDown:
 
             # Initialize at saturation conditions (equilibrium at t=0)
             if "liquid_level" in self.input["vessel"]:
-                # Two-phase initial condition
-                self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)
+                # Two-phase initial condition. The liquid zone is saturated liquid at p0.
+                # The gas zone is saturated vapour by default, or - if
+                # initial.gas_temperature is given - a warmer (superheated) gas at p0: a
+                # lower gas density and mass, so at a matched total mass the fill (liquid
+                # mass) takes up the difference. Pressure and mass balance still close.
                 self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)
-                self.T_gas0 = self.fluid_gas.T()  # Saturated vapour
                 self.T_liquid0 = self.fluid_liquid.T()  # Saturated liquid
+                if "gas_temperature" in self.input["initial"]:
+                    self.T_gas0 = self.input["initial"]["gas_temperature"]
+                    self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T_gas0)
+                else:
+                    self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)
+                    self.T_gas0 = self.fluid_gas.T()  # Saturated vapour
 
                 # Calculate initial masses
                 ll = self.input["vessel"]["liquid_level"]
@@ -569,6 +577,11 @@ class HydDown:
             self.tz_M_ls = 0.0
             self.tz_U_ls = 0.0
             self.tz_m_solid = 0.0
+            # Below-triple wetted (liquid/solid-contact) wall node. Seeded at handoff from
+            # the cold above-triple wetted wall and then relaxed toward the liquid/solid
+            # temperature, so the wetted wall keeps tracking the cold phase instead of
+            # jumping to the (warm) gas-contact wall. None until the handoff.
+            self.tz_T_wall_wet = None
 
     def calc_liquid_level(self):
         """
@@ -644,6 +657,40 @@ class HydDown:
         self.release_rate[i] = rate["mdot"]
         return rate["mdot"]
 
+    def _wetted_wall_step(self, i, T_cold, has_cold):
+        """Evolve the below-triple wetted (liquid/solid-contact) wall node and store it in
+        ``T_vessel_wetted[i]``.
+
+        The wetted wall carries its own energy balance: it exchanges with the cold phase
+        (liquid at the triple point on the plateau, dry ice on the sublimation line during
+        the descent) through ``release.solid_h_inner`` over the wetted (1 - gas) fraction of
+        the inner area, plus ambient over the same fraction of the outer area. It uses the
+        wetted fraction of the wall mass. This keeps the reported wetted wall tracking the
+        cold phase down toward the measured bottom-of-vessel wall temperatures, instead of
+        collapsing to the (warm) gas-contact wall as it did before.
+
+        The reciprocal wall->solid heat is intentionally NOT removed from the liquid/solid
+        zone: that zone is kept adiabatic to the wall, matching the existing two-zone
+        simplification and leaving the calibrated retained-dry-ice mass unchanged.
+        """
+        dt = self.tstep
+        m_wall = getattr(self, "vessel_density", 0.0) * self.vol_solid
+        cp_wall = getattr(self, "vessel_cp", 500.0)
+        h_out = getattr(self, "h_out", 0.0)
+        frac_wet = max(1.0 - self.solid_gas_wall_frac, 0.0)
+        if self.tz_T_wall_wet is None:
+            self.tz_T_wall_wet = self.T_vessel_wetted[i - 1]
+        Tw = self.tz_T_wall_wet
+        m_ww = m_wall * frac_wet
+        if has_cold and m_ww > 0:
+            Tamb = getattr(self, "Tamb", Tw)
+            A_wet = self.surf_area_inner * frac_wet
+            Q_ws = self.solid_h_inner * A_wet * (Tw - T_cold)  # wall -> cold phase
+            Q_out = h_out * self.surf_area_outer * frac_wet * (Tamb - Tw)
+            Tw = Tw + dt * (Q_out - Q_ws) / (m_ww * cp_wall)
+        self.tz_T_wall_wet = Tw
+        self.T_vessel_wetted[i] = Tw
+
     def _two_zone_plateau_step(self, i):
         """Two-zone triple-point plateau step: warm gas zone + adiabatic liquid/solid lever.
 
@@ -689,7 +736,8 @@ class HydDown:
         self.T_gas[i] = r["T_g"]
         self.T_liquid[i] = rm.T_TRIPLE_EOS
         self.T_fluid[i] = r["T_g"]
-        self.T_vessel_wetted[i] = self.T_vessel[i]
+        # wetted wall tracks the cold liquid/solid at the triple point (not the gas wall)
+        self._wetted_wall_step(i, rm.T_TRIPLE_EOS, True)
         self.m_solid[i] = m_s
         self.m_liquid[i] = m_l
         self.m_gas[i] = m_g
@@ -747,9 +795,20 @@ class HydDown:
         atm = rm.atm_split(rm._gas2d(rm._g2_h, r["T_g"], r["P"]))
         self.P[i] = r["P"]
         self.T_gas[i] = r["T_g"]
-        self.T_liquid[i] = r["T_s"]
+        # T_s is pinned to the sublimation line, so it only means something while dry ice is
+        # actually present. For a liquid drain that empties to residual gas before the triple
+        # point (m_solid -> 0), reporting T_s would be a phantom cold "solid" for a zero-mass
+        # zone; report the real residual (gas) temperature instead.
+        self.T_liquid[i] = r["T_s"] if r["m_solid"] > 1e-2 else r["T_g"]
         self.T_fluid[i] = r["T_g"]
-        self.T_vessel_wetted[i] = self.T_vessel[i]
+        # wetted wall tracks the dry ice down the sublimation line while solid is present;
+        # once the solid is gone (liquid drain -> residual gas) the wetted wall is meaningless,
+        # so relax it toward the gas-contact wall instead.
+        if r["m_solid"] > 1e-2:
+            self._wetted_wall_step(i, r["T_s"], True)
+        else:
+            self.T_vessel_wetted[i] = self.T_vessel[i]
+            self.tz_T_wall_wet = self.T_vessel[i]
         self.m_solid[i] = r["m_solid"]
         self.m_liquid[i] = 0.0
         self.m_gas[i] = r["m_g"]
@@ -1374,21 +1433,28 @@ class HydDown:
                 self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)
                 self.U_liquid[0] = self.fluid_liquid.umass()
                 self.rho_liquid[0] = self.fluid_liquid.rhomass()
-                try:
-                    self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)
-                    _rho = self.fluid_gas.rhomass()
-                    _U = self.fluid_gas.umass()
-                    # Verify DmassUmass round-trip at saturation
-                    self.fluid_gas.update(CP.DmassUmass_INPUTS, _rho, _U)
-                    # Verify quality is valid (Q=1 at saturation boundary)
-                    _Q = self.fluid_gas.Q()
-                    if _Q < 0 or _Q > 1:
-                        raise ValueError("Invalid quality at saturation")
-                except Exception:
-                    # Saturation boundary unstable - add slight superheat
-                    self.T_gas0 += 1.0
-                    self.T_gas[0] = self.T_gas0
+                if "gas_temperature" in self.input["initial"]:
+                    # Specified superheated gas zone: set U/rho from the warm state so the
+                    # first solver step keeps the gas warm (a saturated overwrite here would
+                    # collapse T_gas back to saturation at step 1). Superheated gas is off
+                    # the Q=1 boundary, so the DmassUmass round-trip below is stable.
                     self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T_gas0)
+                else:
+                    try:
+                        self.fluid_gas.update(CP.PQ_INPUTS, self.p0, 1.0)
+                        _rho = self.fluid_gas.rhomass()
+                        _U = self.fluid_gas.umass()
+                        # Verify DmassUmass round-trip at saturation
+                        self.fluid_gas.update(CP.DmassUmass_INPUTS, _rho, _U)
+                        # Verify quality is valid (Q=1 at saturation boundary)
+                        _Q = self.fluid_gas.Q()
+                        if _Q < 0 or _Q > 1:
+                            raise ValueError("Invalid quality at saturation")
+                    except Exception:
+                        # Saturation boundary unstable - add slight superheat
+                        self.T_gas0 += 1.0
+                        self.T_gas[0] = self.T_gas0
+                        self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T_gas0)
             else:
                 # Single-phase gas
                 self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T_gas0)
@@ -1566,6 +1632,10 @@ class HydDown:
                     self.tz_U_gas = self.tz_m_gas * rm.gas_u_at(T_gas_h)
                     self.tz_M_ls = self.m_liquid[i - 1]
                     self.tz_U_ls = self.tz_M_ls * rm.u_l
+                    # Carry the cold liquid-contact wall temperature from the above-triple
+                    # detailed wall model into the below-triple wetted-wall node, so it keeps
+                    # cooling with the liquid/solid instead of resetting to the gas-side wall.
+                    self.tz_T_wall_wet = self.T_vessel_wetted[i - 1]
                     self.M_vessel = self.m_liquid[i - 1] + self.m_gas[i - 1]
                     _ml, _mg, self.U_vessel = rm.triple_LG_from_MV(
                         self.M_vessel, self.vol
@@ -3146,9 +3216,17 @@ class HydDown:
                         self.T_fluid[i] = self.T_gas[i] if self.m_gas[i] > 1e-6 else self.T_liquid[i]
                         self.rho[i] = self.mass_fluid[i] / self.vol
 
-                        # Update main fluid object for compatibility
+                        # Update main fluid object for compatibility (best-effort). Below the
+                        # CO2 triple point an equilibrium D,U flash of the (warm, non-equilibrium)
+                        # inventory can land in the solid region and raise, even while the NEM
+                        # zones legitimately hold a pressure above the triple point. The NEM
+                        # tracks the two zones explicitly and the solid-regime handoff keys off
+                        # the NEM pressure, so on failure keep the last valid self.fluid state.
                         total_U = (U_gas_end + U_liquid_end) / self.mass_fluid[i]
-                        self.fluid.update(CP.DmassUmass_INPUTS, self.rho[i], total_U)
+                        try:
+                            self.fluid.update(CP.DmassUmass_INPUTS, self.rho[i], total_U)
+                        except ValueError:
+                            pass
 
                         # Calculate liquid level for NEM
                         if self.m_liquid[i] > 1e-6 and self.rho_liquid[i] > 1e-6:

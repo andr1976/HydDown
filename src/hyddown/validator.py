@@ -53,6 +53,9 @@ def validate_mandatory_ruleset(input):
                 "temperature": {"required": True, "type": "number"},
                 "pressure": {"required": True, "type": "number"},
                 "fluid": {"required": True, "type": "string"},
+                # Optional: superheated initial gas-zone temperature for the
+                # non-equilibrium two-phase start (a warmer, less dense gas).
+                "gas_temperature": {"required": False, "type": "number"},
             },
         },
         "calculation": {

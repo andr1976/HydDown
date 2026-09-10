@@ -1,48 +1,77 @@
-# Validation case: CARDICE JIP - 2 m3 CO2 sphere blowdown, Batch 6.
-# Ref: Vaillant et al., "Vessel Blowdown of CO2-Rich Fluids: Experiments and Simulations",
-#      GHGT-15 (2021), SSRN 3823308; open dataset Zenodo DOI 10.5281/zenodo.17257910.
+# Validation case: CARDICE JIP - 2 m3 CO2 sphere blowdown, TEST 6 (folder cardice-06).
+# Ref: Vaillant et al., "Vessel blowdown of CO2-rich fluids: experiments and simulations",
+#      GHGT-15 (2021), SSRN 3823308 (test matrix, Table 1). Rig details: Jamois et al.,
+#      "An experimental setup for investigating the blowdown of liquid CO2 down to -50 C",
+#      Int. J. Greenhouse Gas Control 129 (2023) 103974. Open 1 Hz dataset: Zenodo DOI
+#      10.5281/zenodo.17257910 (folder cardice-06). Experiments by Ineris (2 m3 sphere).
 #
-# Batch 6: pure CO2 at vapour/liquid equilibrium, ~20 bar / -19 C, LIQUID release, 3 mm orifice.
-# The sphere is modelled with hemispherical heads and length -> 0 (V = 2.065 m3, D = 1.58 m).
-# solid_in_vessel is enabled: the blowdown crosses the CO2 triple point, so dry ice forms.
+# Test 6: pure CO2 at vapour/liquid equilibrium, 20 bar / -20 C, LIQUID (bottom) release.
+# The counterpart to Test 5 (cardice-05, gas release). Reconciled against the 1 Hz load-cell,
+# pressure and internal-temperature data.
 #
-# CALIBRATION NOTES (to fit against the Zenodo data):
-#   - liquid_level: set from the measured initial mass (load cells). Nominal here.
-#   - discharge_coef: calibrate to match the measured depressurisation rate.
+# KEY PHYSICAL RESULT (model and data agree): a LIQUID release forms essentially NO in-vessel
+# dry ice. The liquid drains out the bottom (and boils off) and is exhausted while the vessel
+# is still near saturation (~5-10 bar), so the pressure only crosses the triple point (5.18 bar)
+# in the final seconds - there is NO triple-point plateau, unlike the gas release. Measured
+# vessel empties to 4.4 kg retained; model gives 4.4 kg. This contrasts with the GAS releases
+# (tests 5,7,9), where >450 kg of dry ice was retained in the sphere (Vaillant Fig. 3).
+#
+# CALIBRATION (against cardice-06 1 Hz data; blowdown starts at t0 = 438 s in the raw file):
+#   - liquid_level 0.6238 -> initial CoolProp mass 801.8 kg  vs measured 801.6 kg (load cells)
+#   - gas_temperature 256.65 K (-16.5 C): the gas zone starts superheated per the top
+#     thermocouples at t0 (Tc in 5,6 ~ -16 C) vs saturated liquid at -19.5 C
+#   - orifice 4 mm (documented pure-CO2 orifice, Jamois; per-test size not reported)
+#   - discharge_coef 0.62: matched to the SUSTAINED (smoothed) dMass/dt ~ 0.13 kg/s over the
+#     first hour, NOT the 0-120 s opening spike (~0.176 kg/s). This reconciles the blowdown
+#     duration (model 2.81 h vs measured 2.93 h to 2 bar).
+#   - h_gas_liquid 2.0 (fixed, low interphase HTC) instead of "calc_two_sided": a liquid drain
+#     is near-adiabatic between the warm gas and the cold boiling liquid.
+#   - h_outer 0.4 W/m2K: Jamois measured overall insulation loss 4.3 W/K over 11 m2 ~ 0.39.
+#   - thickness 0.072 m: tuned so the (shell-corrected) wall mass ~ 4.82 t, matching the
+#     measured 4.80 t total (physical shell is 54 mm P355GH; the extra accounts for the 3
+#     heavy flanges/nozzles). cp 450, k 44, rho 7800 (Jamois Table 1).
+#
+# RECONCILIATION STATUS:
+#   MATCH: initial mass, initial+sustained mass rate, pressure and inventory through the first
+#          ~1.5 h (~85% of the inventory), blowdown duration, retained mass (no in-vessel dry ice).
+#   GAP:   gas-zone temperature runs too cold (model ~-29 C vs measured -16..-20 C) and the tail
+#          pressure (>2 h) drops faster than measured. Both point to too little wall->gas heat /
+#          gas cushion late in the drain - the next thermal-tuning target.
 vessel:
   length: 0.0                  # sphere: two hemispherical heads, no cylindrical section
-  diameter: 1.58               # 1580 mm internal diameter
-  thickness: 0.06              # ~60 mm steel wall
-  heat_capacity: 490
+  diameter: 1.58               # ~1556-1580 mm ID (Jamois: r=778mm -> 1556; V used here 2.065 m3)
+  thickness: 0.072             # shell-corrected wall mass ~4.82 t = measured 4.80 t (incl flanges)
+  heat_capacity: 450           # P355GH cp (Jamois Table 1)
   density: 7800.
   orientation: "horizontal"
-  liquid_level: 0.9            # NOMINAL fill (~55 %) - confirm from measured initial mass
+  liquid_level: 0.6238         # CALIBRATED to measured initial mass 801.6 kg (load cells)
   type: "Hemispherical"
 initial:
-  temperature: 254.15          # -19 C (overridden: two-phase T set by P + liquid level)
-  pressure: 2000000            # 20 bar (saturated)
+  temperature: 253.15          # -20 C (overridden: two-phase T set by P + liquid level)
+  pressure: 1964000            # 19.64 bar (measured initial P sphere)
   fluid: "CO2"
+  gas_temperature: 256.65      # -16.5 C: superheated gas zone per top thermocouples at t0
 calculation:
   type: "energybalance"
   time_step: 5
-  end_time: 12000
+  end_time: 13000              # blowdown reaches ~2 bar at ~2.93 h (10550 s)
   non_equilibrium: true
-  h_gas_liquid: "calc_two_sided"
+  h_gas_liquid: 2.0            # fixed low gas-liquid interphase HTC (near-adiabatic drain)
 valve:
   flow: "discharge"
   type: "none"
   back_pressure: 101325.
 release:
-  type: "liquid"               # Batch 6 is a liquid-space release
-  diameter: 0.003              # 3 mm orifice
-  discharge_coef: 0.8          # CALIBRATE against the measured rate
+  type: "liquid"               # Test 6 is a liquid-space (bottom) release
+  diameter: 0.004              # documented pure-CO2 orifice (Jamois); per-test size not reported
+  discharge_coef: 0.62         # CALIBRATED to sustained dMass/dt ~0.13 kg/s (not the opening spike)
   back_pressure: 101325.
   atm_pressure: 101325.
   eos: "tcPR"
-  solid_in_vessel: true        # blowdown crosses the triple point -> dry ice in-vessel
+  solid_in_vessel: true        # crosses the triple point at the very end (little/no retained solid)
   solid_h_inner: 20.0
 heat_transfer:
   type: "specified_h"
   temp_ambient: 283.15         # ~10 C ambient
-  h_outer: 2                   # insulated vessel (low external HTC)
+  h_outer: 0.4                 # Jamois: measured insulation ~0.39 W/m2K (4.3 W/K over 11 m2)
   h_inner: "calc"

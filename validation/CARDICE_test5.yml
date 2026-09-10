@@ -55,7 +55,11 @@ release:
   atm_pressure: 101325.
   eos: "tcPR"
   solid_in_vessel: true        # crosses the triple point -> dry ice forms in-vessel
-  solid_h_inner: 20.0
+  solid_h_inner: 150.0         # wall<->dry-ice HTC below triple: sets the wetted (bottom) wall
+                               # min. Sensitivity vs cardice-07 data: 20->-59C, 60->-70C,
+                               # 150->-74C (matches measured -75C coldest sensor), 400->-75.5C
+                               # (asymptote). Only affects the wetted wall - gas wall + retained
+                               # dry ice are unchanged. 20 is low for dry-ice/steel contact.
   solid_h_gas_liquid: 0.0      # plateau interphase (flat liquid surface) - gas stays warm
   solid_h_gas_solid: 3.0       # descent interphase (dry-ice bank): calibrated so the descent
                                # gas (~-32 C) and retained dry ice (~211 kg) match the data
