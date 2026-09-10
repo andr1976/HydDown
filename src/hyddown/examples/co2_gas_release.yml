@@ -1,0 +1,42 @@
+# CO2 vessel release through a hole in the VAPOUR space (gas release).
+#
+# Same tank as co2_release.yml but release.type = gas: the hole draws saturated vapour, the
+# liquid boils to replenish it (auto-refrigeration - gas/liquid temperatures fall along the
+# saturation line), and - unlike a liquid-space leak - the vapour expands to superheat at
+# 1 atm, so it forms essentially no atmospheric dry ice (only a little in the throat near
+# the triple point). Initial state is two-phase (liquid_level), non-equilibrium energy balance.
+vessel:
+  length: 6.0
+  diameter: 2.0
+  thickness: 0.05
+  heat_capacity: 490
+  density: 7800.
+  orientation: "horizontal"
+  liquid_level: 1.0
+  type: "Flat-end"
+initial:
+  temperature: 253.15          # overridden: two-phase T set by pressure + liquid level
+  pressure: 2000000            # 20 bar (two-phase CO2: above triple, below critical)
+  fluid: "CO2"
+calculation:
+  type: "energybalance"
+  time_step: 5
+  end_time: 5000
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "none"                 # no throttling device - the outflow is the release hole
+  back_pressure: 101325.
+release:
+  type: "gas"                  # hole in the vapour space (saturated-vapour stagnation)
+  diameter: 0.05
+  discharge_coef: 0.62
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "tcPR"
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 288.15
+  h_outer: 5
+  h_inner: "calc"

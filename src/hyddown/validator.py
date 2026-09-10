@@ -157,6 +157,7 @@ def validate_mandatory_ruleset(input):
                         "mdot",
                         "relief",
                         "hem_release",
+                        "none",
                     ],
                 },
                 "flow": {
@@ -413,6 +414,11 @@ def validate_mandatory_ruleset(input):
         },
     }
 
+    # A top-level "release" block is validated separately (release_validation); the
+    # standard schemas do not know about it, so ignore it here.
+    if "release" in input:
+        input = {k: val for k, val in input.items() if k != "release"}
+
     v = Validator(schema_general)
     retval = v.validate(input)
     if v.errors:
@@ -437,6 +443,10 @@ def heat_transfer_validation(input):
         True for success, False for failure
     """
     retval = True
+
+    # Ignore a top-level "release" block (validated separately in release_validation).
+    if "release" in input:
+        input = {k: val for k, val in input.items() if k != "release"}
 
     if input["calculation"]["type"] == "energybalance":
         if input["heat_transfer"]["type"] == "specified_h":
@@ -802,6 +812,10 @@ def valve_validation(input):
         : bool
         True for success, False for failure
     """
+    # Ignore a top-level "release" block (validated separately in release_validation).
+    if "release" in input:
+        input = {k: val for k, val in input.items() if k != "release"}
+
     schema_relief = {
         "initial": {"required": True},
         "calculation": {"required": True},
@@ -1007,6 +1021,33 @@ def valve_validation(input):
         },
     }
 
+    # "none": no throttling device on the vessel - the outflow is driven entirely by a
+    # top-level ``release`` block (see release_validation). Only type/flow are needed.
+    schema_none = {
+        "initial": {"required": True},
+        "calculation": {"required": True},
+        "validation": {"required": False},
+        "vessel": {"required": True},
+        "rupture": {"required": False},
+        "heat_transfer": {"required": False},
+        "valve": {
+            "required": True,
+            "type": "dict",
+            "allow_unknown": False,
+            "schema": {
+                "type": {"required": True, "type": "string", "allowed": ["none"]},
+                "flow": {
+                    "required": True,
+                    "type": "string",
+                    "allowed": ["discharge", "filling"],
+                },
+                "back_pressure": {"required": False, "type": "number", "min": 0},
+                "end_pressure": {"required": False, "type": "number", "min": 0},
+            },
+        },
+    }
+
+    retval = True
     if input["valve"]["type"] == "relief":
         v = Validator(schema_relief)
         retval = v.validate(input)
@@ -1038,7 +1079,60 @@ def valve_validation(input):
         retval = v.validate(input)
         if v.errors:
             print(v.errors)
+    elif input["valve"]["type"] == "none":
+        v = Validator(schema_none)
+        retval = v.validate(input)
+        if v.errors:
+            print(v.errors)
 
+    return retval
+
+
+def release_validation(input):
+    """
+    Validate a top-level ``release`` block (thermopack CO2 HEM release + dry ice).
+
+    The release scenario is tailored for pure CO2 and reuses the non-equilibrium (NEM)
+    two-phase model, so it enforces a set of cross-field constraints in addition to the
+    ``release`` sub-schema.
+
+    Parameters
+    ----------
+    input : dict
+        Structure holding input
+
+    Return
+    ----------
+        : bool
+        True for success, False for failure
+    """
+    schema_release = {
+        "type": {"required": True, "type": "string", "allowed": ["liquid", "gas"]},
+        "diameter": {"required": True, "type": "number", "min": 0},
+        "discharge_coef": {"required": True, "type": "number", "min": 0},
+        "back_pressure": {"required": False, "type": "number", "min": 0},
+        "atm_pressure": {"required": False, "type": "number", "min": 0},
+        "eos": {"required": False, "type": "string", "allowed": ["tcPR"]},
+    }
+    v = Validator(schema_release)
+    retval = v.validate(input["release"])
+    if v.errors:
+        print({"release": v.errors})
+
+    # Cross-field constraints (tailored for CO2, two-phase NEM energy balance)
+    if input["initial"].get("fluid") != "CO2":
+        print("release: only fluid 'CO2' is currently supported")
+        retval = False
+    calc = input.get("calculation", {})
+    if not calc.get("non_equilibrium", False):
+        print("release: requires calculation.non_equilibrium = true")
+        retval = False
+    if calc.get("type") != "energybalance":
+        print("release: requires calculation.type = 'energybalance'")
+        retval = False
+    if "liquid_level" not in input.get("vessel", {}):
+        print("release: requires vessel.liquid_level (initial state is two-phase)")
+        retval = False
     return retval
 
 
@@ -1057,6 +1151,11 @@ def validation(input):
         : bool
         True for success, False for failure
     """
+    # A top-level ``release`` block is validated separately; the standard validators
+    # ignore it internally, so it is safe to pass the full input to them.
+    if "release" in input and not release_validation(input):
+        return False
+
     return (
         validate_mandatory_ruleset(input)
         and valve_validation(input)

@@ -1,0 +1,42 @@
+# CO2 vessel release through a hole, with dry-ice (below-triple-point) atmospheric state.
+#
+# The release rate is computed with the thermopack HEM model (co2_release.py), which
+# survives the choked throat crossing the CO2 triple point (5.18 bar) where the stream
+# becomes vapour + solid CO2 (dry ice). The atmospheric vapour / dry-ice split is stored
+# per timestep. Initial state is two-phase (liquid_level), non-equilibrium energy balance.
+vessel:
+  length: 6.0
+  diameter: 2.0
+  thickness: 0.05
+  heat_capacity: 490
+  density: 7800.
+  orientation: "horizontal"
+  liquid_level: 1.0
+  type: "Flat-end"
+initial:
+  temperature: 253.15          # overridden: two-phase T set by pressure + liquid level
+  pressure: 1200000            # 12 bar (two-phase CO2: above triple, below critical)
+  fluid: "CO2"
+calculation:
+  type: "energybalance"
+  time_step: 5
+  end_time: 5000
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "none"                 # no throttling device - the outflow is the release hole
+  back_pressure: 101325.
+release:
+  type: "liquid"               # hole in the liquid space (saturated-liquid stagnation);
+                               # switches to vapour once the liquid inventory is exhausted
+  diameter: 0.05
+  discharge_coef: 0.62
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "tcPR"
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 288.15
+  h_outer: 5
+  h_inner: "calc"

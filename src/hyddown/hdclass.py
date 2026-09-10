@@ -255,6 +255,24 @@ class HydDown:
             # and self.input["valve"]["flow"] == "filling"
         ):
             self.p_back = self.input["valve"]["back_pressure"]
+        elif self.input["valve"]["type"] == "none":
+            # No throttling device: the outflow is driven by a top-level "release" block.
+            self.p_back = self.input["valve"].get("back_pressure", 101325.0)
+
+        # Reading release specific data (thermopack CO2 HEM release + dry-ice state).
+        # All thermopack work is delegated to hyddown.co2_release.CO2ReleaseModel; only
+        # the plain input values are read here (no thermopack import in the HydDown class).
+        self.has_release = "release" in self.input
+        if self.has_release:
+            rel = self.input["release"]
+            self.release_type = rel["type"]  # 'liquid' (liquid space) or 'gas' (vapour space)
+            self.D_release = rel["diameter"]
+            self.CD_release = rel["discharge_coef"]
+            self.release_back_pressure = rel.get("back_pressure", 101325.0)
+            self.release_atm_pressure = rel.get(
+                "atm_pressure", self.release_back_pressure
+            )
+            self.release_eos = rel.get("eos", "tcPR")
 
         # valve type
         # - constant_mass
@@ -484,6 +502,31 @@ class HydDown:
             self.rho_liquid = np.zeros(data_len)  # Liquid phase density
             self.mdot_phase_transfer = np.zeros(data_len)  # Mass transfer rate (condensation > 0, evaporation < 0)
 
+        # Release model (thermopack CO2 HEM release rate + dry-ice atmospheric state).
+        # Imported lazily so non-release runs never import thermopack.
+        if self.has_release:
+            from hyddown.co2_release import CO2ReleaseModel
+
+            self.release_model = CO2ReleaseModel(
+                back_pressure=self.release_back_pressure,
+                atm_pressure=self.release_atm_pressure,
+                eos=self.release_eos,
+            )
+            # A 'liquid' release switches to 'gas' once the liquid inventory is exhausted.
+            self.release_phase = self.release_type
+            # Set once the tank approaches the CO2 triple point: the release is frozen so
+            # the vessel state never crosses into the solid-in-vessel regime (out of scope,
+            # and where the CoolProp vessel solver fails). See DRY_ICE_HANDOVER.md sec. 5.5.
+            self.release_frozen = False
+            # Atmospheric (1 atm) end-state time series
+            self.T_atm = np.zeros(data_len)  # atmospheric temperature [K]
+            self.x_vap_atm = np.zeros(data_len)  # atmospheric vapour mass fraction [-]
+            self.x_solid_atm = np.zeros(data_len)  # atmospheric dry-ice (solid) mass fraction [-]
+            self.solid_frac_throat = np.zeros(data_len)  # dry-ice fraction at choked throat [-]
+            self.m_dryice_cum = np.zeros(data_len)  # cumulative dry-ice mass released [kg]
+            self.release_choked = np.zeros(data_len)  # 1.0 if choked flow, else 0.0
+            self.release_rate = np.zeros(data_len)  # release-hole mass flow only [kg/s]
+
     def calc_liquid_level(self):
         """
         Calculate liquid level height based on current two-phase fluid state.
@@ -512,6 +555,51 @@ class HydDown:
             return h_liq
         else:
             return 0.0
+
+    def compute_release(self, P, i):
+        """
+        Compute the thermopack HEM release mass rate at tank pressure ``P`` and store the
+        atmospheric (1 atm) dry-ice end state at time index ``i``.
+
+        The stagnation branch (saturated liquid / vapour) follows ``self.release_phase``,
+        which is set from ``release.type`` and flips ``liquid`` -> ``gas`` once the liquid
+        inventory is exhausted (handled in the mass balance).
+
+        Parameters
+        ----------
+        P : float
+            Current tank pressure [Pa].
+        i : int
+            Time index at which to store the atmospheric state.
+
+        Returns
+        -------
+        float
+            Release mass flow [kg/s] (>= 0).
+        """
+        # Validity floor: once the tank approaches/drops to the triple point, dry ice starts
+        # forming inside the vessel (solid-in-vessel regime, out of scope) - stop the
+        # release rather than extrapolate. Also stop if there is no driving pressure.
+        if (
+            self.release_frozen
+            or P <= self.release_model.P_TRIPLE
+            or P <= self.release_back_pressure
+        ):
+            return 0.0
+
+        rate, atm = self.release_model.release_state(
+            P,
+            self.release_phase,
+            self.CD_release,
+            self.D_release ** 2 / 4 * math.pi,
+        )
+        self.T_atm[i] = atm["T"]
+        self.x_vap_atm[i] = atm["vapour_frac"]
+        self.x_solid_atm[i] = atm["solid_frac"]
+        self.solid_frac_throat[i] = rate["solid_frac_throat"]
+        self.release_choked[i] = 1.0 if rate["choked"] else 0.0
+        self.release_rate[i] = rate["mdot"]
+        return rate["mdot"]
 
     def PHres(self, T, P, H):
         """
@@ -1151,6 +1239,11 @@ class HydDown:
                 self.D_orifice**2 / 4 * math.pi,
             )
 
+        # Release outflow (thermopack CO2 HEM). Additive: for release-only the valve rate
+        # is 0 (valve type "none"); a concurrent valve (future extension) would sum in here.
+        if self.has_release:
+            self.mass_rate[0] = self.mass_rate[0] + self.compute_release(self.p0, 0)
+
         self.time_array[0] = 0
 
         # ============================================================================
@@ -1181,6 +1274,18 @@ class HydDown:
             total=len(self.time_array),
         ):
             self.time_array[i] = self.time_array[i - 1] + self.tstep
+
+            # Triple-point floor guard (CO2 release): once the tank pressure approaches the
+            # triple point, freeze the release so the vessel state never crosses below it
+            # (solid-in-vessel regime, out of scope - and where the CoolProp vessel solver
+            # fails). The 15% margin covers a single step's pressure drop so the state stays
+            # strictly above the triple point. Once frozen the tank simply holds/relaxes
+            # under heat transfer for the remainder of the run.
+            if self.has_release and not self.release_frozen:
+                if self.P[i - 1] <= self.release_model.P_TRIPLE * 1.15:
+                    self.release_frozen = True
+                    self.mass_rate[i - 1] = 0.0
+
             self.mass_fluid[i] = (
                 self.mass_fluid[i - 1] - self.mass_rate[i - 1] * self.tstep
             )
@@ -2359,12 +2464,18 @@ class HydDown:
                 # ====================================================================
                 # For non-equilibrium model, solve separate energy balances for gas and liquid phases
                 if self.non_equilibrium:
-                    # First, update masses with valve flow only (no phase transfer yet)
-                    # Assume discharge/filling happens through gas phase
+                    # First, update masses with valve/release flow only (no phase transfer yet)
                     if input["valve"]["flow"] == "discharge":
-                        # Mass leaves through gas phase
-                        self.m_gas[i] = self.m_gas[i-1] - self.mass_rate[i-1] * self.tstep
-                        self.m_liquid[i] = self.m_liquid[i-1]
+                        if self.has_release and self.release_phase == "liquid":
+                            # Liquid-space release: the outflow leaves the liquid inventory.
+                            # (release_phase flips to "gas" once the liquid is exhausted, so
+                            # this branch stops draining liquid at that point.)
+                            self.m_liquid[i] = self.m_liquid[i-1] - self.mass_rate[i-1] * self.tstep
+                            self.m_gas[i] = self.m_gas[i-1]
+                        else:
+                            # Vapour-space release / standard blowdown: leaves the gas phase.
+                            self.m_gas[i] = self.m_gas[i-1] - self.mass_rate[i-1] * self.tstep
+                            self.m_liquid[i] = self.m_liquid[i-1]
                     else:  # filling
                         # Mass enters through gas phase
                         self.m_gas[i] = self.m_gas[i-1] - self.mass_rate[i-1] * self.tstep
@@ -2556,23 +2667,39 @@ class HydDown:
                                           - self.tstep * Q_gas_liquid
                                           + E_evap - E_cond)  # Phase transfer energy
                     else:  # discharge
-                        if self.m_gas[i-1] > 1e-6:
-                            # Use DmassUmass to get enthalpy (avoids PT issues at saturation)
-                            # Calculate discharge enthalpy - fail if thermodynamic state is invalid
-                            self.fluid_gas.update(CP.DmassUmass_INPUTS, self.rho_gas[i-1], self.U_gas[i-1])
-                            h_valve = self.fluid_gas.hmass()
+                        # Attribute the outflow enthalpy to the phase the mass actually
+                        # leaves from. A liquid-space release draws liquid (release_phase
+                        # == "liquid"); a vapour-space release / standard blowdown draws
+                        # gas. Exactly one of h_gas_out / h_liq_out is non-zero.
+                        liquid_release = self.has_release and self.release_phase == "liquid"
+                        h_gas_out = 0.0
+                        h_liq_out = 0.0
+                        if liquid_release:
+                            if self.m_liquid[i-1] > 1e-6:
+                                self.fluid_liquid.update(
+                                    CP.DmassUmass_INPUTS, self.rho_liquid[i-1], self.U_liquid[i-1]
+                                )
+                                h_liq_out = self.fluid_liquid.hmass()
                         else:
-                            h_valve = 0.0
+                            if self.m_gas[i-1] > 1e-6:
+                                # Use DmassUmass to get enthalpy (avoids PT issues at saturation)
+                                self.fluid_gas.update(CP.DmassUmass_INPUTS, self.rho_gas[i-1], self.U_gas[i-1])
+                                h_gas_out = self.fluid_gas.hmass()
                         U_gas_tentative = (U_gas_start
-                                          - self.tstep * self.mass_rate[i-1] * h_valve
+                                          - self.tstep * self.mass_rate[i-1] * h_gas_out
                                           + self.tstep * self.Q_inner[i]
                                           - self.tstep * Q_gas_liquid
                                           + E_evap - E_cond)  # Phase transfer energy
 
                     # Liquid phase energy balance:
-                    # dU_liquid = Q_wall_liquid + Q_gas_liquid - E_phase_transfer
+                    # dU_liquid = Q_wall_liquid + Q_gas_liquid - h_liq_out*dm_liquid - E_phase_transfer
                     U_liquid_start = self.U_liquid[i-1] * self.m_liquid[i-1]
+                    # Outflow enthalpy leaving the liquid phase (0 unless a liquid release)
+                    liquid_out_term = 0.0
+                    if input["valve"]["flow"] == "discharge":
+                        liquid_out_term = self.tstep * self.mass_rate[i-1] * h_liq_out
                     U_liquid_tentative = (U_liquid_start
+                                         - liquid_out_term
                                          + self.tstep * self.Q_inner_wetted[i]
                                          + self.tstep * Q_gas_liquid
                                          - E_evap + E_cond)  # Phase transfer energy (opposite sign)
@@ -3050,6 +3177,16 @@ class HydDown:
                     self.MW,
                     self.D_orifice**2 / 4 * math.pi,
                 )
+            # Release outflow (thermopack CO2 HEM), additive to any valve rate.
+            if self.has_release:
+                # Switch a liquid-space release to vapour once the liquid is exhausted.
+                if (
+                    self.release_type == "liquid"
+                    and self.release_phase == "liquid"
+                    and self.m_liquid[i] <= 1e-6
+                ):
+                    self.release_phase = "gas"
+                self.mass_rate[i] = self.mass_rate[i] + self.compute_release(self.P[i], i)
             if (
                 "end_pressure" in self.input["valve"]
                 and self.input['valve']['flow']=='filling' and self.P[i] > self.input["valve"]["end_pressure"]
@@ -3065,6 +3202,12 @@ class HydDown:
             if massflow_stop_switch:
                 self.mass_rate[i] = 0
         self.isrun = True
+
+        # Cumulative dry-ice mass released to atmosphere (kg): the atmospheric solid mass
+        # fraction times the release-hole mass flow, integrated over the run.
+        if self.has_release:
+            dryice_rate = self.x_solid_atm * self.release_rate  # kg/s of dry ice
+            self.m_dryice_cum = np.cumsum(dryice_rate * self.tstep)
 
         if input["valve"]["type"] == "relief":
             idx_max = self.mass_rate.argmax()
@@ -3147,6 +3290,14 @@ class HydDown:
             df.insert(
                 13, "Outer wall temperature  (oC)", self.T_outer_wall - 273.15, True
             )
+            # CO2 release / dry-ice atmospheric state (appended so column indices are stable)
+            if self.has_release:
+                df["Release mass rate (kg/s)"] = self.release_rate
+                df["Atmospheric temperature (oC)"] = self.T_atm - 273.15
+                df["Atmospheric vapour mass fraction (-)"] = self.x_vap_atm
+                df["Atmospheric dry-ice mass fraction (-)"] = self.x_solid_atm
+                df["Throat dry-ice mass fraction (-)"] = self.solid_frac_throat
+                df["Cumulative dry-ice mass (kg)"] = self.m_dryice_cum
         return df
 
     def plot(self, filename=None, verbose=True):
@@ -3344,6 +3495,64 @@ class HydDown:
         if filename != None:
             plt.savefig(filename + "_main.png")
 
+        if verbose:
+            plt.show()
+        return
+
+    def plot_release(self, filename=None, verbose=True):
+        """
+        Plot the CO2 release results: release rate + tank pressure, and the atmospheric
+        dry-ice / vapour split with cumulative dry-ice mass.
+
+        Only valid for a run with a top-level ``release`` block. Figures are saved as PDF
+        (repository convention). Uses the ORS brand palette (navy/red/amber/slate).
+
+        Parameters
+        ----------
+        filename : str
+            If provided, the figure is saved to ``<filename>_release.pdf``.
+        verbose : bool
+            Show the figure on screen if True.
+        """
+        if not self.has_release:
+            raise ValueError("plot_release requires a run with a 'release' block")
+
+        import pylab as plt
+
+        navy, red, amber, slate = "#002D40", "#D61F39", "#E6A740", "#82979F"
+        t = self.time_array
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), dpi=300)
+
+        # (1) release rate + tank pressure
+        ax1.plot(t, self.release_rate, color=red, label="Release rate (kg/s)")
+        ax1.set_xlabel("Time (s)")
+        ax1.set_ylabel("Release mass rate (kg/s)", color=red)
+        ax1.tick_params(axis="y", labelcolor=red)
+        ax1b = ax1.twinx()
+        ax1b.plot(t, self.P / 1e5, color=navy, label="Tank pressure (bar)")
+        ax1b.axhline(self.release_model.P_TRIPLE / 1e5, color=slate, ls="--",
+                     lw=1, label="CO2 triple point")
+        ax1b.set_ylabel("Tank pressure (bar)", color=navy)
+        ax1b.tick_params(axis="y", labelcolor=navy)
+        ax1.set_title("Release rate and tank pressure")
+
+        # (2) atmospheric dry-ice / vapour fractions + cumulative dry-ice mass
+        ax2.plot(t, self.x_solid_atm, color=amber, label="Atm. dry-ice fraction")
+        ax2.plot(t, self.solid_frac_throat, color=slate, ls=":", label="Throat dry-ice fraction")
+        ax2.set_xlabel("Time (s)")
+        ax2.set_ylabel("Dry-ice mass fraction (-)")
+        ax2.set_ylim(0, 1)
+        ax2b = ax2.twinx()
+        ax2b.plot(t, self.m_dryice_cum, color=navy, label="Cumulative dry ice (kg)")
+        ax2b.set_ylabel("Cumulative dry-ice mass (kg)", color=navy)
+        ax2b.tick_params(axis="y", labelcolor=navy)
+        ax2.legend(loc="upper left")
+        ax2.set_title("Atmospheric dry-ice state")
+
+        plt.tight_layout()
+        if filename is not None:
+            plt.savefig(filename + "_release.pdf")
         if verbose:
             plt.show()
         return
@@ -3657,6 +3866,13 @@ class HydDown:
         report["initial_mass"] = self.mass_fluid[0]
         report["final_mass"] = self.mass_fluid[-1]
         report["volume"] = self.vol
+
+        # CO2 release / dry-ice summary
+        if self.has_release:
+            report["max_release_rate"] = max(self.release_rate)
+            report["total_dryice_mass"] = self.m_dryice_cum[-1]
+            report["max_atm_dryice_frac"] = max(self.x_solid_atm)
+            report["max_throat_dryice_frac"] = max(self.solid_frac_throat)
 
         # Heat transfer (Q in W, q in W/m²)
         # Track both max and min to capture extreme values in both directions
