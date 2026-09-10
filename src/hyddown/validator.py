@@ -56,6 +56,11 @@ def validate_mandatory_ruleset(input):
                 # Optional: superheated initial gas-zone temperature for the
                 # non-equilibrium two-phase start (a warmer, less dense gas).
                 "gas_temperature": {"required": False, "type": "number"},
+                # Optional: uniform initial wall temperature. If omitted, the wall starts
+                # at initial.temperature, except that with a superheated gas zone the
+                # gas-contact wall starts at gas_temperature and the wetted wall at the
+                # liquid temperature.
+                "wall_temperature": {"required": False, "type": "number"},
             },
         },
         "calculation": {

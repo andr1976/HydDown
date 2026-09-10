@@ -38,6 +38,8 @@ initial:
   temperature: 253.15          # -20 C (overridden: two-phase T set by P + liquid level)
   pressure: 2000000            # 20 bar (saturated)
   fluid: "CO2"
+  gas_temperature: 255.94      # -17.2 C: mid-band of top 3 gas-space thermocouples at t0
+                               # (also sets the initial gas-contact wall temperature)
 calculation:
   type: "energybalance"
   time_step: 20

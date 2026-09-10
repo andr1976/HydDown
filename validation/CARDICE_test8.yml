@@ -40,7 +40,7 @@ initial:
   temperature: 244.15          # -29 C (overridden: two-phase T set by P + liquid level)
   pressure: 1471000            # 14.71 bar (measured initial P sphere)
   fluid: "CO2"
-  gas_temperature: 250.82      # -22.3 C: superheated gas zone per top thermocouples at t0
+  gas_temperature: 249.25      # -23.9 C: mid-band of top 3 gas-space thermocouples at t0
 calculation:
   type: "energybalance"
   time_step: 5

@@ -1423,14 +1423,27 @@ class HydDown:
         input = self.input
         self.rho[0] = self.rho0
         self.T_fluid[0] = self.T0
-        self.T_vessel[0] = self.T0
-        self.T_inner_wall[0] = self.T0
-        self.T_outer_wall[0] = self.T0
-        self.T_vessel_wetted[0] = self.T0
-        self.T_inner_wall_wetted[0] = self.T0
-        self.T_outer_wall_wetted[0] = self.T0
-        self.T_bonded_wall[0] = self.T0
-        self.T_bonded_wall_wetted[0] = self.T0
+        # Initial wall temperature. Default: uniform at T0. For a two-phase start with a
+        # superheated gas zone (initial.gas_temperature), the wall has equilibrated with the
+        # phase it touches before the blowdown, so initialise the gas-contact (unwetted) wall
+        # at the gas temperature and the wetted (liquid-contact) wall at the liquid temperature.
+        # An explicit initial.wall_temperature overrides both with a uniform value.
+        T_wall_gas = self.T0
+        T_wall_wet = self.T0
+        if "wall_temperature" in self.input["initial"]:
+            T_wall_gas = T_wall_wet = self.input["initial"]["wall_temperature"]
+        elif ("gas_temperature" in self.input["initial"]
+              and "liquid_level" in self.input["vessel"]):
+            T_wall_gas = self.T_gas0
+            T_wall_wet = self.T_liquid0
+        self.T_vessel[0] = T_wall_gas
+        self.T_inner_wall[0] = T_wall_gas
+        self.T_outer_wall[0] = T_wall_gas
+        self.T_bonded_wall[0] = T_wall_gas
+        self.T_vessel_wetted[0] = T_wall_wet
+        self.T_inner_wall_wetted[0] = T_wall_wet
+        self.T_outer_wall_wetted[0] = T_wall_wet
+        self.T_bonded_wall_wetted[0] = T_wall_wet
         self.liquid_level[0] = self.liquid_level0
         if self.input["valve"]["flow"] == "discharge":
             self.T_vent[0] = self.T0
