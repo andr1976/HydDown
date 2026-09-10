@@ -661,6 +661,25 @@ class HydDown:
         self.release_rate[i] = rate["mdot"]
         return rate["mdot"]
 
+    def _h_gas_wall(self, T_gas, T_wall, P):
+        """Gas->wall heat-transfer coefficient below the triple point [W/m2K].
+
+        ``release.solid_h_gas_wall`` is either a fixed number (default 15) or the string
+        ``"calc"`` for a natural-convection estimate. The correlation (transport.h_inner:
+        Pr, Gr -> Ra -> Nu, h = Nu*k/L) uses CoolProp's ``T|gas`` phase spec, which is valid
+        for CO2 vapour below the triple point (verified down to ~1 bar). Falls back to 15 on
+        any CoolProp failure or a negligible gas/wall temperature difference.
+        """
+        hgw = self.solid_h_gas_wall
+        if isinstance(hgw, str) and hgw.lower() == "calc":
+            if abs(T_wall - T_gas) < 0.1:
+                return 15.0
+            try:
+                return tp.h_inner(self.inner_vol.D, T_gas, T_wall, P, "HEOS::CO2")
+            except Exception:
+                return 15.0
+        return float(hgw)
+
     def _wetted_wall_step(self, i, T_cold, has_cold):
         """Evolve the below-triple wetted (liquid/solid-contact) wall node and store it in
         ``T_vessel_wetted[i]``.
@@ -711,7 +730,7 @@ class HydDown:
         T_g_prev = rm.gas_T_from_u(self.tz_U_gas / self.tz_m_gas)
         Twall_prev = self.T_vessel[i - 1]
         A_g = self.surf_area_inner * self.solid_gas_wall_frac
-        Q_wg = self.solid_h_gas_wall * A_g * (Twall_prev - T_g_prev)  # wall -> gas
+        Q_wg = self._h_gas_wall(T_g_prev, Twall_prev, self.P[i - 1]) * A_g * (Twall_prev - T_g_prev)  # wall -> gas
         Q_gl = self.solid_h_gas_liquid * A_g * (T_g_prev - rm.T_TRIPLE_EOS)  # gas -> L/S
 
         r = rm.two_zone_plateau_step(
@@ -775,7 +794,7 @@ class HydDown:
         T_g_prev = rm._gas_T_from_u_P(self.tz_U_gas / self.tz_m_gas, self.P[i - 1])
         Twall_prev = self.T_vessel[i - 1]
         A_g = self.surf_area_inner * self.solid_gas_wall_frac
-        Q_wg = self.solid_h_gas_wall * A_g * (Twall_prev - T_g_prev)
+        Q_wg = self._h_gas_wall(T_g_prev, Twall_prev, self.P[i - 1]) * A_g * (Twall_prev - T_g_prev)
         UA_gs = self.solid_h_gas_solid * A_g  # gas->dry-ice interphase conductance [W/K]
 
         if self.P[i - 1] <= self.release_back_pressure * 1.002:
