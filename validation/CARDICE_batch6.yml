@@ -78,6 +78,7 @@ release:
   eos: "tcPR"
   solid_in_vessel: true        # crosses the triple point at the very end (little/no retained solid)
   solid_h_inner: 20.0
+  solid_h_gas_wall: "calc"     # natural-convection gas->wall HTC (inactive here - empties before plateau)
 heat_transfer:
   type: "specified_h"
   temp_ambient: 283.15         # ~10 C ambient

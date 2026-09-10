@@ -1,0 +1,62 @@
+# Validation case: CARDICE JIP - 2 m3 CO2 sphere blowdown, TEST 7 (folder cardice-07).
+# Ref: Vaillant et al., GHGT-15 (2021), SSRN 3823308 (test matrix Table 1); rig details
+#      Jamois et al., Int. J. Greenhouse Gas Control 129 (2023) 103974. Open 1 Hz dataset
+#      Zenodo DOI 10.5281/zenodo.17257910 (folder cardice-07). Experiments by Ineris.
+#
+# Test 7: pure CO2 at vapour/liquid equilibrium, 15 bar / -29 C, GAS (vapour-space) release.
+# The 15-bar gas counterpart (T5 20 bar, T9 10 bar). A GAS release retains a large in-vessel
+# dry-ice bank (measured ~298 kg) with a triple-point plateau, unlike a liquid release.
+#
+# DISCHARGE: single physical Cd 0.68 + orifice inferred from the (reliable HEM) gas rate:
+#   measured ~0.049 kg/s -> 4.38 mm at Cd 0.68. Same convention as all CARDICE cases.
+# BELOW-TRIPLE: two-node wall - gas-contact wall uses the natural-convection HTC
+#   (solid_h_gas_wall "calc"); the wetted (dry-ice-contact) wall uses solid_h_inner 150 so it
+#   reaches ~-75 C (measured). GAP: the 0-D gas node runs colder than the measured warm top
+#   (stratification limit).
+#
+# CALIBRATION (against cardice-07 1 Hz data):
+#   - liquid_level 0.6115 -> initial mass ~791 kg vs measured 790.8 kg (load cells)
+#   - gas_temperature 250.18 K (-23 C): superheated gas zone per the top thermocouples at t0
+#   - orifice 4.38 mm from the gas rate (HEM); Cd 0.68
+#   - h_outer 0.4 W/m2K (Jamois insulation); thickness 0.072 (shell-corrected wall ~4.82 t)
+vessel:
+  length: 0.0                  # sphere: two hemispherical heads, no cylindrical section
+  diameter: 1.58               # ~1556-1580 mm ID
+  thickness: 0.072             # shell-corrected wall mass ~4.82 t = measured 4.80 t (incl flanges)
+  heat_capacity: 450           # P355GH cp (Jamois Table 1)
+  density: 7800.
+  orientation: "horizontal"
+  liquid_level: 0.6115         # CALIBRATED to measured initial mass 790.8 kg
+  type: "Hemispherical"
+initial:
+  temperature: 244.15          # -29 C (overridden: two-phase T set by P + liquid level)
+  pressure: 1485000            # 14.85 bar (measured initial P sphere)
+  fluid: "CO2"
+  gas_temperature: 250.18      # -23 C: superheated gas zone per top thermocouples at t0
+calculation:
+  type: "energybalance"
+  time_step: 20
+  end_time: 30000              # gas blowdown is long (plateau); ~5.9 h to 2 bar
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "none"
+  back_pressure: 101325.
+release:
+  type: "gas"                  # Test 7 is a vapour-space (middle) release
+  diameter: 0.00438            # from the gas rate via HEM (~0.049 kg/s) at Cd 0.68
+  discharge_coef: 0.68         # single physical Cd
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "tcPR"
+  solid_in_vessel: true        # crosses the triple point -> dry ice forms in-vessel
+  solid_h_inner: 150.0         # wall<->dry-ice HTC -> wetted (bottom) wall ~-75 C
+  solid_h_gas_wall: "calc"     # natural-convection gas->wall HTC (transport.h_inner, CoolProp T|gas)
+  solid_h_gas_liquid: 0.0      # plateau interphase (gas stays warm)
+  solid_h_gas_solid: 3.0       # descent interphase (dry-ice bank)
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 283.15
+  h_outer: 0.4                 # Jamois: measured insulation ~0.39 W/m2K
+  h_inner: "calc"

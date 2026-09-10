@@ -11,18 +11,19 @@
 # Gas-release tests produced > 450 kg of solid CO2 inside the sphere.
 #
 # Vessel filled with liquid to the MIDDLE of the sphere (half the volume).
-# Orifice diameter is NOT given in the paper -> CALIBRATED to the measured mass rate.
+# Orifice diameter is NOT given in the paper -> inferred from the gas rate via HEM (reliable).
 #
-# HydDown vs Test 5 (Fig. 5) after calibrating the 3 mm orifice:
-#   initial mass rate   0.0385 kg/s   vs measured ~0.040   (match)
-#   plateau mass rate   0.0101 kg/s   vs measured ~0.010   (match)
-#   pressure plateau    5.26 bar      vs measured ~5 bar   (triple point, match)
-#   liquid/solid plateau temperature  -56.6 C  vs ~-56 C   (match)
-#   gas warmer than liquid on the way down (reproduces EXPERIMENT_MIDDLE vs _BOTTOM)
-#   peak in-vessel dry ice  ~300 kg   vs paper > 450 kg    (same order; the gap is the
-#     boil-off/freeze split during the 20->5.26 bar descent - path/heat-transfer dependent)
-# The absolute timescale (~16 h) is consistent with ~800 kg of gas leaving at ~0.01 kg/s;
-# a precise time-axis overlay needs the Zenodo 1 Hz data (DOI 10.5281/zenodo.17257910).
+# DISCHARGE: single physical Cd 0.68 + gas-inferred orifice 3.44 mm (uniform convention across
+# the CARDICE set). BELOW-TRIPLE two-node wall: gas-contact wall = natural convection
+# (solid_h_gas_wall "calc"); wetted (dry-ice-contact) wall = solid_h_inner 150.
+#
+# HydDown vs cardice-05 1 Hz data (h_outer 0.4, calc gas-wall):
+#   initial + plateau mass rate, pressure plateau (5.26 bar), liquid/solid plateau -56.6 C: match
+#   retained in-vessel dry ice   ~270 kg   vs measured ~217 kg   (right magnitude)
+#   wetted (bottom) wall min  -78 C  vs measured -75 C  (match); gas-contact wall -30 vs top ~-29
+#   GAP: the 0-D gas node runs colder than the measured warm top (~-42 C) - the gas is stratified
+#     (warm on top), which a single 0-D gas node cannot represent (not the wall HTC: that is now
+#     the physical natural-convection value).
 vessel:
   length: 0.0                  # sphere (two hemispherical heads, no cylinder): V = 2.065 m3
   diameter: 1.58               # 1580 mm internal diameter
@@ -49,8 +50,8 @@ valve:
   back_pressure: 101325.
 release:
   type: "gas"                  # Test 5: vapour-space (mid-side) release
-  diameter: 0.003              # CALIBRATED: gives ~0.039 kg/s initial rate vs measured ~0.040
-  discharge_coef: 0.85         # (orifice not reported; 3 mm is within the CARDICE 3-6 mm range)
+  diameter: 0.00344            # orifice inferred from the gas rate via HEM (~0.042 kg/s) at Cd 0.68
+  discharge_coef: 0.68         # single physical Cd (uniform across the CARDICE set)
   back_pressure: 101325.
   atm_pressure: 101325.
   eos: "tcPR"
@@ -60,11 +61,13 @@ release:
                                # 150->-74C (matches measured -75C coldest sensor), 400->-75.5C
                                # (asymptote). Only affects the wetted wall - gas wall + retained
                                # dry ice are unchanged. 20 is low for dry-ice/steel contact.
+  solid_h_gas_wall: "calc"     # natural-convection gas->wall HTC below triple (~11 W/m2K),
+                               # instead of a fixed value (transport.h_inner, CoolProp T|gas)
   solid_h_gas_liquid: 0.0      # plateau interphase (flat liquid surface) - gas stays warm
   solid_h_gas_solid: 3.0       # descent interphase (dry-ice bank): calibrated so the descent
                                # gas (~-32 C) and retained dry ice (~211 kg) match the data
 heat_transfer:
   type: "specified_h"
   temp_ambient: 283.15         # ~10 C ambient
-  h_outer: 2                   # insulated sphere (low external HTC)
+  h_outer: 0.4                 # Jamois: measured insulation ~0.39 W/m2K (4.3 W/K over 11 m2)
   h_inner: "calc"
