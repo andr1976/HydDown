@@ -7,20 +7,21 @@
 # The lowest-pressure liquid release (with T6 20 bar and T8 15 bar). Like the others: a LIQUID
 # release forms essentially NO in-vessel dry ice (retained ~5 kg model vs ~0 measured).
 #
-# DISCHARGE MODEL (single physical Cd + non-equilibrium liquid): orifice inferred from the GAS
-# tail via HEM (reliable), single Cd 0.68 for both phases. The measured gas tail (0.02 kg/s @6 bar)
-# -> a 4.37 mm orifice. NOTE: at 10 bar the liquid needs NO non-equilibrium boost
-# (liquid_nonequilibrium 0) - the equilibrium HEM liquid flux already matches the data. The
-# metastable/delayed-flashing boost is pressure dependent and fades at low pressure
-# (T6 20 bar N=0.267, T8 15 bar N=0.195, T10 10 bar N=0).
+# DISCHARGE MODEL (single physical Cd + non-equilibrium liquid): single Cd 0.68, N=0 (no boost).
+# UNLIKE T6/T8, T10's orifice is calibrated to the LIQUID rate, not the gas tail: at 10 bar the
+# HEM liquid flux OVER-predicts (~12%), so the gas-inferred orifice (4.44 mm) drains the liquid
+# too fast (early depletion). The liquid rate (~0.095 kg/s, steady) implies 4.09 mm, which matches
+# the ~2.9 h duration. The gas tail then runs ~15% slow (gas implies ~4.44 mm) - a small fraction
+# of the blowdown. (The metastable liquid boost fades with pressure: T6 20 bar N=0.267,
+# T8 15 bar N=0.195, T10 10 bar N=0 - and here HEM even slightly over-predicts.)
 #
 # CALIBRATION (against cardice-10 1 Hz data):
 #   - liquid_level 0.582 -> initial CoolProp mass 743.4 kg vs measured 743.3 kg (load cells)
 #   - gas_temperature 239.38 K (-33.8 C): gas zone starts superheated per the top thermocouples
-#   - orifice 4.37 mm from the gas tail (HEM); Cd 0.68; liquid_nonequilibrium 0.0
+#   - orifice 4.09 mm from the (steady, full-drain) liquid rate 0.095 kg/s; Cd 0.68; N 0.0
 #   - h_gas_liquid 2.0, h_outer 0.4, wall 0.072 m (shell-corrected ~4.82 t = measured 4.80 t).
-# MATCH: initial mass; gas-tail rate (0.020 vs 0.020); liquid rate ~0.108 vs 0.096 (HEM slightly
-# high at N=0); retained mass (~no dry ice). Duration ~2.5 vs 2.9 h.
+# MATCH: initial mass; liquid rate 0.094 vs 0.095; liquid depletes 2.1 vs 2.0 h; duration 2.9 vs
+# 2.9 h; retained mass (~no dry ice). Gas tail ~15% slow (gas/liquid orifice differ by ~8%).
 vessel:
   length: 0.0                  # sphere: two hemispherical heads, no cylindrical section
   diameter: 1.58               # ~1556-1580 mm ID
@@ -47,9 +48,11 @@ valve:
   back_pressure: 101325.
 release:
   type: "liquid"               # Test 10 is a liquid-space (bottom) release
-  diameter: 0.00437            # TRUE orifice from the GAS tail via HEM (~0.020 kg/s @6 bar)
-  discharge_coef: 0.68         # single physical Cd for BOTH phases (gas = HEM at 4.37 mm)
-  liquid_nonequilibrium: 0.0   # no non-equilibrium boost at 10 bar - HEM already matches the liquid
+  diameter: 0.00409            # calibrated to the LIQUID rate (0.095 kg/s, HEM) -> matches the 2.9 h
+                               # duration. Gas tail implies ~4.44 mm but HEM liquid over-predicts at
+                               # 10 bar, so the liquid needs the smaller orifice (see header).
+  discharge_coef: 0.68         # single physical Cd
+  liquid_nonequilibrium: 0.0   # no boost at 10 bar (HEM liquid already >= measured)
   back_pressure: 101325.
   atm_pressure: 101325.
   eos: "tcPR"
