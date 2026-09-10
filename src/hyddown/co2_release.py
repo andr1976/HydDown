@@ -95,8 +95,138 @@ class CO2ReleaseModel:
         self.P_TRIPLE = P_TRIPLE  # convenience: the (literature) validity-floor constant
         self._init_atm_endpoints()
         self._init_triple_point()
+        self._init_gas_table()
 
     # ------------------------------------------------------------------ setup
+    def _init_gas_table(self):
+        """Precompute superheated-gas properties at the triple-point pressure.
+
+        The two-zone below-triple model steps the gas zone many times with a per-step
+        root-find; doing that with live thermopack flashes is far too slow. At the
+        triple-point pressure (the plateau) the gas properties depend only on T, so a 1-D
+        table (T -> u, rho, h, and the HEM mass flux G) is built once and interpolated.
+        """
+        T = np.linspace(self.T_TRIPLE_EOS - 0.2, 345.0, 180)
+        u = np.empty_like(T)
+        rho = np.empty_like(T)
+        h = np.empty_like(T)
+        G = np.empty_like(T)
+        P = self.P_TRIPLE_EOS
+        for i, Ti in enumerate(T):
+            v = _scal(self.eos.specific_volume(Ti, P, self.z, self.VAP)) / self.M
+            hi = _scal(self.eos.enthalpy(Ti, P, self.z, self.VAP)) / self.M
+            u[i] = hi - P * v
+            rho[i] = 1.0 / v
+            h[i] = hi
+            G[i] = self.gas_leak_rate(Ti, P, 1.0, 1.0)["mdot"]  # Cd*area = 1 -> flux
+        self._gt_T, self._gt_u, self._gt_rho, self._gt_h, self._gt_G = T, u, rho, h, G
+
+        # --- 2-D table over (T, P) for the descent (P floats below the triple point) ---
+        # Only the cheap state properties are tabulated (one flash each); the descent leak
+        # rate is computed live per step (far fewer steps than tabulating G everywhere).
+        Pgrid = np.linspace(self.p_back * 0.85, self.P_TRIPLE_EOS * 1.001, 55)
+        Tgrid = np.linspace(self.T_TRIPLE_EOS - 30.0, 345.0, 70)
+        RHO = np.empty((Tgrid.size, Pgrid.size))
+        U2 = np.empty_like(RHO)
+        H2 = np.empty_like(RHO)
+        for a, Ti in enumerate(Tgrid):
+            for b, Pi in enumerate(Pgrid):
+                v = _scal(self.eos.specific_volume(Ti, Pi, self.z, self.VAP)) / self.M
+                hi = _scal(self.eos.enthalpy(Ti, Pi, self.z, self.VAP)) / self.M
+                RHO[a, b] = 1.0 / v
+                U2[a, b] = hi - Pi * v
+                H2[a, b] = hi
+        self._g2_T, self._g2_P, self._g2_rho, self._g2_u, self._g2_h = (
+            Tgrid, Pgrid, RHO, U2, H2)
+        # sublimation line vs pressure: T_sub(P), and saturated-vapour h,u there
+        self._sl_P = np.linspace(self.p_back * 0.9, self.P_TRIPLE_EOS * 0.999, 50)
+        self._sl_T = np.array([
+            optimize.brentq(lambda T: self._sublimation_pressure(T) - Pi, 180.0,
+                            self.T_TRIPLE_EOS - 1e-4)
+            for Pi in self._sl_P])
+        self._sl_us = np.array([
+            (_scal(self.eos.solid_enthalpy(Ti, Pi, self.z)) / self.M) - Pi *
+            (_scal(self.eos.solid_volume(Ti, Pi, self.z)) / self.M)
+            for Ti, Pi in zip(self._sl_T, self._sl_P)])
+
+    def _gas_P_from_rho_T(self, rho, T):
+        """Gas pressure from density and temperature (invert the 2-D rho table at T)."""
+        a = int(np.clip(np.searchsorted(self._g2_T, T) - 1, 0, self._g2_T.size - 2))
+        wa = (self._g2_T[a + 1] - T) / (self._g2_T[a + 1] - self._g2_T[a])
+        rho_row = wa * self._g2_rho[a] + (1 - wa) * self._g2_rho[a + 1]  # rho vs P at this T
+        # rho decreases with P? no - rho increases with P; invert monotonic
+        order = np.argsort(rho_row)
+        return float(np.interp(rho, rho_row[order], self._g2_P[order]))
+
+    def _gas2d(self, arr, T, P):
+        """Bilinear interpolation of a 2-D gas array at (T, P)."""
+        a = int(np.clip(np.searchsorted(self._g2_T, T) - 1, 0, self._g2_T.size - 2))
+        b = int(np.clip(np.searchsorted(self._g2_P, P) - 1, 0, self._g2_P.size - 2))
+        wa = (self._g2_T[a + 1] - T) / (self._g2_T[a + 1] - self._g2_T[a])
+        wb = (self._g2_P[b + 1] - P) / (self._g2_P[b + 1] - self._g2_P[b])
+        return float(
+            wa * wb * arr[a, b] + wa * (1 - wb) * arr[a, b + 1]
+            + (1 - wa) * wb * arr[a + 1, b] + (1 - wa) * (1 - wb) * arr[a + 1, b + 1])
+
+    def _T_sub_of_P(self, P):
+        return float(np.interp(P, self._sl_P, self._sl_T))
+
+    def _gas_T_from_u_P(self, u, P):
+        """Gas temperature from internal energy at pressure P (invert u(.,P) column)."""
+        b = int(np.clip(np.searchsorted(self._g2_P, P) - 1, 0, self._g2_P.size - 2))
+        wb = (self._g2_P[b + 1] - P) / (self._g2_P[b + 1] - self._g2_P[b])
+        u_col = wb * self._g2_u[:, b] + (1 - wb) * self._g2_u[:, b + 1]  # u vs T at this P
+        return float(np.interp(u, u_col, self._g2_T))
+
+    def two_zone_descent_step(self, m_g, U_g, m_solid, P_prev, Q_wg, UA_gs, dt, Cd, area, V):
+        """One timestep of the two-zone sublimation descent (liquid exhausted).
+
+        A warm gas zone leaks and depressurises; the solid rides the sublimation line,
+        subliming (a) to cool itself as the pressure falls and (b) from the gas->solid
+        interphase heat ``UA_gs*(T_g - T_s)``. That interphase term both cools the gas and
+        sublimes extra dry ice - the single lever that trades gas superheat against
+        retained solid. With ``UA_gs = 0`` the solid is adiabatic and mostly retained.
+        """
+        V_g = V - m_solid * self.v_s
+        rho_g = m_g / V_g
+        T_g = self._gas_T_from_u_P(U_g / m_g, P_prev)
+        P = min(max(self._gas_P_from_rho_T(rho_g, T_g), self.p_back * 0.9), self.P_TRIPLE_EOS)
+        T_s = self._T_sub_of_P(P)
+        T_s_prev = self._T_sub_of_P(P_prev)
+        # gas -> solid interphase heat (cools the gas, sublimes solid)
+        Q_gs = max(UA_gs * (T_g - T_s), 0.0)
+        dm_cool = m_solid * self.cp_solid * max(T_s_prev - T_s, 0.0) / self.L_sub
+        dm_int = Q_gs * dt / self.L_sub
+        dm_sub = min(dm_cool + dm_int, m_solid)
+        h_vap_sub = self._gas2d(self._g2_h, T_s, P)  # vapour enthalpy leaving the solid
+        mdot = self.gas_leak_rate(T_g, P, Cd, area)["mdot"]  # live (few descent steps)
+        h_g = self._gas2d(self._g2_h, T_g, P)
+        m_g = m_g - mdot * dt + dm_sub
+        U_g = U_g + dt * (Q_wg - Q_gs) - mdot * dt * h_g + dm_sub * h_vap_sub
+        m_solid = m_solid - dm_sub
+        return {"m_g": max(m_g, 1e-9), "U_g": U_g, "m_solid": max(m_solid, 0.0),
+                "T_g": T_g, "T_s": T_s, "P": P, "mdot": mdot}
+
+    def _u_sub_vap_of_P(self, P):
+        return float(np.interp(P, self._sl_P, self._sl_us))
+
+    # -- gas-table interpolants (triple-point pressure) --
+    def gas_T_from_u(self, u):
+        return float(np.interp(u, self._gt_u, self._gt_T))
+
+    def gas_u_at(self, T):
+        return float(np.interp(T, self._gt_T, self._gt_u))
+
+    def gas_rho_at(self, T):
+        return float(np.interp(T, self._gt_T, self._gt_rho))
+
+    def gas_h_at(self, T):
+        return float(np.interp(T, self._gt_T, self._gt_h))
+
+    def gas_G_at(self, T):
+        return float(np.interp(T, self._gt_T, self._gt_G))
+
+    # ------------------------------------------------------------------ setup (cont.)
     def _init_atm_endpoints(self):
         """Pre-compute the (time-invariant) 1-atm endpoint constants.
 
@@ -372,6 +502,10 @@ class CO2ReleaseModel:
         self.u_s = self.h_s - P * self.v_s
         self.u_l = self.h_l - P * self.v_l
         self.u_g = self.h_g - P * self.v_g
+        # Sublimation latent heat and solid heat capacity (for the two-zone descent)
+        self.L_sub = self.h_g - self.h_s
+        h1 = _scal(self.eos.solid_enthalpy(T - 10.0, P, self.z)) / self.M
+        self.cp_solid = (self.h_s - h1) / 10.0
         # Coldest physical vessel state on the sublimation line: the leak stops once the
         # vessel reaches the back pressure, so it cannot cool below the sublimation
         # temperature at p_back.
@@ -487,6 +621,52 @@ class CO2ReleaseModel:
         tl["m_l"] = max(tl["m_l"], 0.0)
         tl["regime"] = "triple"
         return tl
+
+    # ------------------------------------------------ two-zone plateau (below triple)
+    def two_zone_plateau_step(self, m_g, U_g, M_ls, U_ls, Q_wg, Q_gl, dt, Cd, area, V):
+        """One timestep of the two-zone triple-point plateau.
+
+        A warm (superheated) gas zone and an adiabatic liquid/solid zone, coupled so the
+        gas exactly fills ``V - V_ls`` at the triple-point pressure. ``Q_wg`` is the wall
+        heat into the gas [W] and ``Q_gl`` the (usually small) gas->liquid/solid interphase
+        heat [W]; both are supplied by the caller so no wall model lives here.
+
+        Keeping the interphase heat out of the liquid/solid zone is what lets the liquid
+        freeze rather than the warm gas melting it back - the physical lever the CARDICE
+        data shows (35 C gas superheat over a triple-point-pinned liquid/solid).
+
+        Returns the updated (m_g, U_g, M_ls, U_ls) plus the resolved m_l, m_s, T_g [K],
+        mdot [kg/s] and the vaporisation rate.
+        """
+        area_eff = area
+        # liquid/solid split (mass + energy at the triple point)
+        m_s = min(max((M_ls * self.u_l - U_ls) / (self.u_l - self.u_s), 0.0), M_ls)
+        m_l = M_ls - m_s
+        # gas temperature from its own energy, then leak from the warm gas state
+        T_g = self.gas_T_from_u(U_g / m_g)
+        mdot = Cd * area_eff * self.gas_G_at(T_g)
+        h_leave = self.gas_h_at(T_g)
+
+        def resid(mvap):
+            mg2 = m_g - mdot * dt + mvap * dt
+            if mg2 <= 0.0:
+                return 1e12
+            Ug2 = U_g + dt * (Q_wg - Q_gl - mdot * h_leave + mvap * self.h_g)
+            Mls2 = M_ls - mvap * dt
+            Uls2 = U_ls - dt * mvap * self.h_g + dt * Q_gl
+            ms2 = min(max((Mls2 * self.u_l - Uls2) / (self.u_l - self.u_s), 0.0), Mls2)
+            Vg2 = V - ((Mls2 - ms2) * self.v_l + ms2 * self.v_s)
+            return mg2 - self.gas_rho_at(self.gas_T_from_u(Ug2 / mg2)) * Vg2
+
+        lo, hi = 0.0, mdot * 6.0 + 1e-4
+        mvap = optimize.brentq(resid, lo, hi) if resid(lo) * resid(hi) < 0 else mdot
+        m_g = m_g - mdot * dt + mvap * dt
+        U_g = U_g + dt * (Q_wg - Q_gl - mdot * h_leave + mvap * self.h_g)
+        M_ls = M_ls - mvap * dt
+        U_ls = U_ls - dt * mvap * self.h_g + dt * Q_gl
+        return {"m_g": m_g, "U_g": U_g, "M_ls": M_ls, "U_ls": U_ls,
+                "m_l": m_l, "m_s": m_s, "T_g": T_g, "mdot": mdot, "mvap": mvap,
+                "P": self.P_TRIPLE_EOS}
 
 
 # --------------------------------------------------------------------------- self-test

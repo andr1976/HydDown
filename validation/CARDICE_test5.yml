@@ -26,8 +26,9 @@
 vessel:
   length: 0.0                  # sphere (two hemispherical heads, no cylinder): V = 2.065 m3
   diameter: 1.58               # 1580 mm internal diameter
-  thickness: 0.06              # ~60 mm steel wall
-  heat_capacity: 490
+  thickness: 0.072             # tuned so the (shell-corrected) wall mass = 4.82 t, matching
+                               # the measured 4.80 t total (60 mm P355GH shell + 3 flanges)
+  heat_capacity: 450           # P355GH cp (paper Table 1)
   density: 7800.
   orientation: "horizontal"
   liquid_level: 0.635          # CALIBRATED to the measured initial mass 822.9 kg (load cells)
@@ -55,6 +56,9 @@ release:
   eos: "tcPR"
   solid_in_vessel: true        # crosses the triple point -> dry ice forms in-vessel
   solid_h_inner: 20.0
+  solid_h_gas_liquid: 0.0      # plateau interphase (flat liquid surface) - gas stays warm
+  solid_h_gas_solid: 3.0       # descent interphase (dry-ice bank): calibrated so the descent
+                               # gas (~-32 C) and retained dry ice (~211 kg) match the data
 heat_transfer:
   type: "specified_h"
   temp_ambient: 283.15         # ~10 C ambient

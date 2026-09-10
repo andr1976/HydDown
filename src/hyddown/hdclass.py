@@ -167,12 +167,31 @@ class HydDown:
                 horizontal=horizontal,
             )
 
-        if "thickness" in self.input["vessel"]:
-            self.outer_vol = self.inner_vol.add_thickness(
-                self.input["vessel"]["thickness"]
-            )
+        t_wall = self.input["vessel"].get("thickness", 0.0)
+        if t_wall <= 0 or self.vessel_type == "Flat-end":
+            # Flat ends: add_thickness (outer length = L + 2t) is the correct concentric shell.
+            self.outer_vol = self.inner_vol.add_thickness(t_wall)
         else:
-            self.outer_vol = self.inner_vol.add_thickness(0.0)
+            # Head-type tanks (Hemispherical / ASME F&D / DIN): fluids.TANK.add_thickness
+            # spuriously adds 2*thickness to the cylinder length, inserting a phantom
+            # cylindrical band (for a sphere this over-states the wall volume by ~50%).
+            # Rebuild the outer shell concentrically with the SAME cylinder length.
+            Do = self.diameter + 2 * t_wall
+            if self.vessel_type == "Hemispherical":
+                self.outer_vol = fluids.TANK(
+                    D=Do, L=self.length, sideA="spherical", sideB="spherical",
+                    sideA_a=0.5 * Do, sideB_a=0.5 * Do, horizontal=horizontal,
+                )
+            elif self.vessel_type == "ASME F&D":
+                self.outer_vol = fluids.TANK(
+                    D=Do, L=self.length, sideA="torispherical", sideB="torispherical",
+                    horizontal=horizontal,
+                )
+            else:  # DIN
+                self.outer_vol = fluids.TANK(
+                    D=Do, L=self.length, sideA="torispherical", sideB="torispherical",
+                    sideA_f=1, sideA_k=0.1, sideB_f=1, sideB_k=0.1, horizontal=horizontal,
+                )
 
         self.p0 = self.input["initial"]["pressure"]
         self.T0 = self.input["initial"]["temperature"]
@@ -278,6 +297,12 @@ class HydDown:
             # freezing. solid_h_inner is the (simplified) internal HTC used there.
             self.solid_in_vessel = rel.get("solid_in_vessel", False)
             self.solid_h_inner = rel.get("solid_h_inner", 20.0)
+            # Two-zone plateau HTCs: wall->gas keeps the gas warm; gas->liquid/solid
+            # interphase is kept ~0 so heat does not melt the freezing dry ice.
+            self.solid_h_gas_wall = rel.get("solid_h_gas_wall", 15.0)
+            self.solid_h_gas_liquid = rel.get("solid_h_gas_liquid", 0.0)  # plateau (gas<->liquid)
+            self.solid_h_gas_solid = rel.get("solid_h_gas_solid", 0.0)  # descent (gas<->dry ice)
+            self.solid_gas_wall_frac = rel.get("solid_gas_wall_frac", 0.5)
 
         # valve type
         # - constant_mass
@@ -536,6 +561,14 @@ class HydDown:
             self.solid_regime = False  # True once handed off to the solid-in-vessel model
             self.M_vessel = 0.0  # total vessel mass [kg] (thermopack-basis state)
             self.U_vessel = 0.0  # total vessel internal energy [J] (thermopack basis)
+            # Two-zone plateau/descent state (gas zone + liquid/solid zone)
+            self.tz_plateau = False
+            self.tz_descent = False
+            self.tz_m_gas = 0.0
+            self.tz_U_gas = 0.0
+            self.tz_M_ls = 0.0
+            self.tz_U_ls = 0.0
+            self.tz_m_solid = 0.0
 
     def calc_liquid_level(self):
         """
@@ -611,6 +644,126 @@ class HydDown:
         self.release_rate[i] = rate["mdot"]
         return rate["mdot"]
 
+    def _two_zone_plateau_step(self, i):
+        """Two-zone triple-point plateau step: warm gas zone + adiabatic liquid/solid lever.
+
+        The gas keeps its own (superheated) temperature - heated by the wall, decoupled
+        from the cold liquid/solid by a near-zero interphase HTC - so the vessel reproduces
+        the measured gas superheat while the liquid freezes to dry ice at the pinned triple
+        point. Transitions to the sublimation descent once the liquid is exhausted.
+        """
+        rm = self.release_model
+        dt = self.tstep
+        V = self.vol
+        area = self.D_release ** 2 / 4 * math.pi
+
+        T_g_prev = rm.gas_T_from_u(self.tz_U_gas / self.tz_m_gas)
+        Twall_prev = self.T_vessel[i - 1]
+        A_g = self.surf_area_inner * self.solid_gas_wall_frac
+        Q_wg = self.solid_h_gas_wall * A_g * (Twall_prev - T_g_prev)  # wall -> gas
+        Q_gl = self.solid_h_gas_liquid * A_g * (T_g_prev - rm.T_TRIPLE_EOS)  # gas -> L/S
+
+        r = rm.two_zone_plateau_step(
+            self.tz_m_gas, self.tz_U_gas, self.tz_M_ls, self.tz_U_ls,
+            Q_wg, Q_gl, dt, self.CD_release, area, V,
+        )
+        self.tz_m_gas, self.tz_U_gas = r["m_g"], r["U_g"]
+        self.tz_M_ls, self.tz_U_ls = r["M_ls"], r["U_ls"]
+
+        # lumped wall: exchanges with the gas and ambient (liquid/solid zone is adiabatic)
+        m_wall = getattr(self, "vessel_density", 0.0) * self.vol_solid
+        cp_wall = getattr(self, "vessel_cp", 500.0)
+        h_out = getattr(self, "h_out", 0.0)
+        Tamb = getattr(self, "Tamb", T_g_prev)
+        Q_out = h_out * self.surf_area_outer * (Tamb - Twall_prev)
+        self.T_vessel[i] = (
+            Twall_prev + dt * (Q_out - Q_wg) / (m_wall * cp_wall) if m_wall > 0 else Twall_prev
+        )
+
+        m_s = max(r["m_s"], 0.0)
+        m_l = max(r["m_l"], 0.0)
+        m_g = max(r["m_g"], 0.0)
+        atm = rm.atm_split(rm.gas_h_at(r["T_g"]))  # released vapour flashes to 1 atm
+
+        self.P[i] = r["P"]
+        self.T_gas[i] = r["T_g"]
+        self.T_liquid[i] = rm.T_TRIPLE_EOS
+        self.T_fluid[i] = r["T_g"]
+        self.T_vessel_wetted[i] = self.T_vessel[i]
+        self.m_solid[i] = m_s
+        self.m_liquid[i] = m_l
+        self.m_gas[i] = m_g
+        self.mass_fluid[i] = m_g + self.tz_M_ls
+        self.rho[i] = self.mass_fluid[i] / V
+        self.mass_rate[i] = r["mdot"]
+        self.release_rate[i] = r["mdot"]
+        self.solid_frac_throat[i] = 0.0
+        self.release_choked[i] = 1.0
+        self.liquid_level[i] = self.inner_vol.h_from_V(m_l * rm.v_l) if m_l > 1e-6 else 0.0
+        self.T_atm[i] = atm["T"]
+        self.x_vap_atm[i] = atm["vapour_frac"]
+        self.x_solid_atm[i] = atm["solid_frac"]
+
+        # transition to the two-zone sublimation descent once the liquid is exhausted
+        if m_l <= 1e-3:
+            self.tz_plateau = False
+            self.tz_descent = True
+            self.release_phase = "gas"
+            self.tz_m_solid = m_s  # dry ice carried into the descent (warm gas kept)
+
+    def _two_zone_descent_step(self, i):
+        """Two-zone sublimation descent: warm gas leaks/depressurises; the near-adiabatic
+        dry ice sublimes only enough to cool itself down the sublimation line, so most of
+        it is retained."""
+        rm = self.release_model
+        dt = self.tstep
+        V = self.vol
+        area = self.D_release ** 2 / 4 * math.pi
+
+        T_g_prev = rm._gas_T_from_u_P(self.tz_U_gas / self.tz_m_gas, self.P[i - 1])
+        Twall_prev = self.T_vessel[i - 1]
+        A_g = self.surf_area_inner * self.solid_gas_wall_frac
+        Q_wg = self.solid_h_gas_wall * A_g * (Twall_prev - T_g_prev)
+        UA_gs = self.solid_h_gas_solid * A_g  # gas->dry-ice interphase conductance [W/K]
+
+        if self.P[i - 1] <= self.release_back_pressure * 1.002:
+            r = {"m_g": self.tz_m_gas, "U_g": self.tz_U_gas, "m_solid": self.tz_m_solid,
+                 "T_g": T_g_prev, "T_s": rm._T_sub_of_P(self.P[i - 1]),
+                 "P": self.P[i - 1], "mdot": 0.0}
+        else:
+            r = rm.two_zone_descent_step(self.tz_m_gas, self.tz_U_gas, self.tz_m_solid,
+                                         self.P[i - 1], Q_wg, UA_gs, dt, self.CD_release, area, V)
+        self.tz_m_gas, self.tz_U_gas, self.tz_m_solid = r["m_g"], r["U_g"], r["m_solid"]
+
+        m_wall = getattr(self, "vessel_density", 0.0) * self.vol_solid
+        cp_wall = getattr(self, "vessel_cp", 500.0)
+        h_out = getattr(self, "h_out", 0.0)
+        Tamb = getattr(self, "Tamb", T_g_prev)
+        Q_out = h_out * self.surf_area_outer * (Tamb - Twall_prev)
+        self.T_vessel[i] = (
+            Twall_prev + dt * (Q_out - Q_wg) / (m_wall * cp_wall) if m_wall > 0 else Twall_prev
+        )
+
+        atm = rm.atm_split(rm._gas2d(rm._g2_h, r["T_g"], r["P"]))
+        self.P[i] = r["P"]
+        self.T_gas[i] = r["T_g"]
+        self.T_liquid[i] = r["T_s"]
+        self.T_fluid[i] = r["T_g"]
+        self.T_vessel_wetted[i] = self.T_vessel[i]
+        self.m_solid[i] = r["m_solid"]
+        self.m_liquid[i] = 0.0
+        self.m_gas[i] = r["m_g"]
+        self.mass_fluid[i] = r["m_g"] + r["m_solid"]
+        self.rho[i] = self.mass_fluid[i] / V
+        self.mass_rate[i] = r["mdot"]
+        self.release_rate[i] = r["mdot"]
+        self.solid_frac_throat[i] = 0.0
+        self.release_choked[i] = 1.0 if r["mdot"] > 0 else 0.0
+        self.liquid_level[i] = 0.0
+        self.T_atm[i] = atm["T"]
+        self.x_vap_atm[i] = atm["vapour_frac"]
+        self.x_solid_atm[i] = atm["solid_frac"]
+
     def _solid_regime_step(self, i):
         """One timestep of the opt-in solid-in-vessel model (below the triple point).
 
@@ -620,14 +773,29 @@ class HydDown:
         point, dry ice accumulating) or a solid+gas point riding the sublimation line
         once the liquid is exhausted. All thermodynamics come from the release model.
 
-        Simplifications (documented): a lumped wall with a fixed internal HTC
-        (``release.solid_h_inner``); gas/liquid held at a common temperature (near
-        equilibrium here); phase equilibrium assumed instantaneous.
+        Two regimes:
+        * while liquid remains - a two-zone plateau: a warm (superheated) gas zone plus
+          an adiabatic liquid/solid zone that does the freezing lever, coupled so the gas
+          fills the vapour volume at the triple-point pressure. This reproduces the
+          measured gas superheat and the liquid-freezes-to-dry-ice plateau.
+        * once the liquid is exhausted - the single-zone sublimation descent (solid+gas
+          riding the sublimation line down to the back pressure).
+
+        Simplifications: lumped wall; the liquid/solid zone is adiabatic to the wall; the
+        gas-wall and interphase HTCs are ``release.solid_h_gas_wall`` /
+        ``release.solid_h_gas_liquid``; phase equilibrium is instantaneous.
         """
         rm = self.release_model
         dt = self.tstep
         V = self.vol
         area = self.D_release ** 2 / 4 * math.pi
+
+        if self.tz_plateau:
+            self._two_zone_plateau_step(i)
+            return
+        if self.tz_descent:
+            self._two_zone_descent_step(i)
+            return
 
         T_prev = self.T_fluid[i - 1]
         P_prev = self.P[i - 1]
@@ -1386,12 +1554,20 @@ class HydDown:
                     not self.solid_regime
                     and self.P[i - 1] <= self.release_model.P_TRIPLE_EOS * 1.05
                 ):
-                    # Hand off: place the vessel on the triple point with the L+G split
-                    # fixed by the volume constraint (re-based into thermopack's energy
-                    # basis; masses are basis-free).
+                    # Hand off to the below-triple model. Keep the NEM's two zones: a warm
+                    # (superheated) gas zone and a liquid/solid zone, both re-based into
+                    # thermopack's energy basis (masses are basis-free). The single-zone
+                    # (M_vessel, U_vessel) state is also seeded for the sublimation descent.
+                    rm = self.release_model
                     self.solid_regime = True
+                    self.tz_plateau = True
+                    self.tz_m_gas = max(self.m_gas[i - 1], 1e-6)
+                    T_gas_h = min(max(self.T_gas[i - 1], rm._gt_T[0]), rm._gt_T[-1])
+                    self.tz_U_gas = self.tz_m_gas * rm.gas_u_at(T_gas_h)
+                    self.tz_M_ls = self.m_liquid[i - 1]
+                    self.tz_U_ls = self.tz_M_ls * rm.u_l
                     self.M_vessel = self.m_liquid[i - 1] + self.m_gas[i - 1]
-                    _ml, _mg, self.U_vessel = self.release_model.triple_LG_from_MV(
+                    _ml, _mg, self.U_vessel = rm.triple_LG_from_MV(
                         self.M_vessel, self.vol
                     )
                 if self.solid_regime:

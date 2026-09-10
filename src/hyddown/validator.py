@@ -1115,6 +1115,10 @@ def release_validation(input):
         "eos": {"required": False, "type": "string", "allowed": ["tcPR"]},
         "solid_in_vessel": {"required": False, "type": "boolean"},
         "solid_h_inner": {"required": False, "type": "number", "min": 0},
+        "solid_h_gas_wall": {"required": False, "type": "number", "min": 0},
+        "solid_h_gas_liquid": {"required": False, "type": "number", "min": 0},
+        "solid_h_gas_solid": {"required": False, "type": "number", "min": 0},
+        "solid_gas_wall_frac": {"required": False, "type": "number", "min": 0, "max": 1},
     }
     v = Validator(schema_release)
     retval = v.validate(input["release"])
