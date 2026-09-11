@@ -115,11 +115,13 @@ def run_model(yml):
 
 
 def title_bits(rel):
-    """Gas/liquid Cd + N read from the release block, for an honest figure title."""
+    """Actual orifice + gas/liquid Cd + N read from the release block, for the figure title."""
+    d_mm = rel["diameter"] * 1000.0
     cd_gas = rel.get("discharge_coef_gas", rel["discharge_coef"])
     if rel["type"] == "liquid":
-        return f"Cd_gas {cd_gas:g} / Cd_liq {rel['discharge_coef']:g} + N {rel.get('liquid_nonequilibrium', 0):g}"
-    return f"Cd_gas {cd_gas:g} (gas release)"
+        return (f"{d_mm:g} mm orifice, Cd_liq {rel['discharge_coef']:g} / Cd_gas {cd_gas:g}"
+                f" + N {rel.get('liquid_nonequilibrium', 0):g}")
+    return f"{d_mm:g} mm orifice, Cd_gas {cd_gas:g} (gas release)"
 
 
 def main():
@@ -191,7 +193,7 @@ def main():
         for a in ax.flat:
             a.set_xlabel("time [h]"); a.grid(alpha=0.25); a.legend(fontsize=6.5, loc="best")
             a.set_xlim(-0.02, th[-1] * 1.02)
-        fig.suptitle(f"CARDICE {tid} - reconciled (true orifice, {title_bits(rel)}) vs 1 Hz data",
+        fig.suptitle(f"CARDICE {tid} - reconciled ({title_bits(rel)}) vs 1 Hz data",
                      color=NAVY, fontweight="bold", fontsize=11)
         fig.tight_layout(rect=[0, 0, 1, 0.97])
         out = os.path.join(RECON, f"CARDICE_{tid}_reconciled.pdf")
