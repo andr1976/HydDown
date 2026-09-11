@@ -19,9 +19,16 @@ The vessel
    :width: 90%
 
    The 2 m\ :sup:`3` steel sphere: (A) bare, (B) top-view drawing, (C) with flanges
-   and insulation, (D) with the aluminium cover. From :cite:`Jamois2023`.
+   and insulation, (D) with the aluminium cover.
 
-.. list-table:: Vessel characteristics :cite:`Jamois2023`
+   From :cite:`Jamois2023`.
+
+The vessel characteristics reported by :cite:`Jamois2023` are summarised in
+:numref:`tbl-vessel`.
+
+.. _tbl-vessel:
+
+.. list-table:: Vessel characteristics
    :widths: 45 55
    :header-rows: 1
 
@@ -96,7 +103,9 @@ protruding through the insulation) - thermal bridges the conduction estimate ign
    :width: 75%
 
    Cooling curves of the insulated vessel used to obtain the measured external
-   heat-transfer conductance. From :cite:`Jamois2023`.
+   heat-transfer conductance.
+
+   From :cite:`Jamois2023`.
 
 For the several-hour CO\ :sub:`2` blowdowns this :math:`\sim 100` W ingress is small
 against the latent (flashing/sublimation) loads, so the blowdown is effectively
@@ -108,7 +117,9 @@ Instrumentation
 .. figure:: figures/vaillant_instrumentation.png
    :width: 85%
 
-   Overall instrumentation of the set-up. From :cite:`Vaillant2021`.
+   Overall instrumentation of the set-up.
+
+   From :cite:`Vaillant2021`.
 
 The measured quantities are:
 
@@ -125,7 +136,9 @@ The measured quantities are:
 
    Example measured temperatures during a blowdown: (A) fluid at 6 heights inside the
    vessel and (B) the wall 5 mm from the inner face, showing the stable vertical
-   stratification of the vapour phase. From :cite:`Jamois2023`.
+   stratification of the vapour phase.
+
+   From :cite:`Jamois2023`.
 
 Two independent flow measurements were used: direct **weighing** (load cells) and an
 **ultrasonic** velocity (inline on the gas pipe, clamp-on on the liquid pipe) combined
@@ -144,9 +157,9 @@ Test matrix
 
 The pure-CO\ :sub:`2` tests are 5-10; tests 1-4 are methane / methane-CO\ :sub:`2`
 mixtures and are out of scope. For the low-temperature tests the sphere was filled
-with liquid to about the middle.
+with liquid to about the middle. The matrix is reported by :cite:`Vaillant2021`.
 
-.. list-table:: CARDICE pure-CO\ :sub:`2` test matrix :cite:`Vaillant2021`
+.. list-table:: CARDICE pure-CO\ :sub:`2` test matrix
    :widths: 12 22 18 18 15 15
    :header-rows: 1
 
@@ -202,13 +215,17 @@ Gas releases produced large in-vessel dry-ice banks (over 450 kg reported), as i
    :width: 60%
 
    Solid CO\ :sub:`2` formed inside the sphere during a **gas** release test (the
-   picture is tilted; the metal rod indicates the vertical). From :cite:`Vaillant2021`.
+   picture is tilted; the metal rod indicates the vertical).
+
+   From :cite:`Vaillant2021`.
 
 .. figure:: figures/jamois_dryice_foam.png
    :width: 60%
 
    Close-up of the dry-ice "foam-like" structure (floating solid with vapour
-   bubbles). From :cite:`Jamois2023`.
+   bubbles).
+
+   From :cite:`Jamois2023`.
 
 Raw-data alignment
 ==================

@@ -143,7 +143,9 @@ gas temperature.
    :width: 95%
 
    Test 5 experimental vs Vessfire results (pressure, mass flow rate, phase
-   temperature, wall temperature). From :cite:`Vaillant2021`.
+   temperature, wall temperature).
+
+   From :cite:`Vaillant2021`.
 
 Sensitivity: wall-to-solid coefficient
 ======================================

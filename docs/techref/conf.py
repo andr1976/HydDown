@@ -29,6 +29,10 @@ latex_elements = {
     "preamble": r"""
 \usepackage{booktabs}
 \usepackage{amsmath}
+% NB: keep :cite: roles out of figure/table captions. sphinxcontrib-bibtex renders a
+% citation as a fragile bracket-protected \hyperlink, which breaks hyperref/nameref
+% caption-title extraction (\Hy@tempa "extra }") inside a \caption moving argument.
+% Attribution is placed in a legend paragraph or the introducing sentence instead.
 """,
 }
 latex_documents = [

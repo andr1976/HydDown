@@ -1,0 +1,34 @@
+vessel:
+  length: 32.47
+  diameter: 7.8
+  thickness: 0.200
+  heat_capacity: 490
+  density: 7800.
+  orientation: "horizontal"
+  liquid_level: 3
+  type: "Hemispherical"
+initial:
+  temperature: 250.
+  pressure: 1601300
+  fluid: "CO2" 
+calculation:
+  type: "energybalance"
+  time_step: 10
+  end_time: 40000
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided" #"calc"
+valve:
+  flow: "discharge"
+  type: "orifice"
+  diameter : 0.030
+  #diameter : 0.013
+  discharge_coef: 0.975
+  back_pressure: 101300.
+  #set_pressure: 2600000
+  #blowdown: 0.1
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 303.15
+  h_outer: 0
+  h_inner: "calc"
+  
