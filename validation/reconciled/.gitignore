@@ -1,0 +1,3 @@
+# Local extraction cache of the raw 1 Hz CARDICE data (from background/CO2_blowdown-DJa.zip)
+_data/
+__pycache__/

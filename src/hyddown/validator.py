@@ -1118,6 +1118,9 @@ def release_validation(input):
         "type": {"required": True, "type": "string", "allowed": ["liquid", "gas"]},
         "diameter": {"required": True, "type": "number", "min": 0},
         "discharge_coef": {"required": True, "type": "number", "min": 0},
+        # Optional separate Cd for a gas discharge (gas release or the gas tail of a
+        # liquid release); defaults to discharge_coef when omitted.
+        "discharge_coef_gas": {"required": False, "type": "number", "min": 0},
         "back_pressure": {"required": False, "type": "number", "min": 0},
         "atm_pressure": {"required": False, "type": "number", "min": 0},
         "eos": {"required": False, "type": "string", "allowed": ["tcPR"]},

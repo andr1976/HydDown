@@ -287,6 +287,12 @@ class HydDown:
             self.release_type = rel["type"]  # 'liquid' (liquid space) or 'gas' (vapour space)
             self.D_release = rel["diameter"]
             self.CD_release = rel["discharge_coef"]
+            # Separate discharge coefficient for a GAS discharge - a gas-space release, or the
+            # gas tail of a liquid release once the liquid is exhausted. Defaults to the single
+            # discharge_coef so existing inputs are unchanged. This lets a liquid release use a
+            # two-phase/flashing Cd for the liquid (with liquid_nonequilibrium) while its gas
+            # tail keeps the reliable single-phase (HEM) gas Cd. See docs/techref discharge.
+            self.CD_release_gas = rel.get("discharge_coef_gas", self.CD_release)
             self.release_back_pressure = rel.get("back_pressure", 101325.0)
             self.release_atm_pressure = rel.get(
                 "atm_pressure", self.release_back_pressure
@@ -650,7 +656,7 @@ class HydDown:
         rate, atm = self.release_model.release_state(
             P,
             self.release_phase,
-            self.CD_release,
+            self.CD_release_gas if self.release_phase == "gas" else self.CD_release,
             self.D_release ** 2 / 4 * math.pi,
         )
         self.T_atm[i] = atm["T"]
@@ -735,7 +741,7 @@ class HydDown:
 
         r = rm.two_zone_plateau_step(
             self.tz_m_gas, self.tz_U_gas, self.tz_M_ls, self.tz_U_ls,
-            Q_wg, Q_gl, dt, self.CD_release, area, V,
+            Q_wg, Q_gl, dt, self.CD_release_gas, area, V,
         )
         self.tz_m_gas, self.tz_U_gas = r["m_g"], r["U_g"]
         self.tz_M_ls, self.tz_U_ls = r["M_ls"], r["U_ls"]
@@ -803,7 +809,7 @@ class HydDown:
                  "P": self.P[i - 1], "mdot": 0.0}
         else:
             r = rm.two_zone_descent_step(self.tz_m_gas, self.tz_U_gas, self.tz_m_solid,
-                                         self.P[i - 1], Q_wg, UA_gs, dt, self.CD_release, area, V)
+                                         self.P[i - 1], Q_wg, UA_gs, dt, self.CD_release_gas, area, V)
         self.tz_m_gas, self.tz_U_gas, self.tz_m_solid = r["m_g"], r["U_g"], r["m_solid"]
 
         m_wall = getattr(self, "vessel_density", 0.0) * self.vol_solid
@@ -894,7 +900,7 @@ class HydDown:
             atm = rm.atm_split(rate["h0"])
         else:
             # vapour leak from the current vessel state (triple point or sublimation line)
-            rate = rm.gas_leak_rate(T_prev, P_prev, self.CD_release, area)
+            rate = rm.gas_leak_rate(T_prev, P_prev, self.CD_release_gas, area)
             atm = rm.atm_split(rate["h0"])
         mdot = rate["mdot"]
         h_leak = rate["h0"]
