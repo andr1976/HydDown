@@ -312,6 +312,11 @@ class HydDown:
             # Non-equilibrium factor for a LIQUID discharge (delayed/metastable flashing
             # through a short orifice): 0 = equilibrium HEM, 1 = frozen all-liquid.
             self.liquid_nonequilibrium = rel.get("liquid_nonequilibrium", 0.0)
+            # Optionally fade that boost linearly with (P - P_triple) as the vessel
+            # depressurises (metastable flashing is a low-pressure saturated effect that
+            # vanishes near the triple point); N = liquid_nonequilibrium at the initial
+            # pressure. Default off, so existing inputs keep a constant N.
+            self.liquid_ne_pressure_scaled = rel.get("liquid_ne_pressure_scaled", False)
 
         # valve type
         # - constant_mass
@@ -559,6 +564,8 @@ class HydDown:
                 atm_pressure=self.release_atm_pressure,
                 eos=self.release_eos,
                 liquid_nonequilibrium=self.liquid_nonequilibrium,
+                liquid_ne_pressure_scaled=self.liquid_ne_pressure_scaled,
+                liquid_ne_pref=self.p0,
             )
             # A 'liquid' release switches to 'gas' once the liquid inventory is exhausted.
             self.release_phase = self.release_type

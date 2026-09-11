@@ -80,7 +80,8 @@ class CO2ReleaseModel:
     """
 
     def __init__(self, back_pressure=P_ATM_DEFAULT, atm_pressure=P_ATM_DEFAULT, eos="tcPR",
-                 liquid_nonequilibrium=0.0):
+                 liquid_nonequilibrium=0.0, liquid_ne_pressure_scaled=False,
+                 liquid_ne_pref=None):
         if str(eos).lower().replace("-", "") != "tcpr":
             raise ValueError(
                 f"Unsupported eos '{eos}'. Only 'tcPR' is supported for CO2 dry-ice modelling."
@@ -101,6 +102,13 @@ class CO2ReleaseModel:
         # well above equilibrium HEM (toward the frozen liquid); N captures how far. Gas
         # discharge is unaffected (single phase, nothing to flash).
         self.liquid_nonequilibrium = float(liquid_nonequilibrium)
+        # Optional pressure scaling of the non-equilibrium factor: the metastable boost is a
+        # saturated low-pressure effect that fades toward equilibrium HEM as the vessel
+        # depressurises toward the triple point (CARDICE/Ineris: N ~ 0.013*(P0-Ptr[bar])).
+        # When enabled, the user's N is scaled by clip((P - Ptr)/(P_ref - Ptr), 0, 1), so N =
+        # N_user at the reference (initial) pressure P_ref and -> 0 at the triple point.
+        self.liquid_ne_pressure_scaled = bool(liquid_ne_pressure_scaled)
+        self.liquid_ne_pref = liquid_ne_pref
         self.P_TRIPLE = P_TRIPLE  # convenience: the (literature) validity-floor constant
         self._init_atm_endpoints()
         self._init_triple_point()
@@ -360,6 +368,10 @@ class CO2ReleaseModel:
             # the metastable limit where the liquid never flashes. rho0 is the saturated
             # liquid density at P0.
             N = self.liquid_nonequilibrium
+            if self.liquid_ne_pressure_scaled and self.liquid_ne_pref:
+                # fade the boost linearly with (P - P_triple) so it -> 0 near the triple point
+                scale = (P0 - self.P_TRIPLE) / (self.liquid_ne_pref - self.P_TRIPLE)
+                N = N * min(max(scale, 0.0), 1.0)
             G_frozen = math.sqrt(2.0 * rho0 * max(P0 - self.p_back, 0.0))
             G_ne = math.sqrt((1.0 - N) * r["G"] ** 2 + N * G_frozen ** 2)
             r["G_HEM"] = r["G"]

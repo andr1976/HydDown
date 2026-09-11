@@ -6,7 +6,10 @@
 # 3/4/6 mm) instead of an orifice inferred from the gas rate at a single Cd.
 #
 # Reconciliation (calibrated to the raw 1 Hz Ineris data, CO2_blowdown-DJa):
-#   * true orifice           : 4 mm (SSRN Table 1)
+#   * true orifice           : 5 mm EFFECTIVE (SSRN Table 1 lists 4 mm, but the
+#                              measured rate exceeds Pursell's 49-bar test through the
+#                              same 4 mm hole - physically impossible; ~5 mm reconciles
+#                              it and drops N from 0.525 to 0.175, in line with T6).
 #   * Cd_gas = 0.84          : canonical sharp-edged gas-orifice coefficient. (The raw data
 #                              gives 0.87-0.92, mean 0.89, constant along each pressure
 #                              decline; 0.84 adopted here.) Used for a gas release and for
@@ -15,7 +18,10 @@
 #                              520). Used for the liquid discharge only.
 #   * liquid_nonequilibrium N: delayed/metastable flashing boost on top of Cd_liquid,
 #                              calibrated to the measured steady liquid-drain rate
-#                              (T6 0.174, T8 0.525, T10 0.020; T8 flashes fastest, ~2.6x HEM).
+#                              (T6 0.174, T8 0.175, T10 0.020). N is PRESSURE-SCALED
+#                              (liquid_ne_pressure_scaled: true): it fades linearly with
+#                              (P0-Ptr) to ~0 near the triple point as the vessel blows down
+#                              (CARDICE/Ineris: N ~ 0.013*(P0-Ptr[bar])).
 #
 # Fallback: the baseline single-Cd files remain in validation/ unchanged.
 
@@ -45,10 +51,11 @@ valve:
   back_pressure: 101325.0
 release:
   type: liquid
-  diameter: 0.004
+  diameter: 0.005
   discharge_coef: 0.62
   discharge_coef_gas: 0.84
-  liquid_nonequilibrium: 0.525
+  liquid_nonequilibrium: 0.175
+  liquid_ne_pressure_scaled: true
   back_pressure: 101325.0
   atm_pressure: 101325.0
   eos: tcPR

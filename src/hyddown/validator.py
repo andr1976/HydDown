@@ -1138,6 +1138,8 @@ def release_validation(input):
         "solid_gas_wall_frac": {"required": False, "type": "number", "min": 0, "max": 1},
         # Non-equilibrium factor for a liquid discharge (0 = HEM, 1 = frozen all-liquid).
         "liquid_nonequilibrium": {"required": False, "type": "number", "min": 0, "max": 1},
+        # Fade the non-equilibrium factor linearly with (P - P_triple) as the vessel blows down.
+        "liquid_ne_pressure_scaled": {"required": False, "type": "boolean"},
     }
     v = Validator(schema_release)
     retval = v.validate(input["release"])

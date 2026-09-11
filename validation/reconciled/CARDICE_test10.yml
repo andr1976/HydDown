@@ -15,7 +15,10 @@
 #                              520). Used for the liquid discharge only.
 #   * liquid_nonequilibrium N: delayed/metastable flashing boost on top of Cd_liquid,
 #                              calibrated to the measured steady liquid-drain rate
-#                              (T6 0.174, T8 0.525, T10 0.020; T8 flashes fastest, ~2.6x HEM).
+#                              (T6 0.174, T8 0.175, T10 0.020). N is PRESSURE-SCALED
+#                              (liquid_ne_pressure_scaled: true): it fades linearly with
+#                              (P0-Ptr) to ~0 near the triple point as the vessel blows down
+#                              (CARDICE/Ineris: N ~ 0.013*(P0-Ptr[bar])).
 #
 # Fallback: the baseline single-Cd files remain in validation/ unchanged.
 
@@ -49,6 +52,7 @@ release:
   discharge_coef: 0.62
   discharge_coef_gas: 0.84
   liquid_nonequilibrium: 0.02
+  liquid_ne_pressure_scaled: true
   back_pressure: 101325.0
   atm_pressure: 101325.0
   eos: tcPR

@@ -90,7 +90,9 @@ def main():
 
     print(f"LIQUID ->  N calibrated to steady drain, Cd_liquid fixed at {CD_LIQUID}")
     print(f"{'test':>4} {'P0[bar]':>8} {'m_liq':>8} {'d[mm]':>6} {'G_HEM':>8} {'G_froz':>8} {'N':>6}")
-    liq = [("T6", "6", 3.0, (400, 1800)), ("T8", "08", 4.0, (400, 2200)),
+    # T8 at 5 mm effective (SSRN lists 4 mm, but its measured rate exceeds Pursell's 49-bar
+    # test through the same 4 mm hole - physically impossible; 5 mm gives N in line with T6).
+    liq = [("T6", "6", 3.0, (400, 1800)), ("T8", "08", 5.0, (400, 2200)),
            ("T10", "10", 4.0, (400, 2000))]
     for name, pfx, d, win in liq:
         t, M, pt, P = load(pfx)
