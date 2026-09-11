@@ -18,9 +18,11 @@ For every test:
    load-cell mass decline (and the pressure drop); all data are shifted to it.
 #. **Initial mass** - ``vessel.liquid_level`` is calibrated (via the CoolProp initial
    phase masses) to the measured load-cell inventory. All six match within 0.4 %.
-#. **Discharge** - a single physical :math:`C_d = 0.68`; the orifice is inferred from
-   the reliable gas discharge and the liquid gets the HNE boost :math:`N`
-   (:ref:`discharge`).
+#. **Discharge** - the baseline figures below use a single physical :math:`C_d = 0.68`
+   with the orifice inferred from the reliable gas discharge and the liquid HNE boost
+   :math:`N`. The *reconciled* sensitivity case - true 3/4/6 mm orifices
+   :cite:`Drescher2022`, phase-split :math:`C_d` and a pressure-scaled :math:`N(P)`
+   (:ref:`discharge`) - is validated separately under ``validation/reconciled/``.
 #. **Gas start** - ``initial.gas_temperature`` = mid-band of the top 3 gas-space
    thermocouples; the gas-contact wall starts at that temperature and the wetted wall
    at the liquid temperature (:ref:`heat_transfer`).

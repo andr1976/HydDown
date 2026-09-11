@@ -135,78 +135,122 @@ single-factor blend :eq:`hne-blend` is sufficient. The Leung :math:`\omega`-meth
 
 **Implementation**: ``co2_release.py:hem_rate()`` (liquid branch).
 
-Orifice and discharge coefficient
-=================================
+Orifice and discharge coefficients
+==================================
 
-Because the per-test orifice size is not reported, it is inferred from the measured
-discharge with a single physical coefficient :math:`C_d = 0.68`. The **gas** discharge
-is reliable HEM (it equals a choked orifice), so for a gas release, and for the *gas
-tail* of a liquid release, the measured gas rate fixes the orifice. The **liquid** rate
-of that same test is then matched with the HNE factor :math:`N`. The inferred sizes:
+The GHGT-16 paper :cite:`Drescher2022` (Table 1) reports the actual restriction-orifice
+sizes: the pure-CO\ :sub:`2` tests use **3, 4 and 6 mm** holes. With the true sizes fixed,
+the discharge coefficient is split by phase and calibrated directly against the raw 1 Hz
+Ineris data (:ref:`validation`):
 
-.. list-table:: Estimated orifices (single :math:`C_d = 0.68`)
-   :widths: 12 12 14 14 18 30
+* the **gas** discharge is reliable single-phase HEM (it equals a choked orifice), so it
+  takes one :math:`C_{d,\text{gas}}`. Fitting the gas tests (5, 7, 9) gives 0.87-0.92, and
+  the coefficient is *constant along each pressure decline* - an independent confirmation
+  of the HEM + single-\ :math:`C_d` gas model. The canonical sharp-edged value
+  :math:`C_{d,\text{gas}} = 0.84` is adopted (low end of the range);
+* the **liquid** discharge takes the two-phase / flashing sharp-orifice coefficient
+  :math:`C_{d,\text{liq}} = 0.62` (Darby / API 520 :cite:`Darby2004`) together with the
+  non-equilibrium factor :math:`N`.
+
+A liquid release therefore uses :math:`C_{d,\text{liq}}` for the liquid and
+:math:`C_{d,\text{gas}}` for its gas tail (``release.discharge_coef_gas``).
+
+.. list-table:: Reconciled discharge (true orifices, calibrated to the 1 Hz data)
+   :widths: 10 12 12 12 12 12
    :header-rows: 1
 
    * - Test
      - Phase
      - :math:`P_0` [bar]
      - Orifice
+     - :math:`C_d`
      - :math:`N`
-     - Inferred from
    * - 5
      - gas
      - 20
-     - 3.44 mm
+     - 3 mm
+     - 0.84
      - --
-     - gas rate
    * - 6
      - liquid
      - 20
-     - 2.66 mm
-     - 0.267
-     - gas tail + liquid rate
+     - 3 mm
+     - 0.62
+     - 0.174
    * - 7
      - gas
      - 15
-     - 4.38 mm
+     - 4 mm
+     - 0.84
      - --
-     - gas rate
    * - 8
      - liquid
      - 15
-     - 4.70 mm
-     - 0.195
-     - gas tail + liquid rate
+     - 5 mm\ :sup:`*`
+     - 0.62
+     - 0.175
    * - 9
      - gas
      - 10
-     - 4.45 mm
+     - 4 mm
+     - 0.84
      - --
-     - gas rate
    * - 10
      - liquid
      - 10
-     - 4.09 mm
-     - 0.0
-     - liquid rate
+     - 4 mm
+     - 0.62
+     - 0.020
 
-The metastable boost :math:`N` decreases with pressure (0.267 at 20 bar, 0.195 at
-15 bar, 0 at 10 bar); at 10 bar the equilibrium HEM liquid flux already meets the
-data, so test 10's orifice is taken from the liquid rate directly (the gas-inferred
-value would over-drain it). The inferred sizes (2.66-4.70 mm) sit inside the papers'
-1 mm-to-full-bore range and near the one documented 4 mm example. A plausible
-physical reading is that tests 7-10 share a nominal 4 mm orifice and the spread comes
-from using one :math:`C_d`; splitting :math:`C_d` by phase (gas :math:`\sim 0.84`-0.9,
-liquid :math:`\sim 0.62`-0.65) would collapse them toward 4 mm - a possible future
-refinement.
+\ :sup:`*` Table 1 lists 4 mm for test 8, but its measured 0.314 kg/s exceeds a controlled
+49 bar lab test :cite:`Pursell2012` through the *same* 4 mm hole - impossible, since flow
+must rise with upstream pressure. An effective 5 mm orifice reconciles it and drops
+:math:`N` from 0.53 to 0.18, in line with test 6.
 
-Why the single-:math:`C_d` + HNE convention
--------------------------------------------
+Pressure-dependent non-equilibrium factor
+-----------------------------------------
 
-If the orifice is instead inferred from the *liquid* rate assuming equilibrium HEM,
-it comes out too large (HEM under-predicts the flashing liquid), and that oversized
-orifice then makes the *gas* tail :math:`\sim 2\times` too fast. Inferring the orifice
-from the reliable gas discharge and giving the liquid the HNE boost removes this
-inconsistency and lets one :math:`C_d` fit both phases (e.g. test 8: liquid
-0.311 vs 0.317 kg/s, gas tail 0.030 vs 0.030 kg/s, both matched).
+Reconciling :math:`N` at the fixed :math:`C_{d,\text{liq}} = 0.62` against the measured
+steady liquid-drain rate shows that, across the saturated-CO\ :sub:`2` regime (CARDICE plus
+the Ineris single point :cite:`Drescher2022`), :math:`N` scales linearly with the distance
+above the triple point:
+
+.. math::
+   :label: n-of-p
+
+   N \approx 0.013\,(P_0 - P_\text{tr})\quad[\text{bar}], \qquad R^2 = 0.88
+
+(a free power exponent returns 1.02, i.e. linear; :math:`N \to 0` at the triple point,
+rising to :math:`\sim 0.31` at 28 bar). It is applied through
+``release.liquid_ne_pressure_scaled``, which fades each test's calibrated :math:`N` as
+
+.. math::
+
+   N_\text{eff}(P) = N\,\operatorname{clip}\!\left(\frac{P - P_\text{tr}}{P_0 - P_\text{tr}},\,0,\,1\right),
+
+so :math:`N = N` at the initial pressure and vanishes near the triple point as the vessel
+blows down. Physically the metastable boost is a short-residence, above-triple effect:
+test 10 at 10 bar already reads :math:`\sim`\ equilibrium because it sits close to the
+triple point.
+
+Two regimes; HEM vs the HNM
+---------------------------
+
+Reconciling :math:`N` across the wider CO\ :sub:`2` release literature - CARDICE, Ineris,
+the saturated Toesse jets :cite:`Toesse2013`, the Pursell orifice tests :cite:`Pursell2012`
+and the Vianna/Lopes HNM dataset :cite:`Lopes2018` - reveals **two regimes that do not
+share one** :math:`N` **law**:
+
+* **low-pressure saturated** CO\ :sub:`2` (10-30 bar; the HydDown regime), where :math:`N`
+  follows :eq:`n-of-p`;
+* **high-pressure dense / subcooled** liquid (49-159 bar), where :math:`N` is governed by
+  subcooling instead.
+
+For the dense regime, plain HEM with a fixed :math:`C_d` reproduces the measured flux **as
+well as** the Vianna homogeneous non-equilibrium model (mean absolute error 20.8 % vs
+22.2 %), so the HNM/HRM machinery is unnecessary there - HEM plus the low-pressure
+:math:`N(P)` boost is sufficient. The residence/diameter dependence of :math:`N` (smaller
+orifice :math:`\to` higher :math:`N`) is real but cannot be pinned universally because the
+orifice *lengths* are unreported. For **large leaks** the long residence lets the liquid
+flash to equilibrium, so :math:`N \to 0` (pure HEM); the discharge coefficient is
+geometry-set and essentially size-independent.
