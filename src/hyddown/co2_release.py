@@ -491,6 +491,17 @@ class CO2ReleaseModel:
         v0 = _scal(self.eos.specific_volume(T, P, self.z, self.VAP))
         return self.hem_rate_from_stagnation(h0, s0, self.M / v0, T, P, Cd, area)
 
+    def dense_leak_rate(self, T, P, Cd, area, phase="liquid"):
+        """HEM rate for a single-phase (subcooled/dense) discharge at the actual vessel
+        state (T, P) - not a saturated bubble/dew point. Feeds the outlet while the vessel is
+        single-phase (before it flashes); the draw is phase-agnostic. Bypasses stagnation()'s
+        P >= P_crit guard. ``phase`` selects the thermopack phase root (liquid/gas)."""
+        ph = self.LIQ if phase == "liquid" else self.VAP
+        h0 = _scal(self.eos.enthalpy(T, P, self.z, ph)) / self.M
+        s0 = _scal(self.eos.entropy(T, P, self.z, ph))  # molar
+        v0 = _scal(self.eos.specific_volume(T, P, self.z, ph))
+        return self.hem_rate_from_stagnation(h0, s0, self.M / v0, T, P, Cd, area)
+
     # =====================================================================
     # Solid-in-vessel regime (below the triple point) - opt-in fallback
     # =====================================================================

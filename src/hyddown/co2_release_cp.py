@@ -162,6 +162,17 @@ class CO2ReleaseModelCP(CO2ReleaseModel):
         h0, s0, v0 = self._gasp(T, P)
         return self.hem_rate_from_stagnation(h0, s0, 1.0 / v0, T, P, Cd, area)
 
+    def dense_leak_rate(self, T, P, Cd, area, phase="liquid"):
+        """HEM rate for a single-phase (subcooled/dense or supercritical) discharge at the
+        actual vessel state (T, P) - not a saturated bubble/dew point. This is what feeds the
+        outlet while the vessel is single-phase, before it flashes: there is only one phase,
+        so the draw is phase-agnostic (a liquid-space or vapour-space outlet both draw it).
+        Bypasses stagnation()'s P >= P_crit guard by taking the state directly."""
+        h0 = PropsSI("Hmass", "T", T, "P", P, "CO2")
+        s0 = PropsSI("Smass", "T", T, "P", P, "CO2")
+        rho0 = PropsSI("Dmass", "T", T, "P", P, "CO2")
+        return self.hem_rate_from_stagnation(h0, s0, rho0, T, P, Cd, area)
+
     # ------------------------------------------------------- atmospheric state
     def atm_split(self, h0_mass):
         beta_gas = (h0_mass - self.h_solid_atm) / (self.h_gas_atm - self.h_solid_atm)
