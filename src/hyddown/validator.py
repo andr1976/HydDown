@@ -1123,9 +1123,9 @@ def release_validation(input):
         "discharge_coef_gas": {"required": False, "type": "number", "min": 0},
         "back_pressure": {"required": False, "type": "number", "min": 0},
         "atm_pressure": {"required": False, "type": "number", "min": 0},
-        "eos": {"required": False, "type": "string", "allowed": ["tcPR"]},
+        "eos": {"required": False, "type": "string", "allowed": ["CoolProp", "tcPR"]},
         "solid_in_vessel": {"required": False, "type": "boolean"},
-        "solid_h_inner": {"required": False, "type": "number", "min": 0},
+        "solid_h_inner": {"required": False, "type": ["number", "string"]},
         "solid_h_gas_wall": {
             "required": False,
             "anyof": [

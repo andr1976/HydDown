@@ -40,7 +40,8 @@ import math
 import numpy as np
 from scipy import optimize
 
-from thermopack.tcPR import tcPR
+# thermopack is imported lazily inside CO2ReleaseModel.__init__ so this module (and the
+# CoolProp-only subclass in co2_release_cp.py) can be imported without a thermopack install.
 
 
 # --- CO2 constants -----------------------------------------------------------------
@@ -86,6 +87,7 @@ class CO2ReleaseModel:
             raise ValueError(
                 f"Unsupported eos '{eos}'. Only 'tcPR' is supported for CO2 dry-ice modelling."
             )
+        from thermopack.tcPR import tcPR  # lazy import (see module header)
         self.eos = tcPR("CO2")
         self.eos.init_solid("CO2")
         self.z = np.array([1.0])

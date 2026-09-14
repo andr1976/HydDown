@@ -297,12 +297,23 @@ class HydDown:
             self.release_atm_pressure = rel.get(
                 "atm_pressure", self.release_back_pressure
             )
-            self.release_eos = rel.get("eos", "tcPR")
+            # Thermodynamic backend for the CO2 release model. "CoolProp" (default) is the
+            # thermopack-free implementation (CoolProp + solid table); "tcPR" uses the
+            # thermopack backend (requires a thermopack install).
+            self.release_eos = rel.get("eos", "CoolProp")
             # Opt-in solid-in-vessel fallback: once the tank reaches the triple point,
             # continue with a thermopack three-phase / sublimation model instead of
             # freezing. solid_h_inner is the (simplified) internal HTC used there.
             self.solid_in_vessel = rel.get("solid_in_vessel", False)
-            self.solid_h_inner = rel.get("solid_h_inner", 20.0)
+            # solid_h_inner: a fixed wall->cold-phase HTC [W/m2 K], OR a boiling correlation
+            # evaluated at the triple-point saturated liquid with the wall superheat -
+            # "calc" -> Rohsenow (h_inside_wetted); "cooper" -> Cooper reduced-pressure
+            # correlation (carries CO2's high reduced pressure natively; the SINTEF choice).
+            # In correlation mode the numeric value below is the fallback used when the
+            # correlation cannot be evaluated.
+            _shi = rel.get("solid_h_inner", 20.0)
+            self.solid_h_inner_mode = _shi.lower() if isinstance(_shi, str) else "fixed"
+            self.solid_h_inner = 150.0 if isinstance(_shi, str) else _shi
             # Two-zone plateau HTCs: wall->gas keeps the gas warm; gas->liquid/solid
             # interphase is kept ~0 so heat does not melt the freezing dry ice.
             self.solid_h_gas_wall = rel.get("solid_h_gas_wall", 15.0)
@@ -557,9 +568,14 @@ class HydDown:
         # Release model (thermopack CO2 HEM release rate + dry-ice atmospheric state).
         # Imported lazily so non-release runs never import thermopack.
         if self.has_release:
-            from hyddown.co2_release import CO2ReleaseModel
+            if str(self.release_eos).lower().replace("-", "") in ("coolprop", "cp"):
+                # thermopack-free backend (CoolProp + solid table)
+                from hyddown.co2_release_cp import CO2ReleaseModelCP as _ReleaseModel
+            else:
+                # thermopack backend (tcPR / GERG2008 / MEOS)
+                from hyddown.co2_release import CO2ReleaseModel as _ReleaseModel
 
-            self.release_model = CO2ReleaseModel(
+            self.release_model = _ReleaseModel(
                 back_pressure=self.release_back_pressure,
                 atm_pressure=self.release_atm_pressure,
                 eos=self.release_eos,
@@ -693,6 +709,48 @@ class HydDown:
                 return 15.0
         return float(hgw)
 
+    def _wetted_wall_htc(self, Tw, T_cold):
+        """Below-triple wetted-wall HTC [W/m2 K]: the fixed ``solid_h_inner``, or a boiling
+        correlation selected by ``solid_h_inner``:
+
+          * ``"calc"``   -> Rohsenow (``h_inside_wetted``);
+          * ``"cooper"`` -> Cooper reduced-pressure correlation, which carries CO2's high
+                            reduced pressure natively (the correlation the SINTEF reference
+                            model uses; needs only P_r, M, q and roughness).
+
+        No boiling liquid exists below the triple point, so the correlation is evaluated at the
+        triple-point saturated liquid and only the driving superheat ``Tw - T_cold`` varies with
+        the descent. Both are capped at 3000 W/m2 K (as ``h_inside_wetted`` is): above that the
+        wall is conduction-limited and its temperature is insensitive to the exact coefficient,
+        and the cap keeps the explicit wall step stable. Falls back to the fixed value when the
+        correlation cannot be evaluated (or when there is no superheat to drive boiling).
+        """
+        mode = getattr(self, "solid_h_inner_mode", "fixed")
+        if mode == "fixed":
+            return self.solid_h_inner
+        Te = Tw - T_cold
+        if Te <= 0.0:
+            return self.solid_h_inner
+        Ptp = self.release_model.P_TRIPLE_EOS
+        try:
+            if mode == "cooper":
+                import ht
+                from CoolProp.CoolProp import PropsSI
+                if not hasattr(self, "_co2_Pc"):
+                    self._co2_Pc = PropsSI("Pcrit", "CO2")
+                    self._co2_MW = PropsSI("molar_mass", "CO2") * 1000.0  # g/mol
+                h = ht.Cooper(P=Ptp, Pc=self._co2_Pc, MW=self._co2_MW, Te=Te, Rp=1e-6)
+            else:  # "calc" -> Rohsenow
+                self.fluid_liquid.update(CP.PQ_INPUTS, Ptp, 0.0)       # sat liquid at triple
+                self.transport_fluid_wet.update(CP.PQ_INPUTS, Ptp, 0.0)
+                L = self.diameter if self.vessel_orientation == "horizontal" else self.length
+                h = tp.h_inside_wetted(L, Tw, T_cold, self.transport_fluid_wet, self.fluid_liquid)
+            if h and h > 0:
+                return min(h, 3000.0)
+        except Exception:
+            pass
+        return self.solid_h_inner
+
     def _wetted_wall_step(self, i, T_cold, has_cold):
         """Evolve the below-triple wetted (liquid/solid-contact) wall node and store it in
         ``T_vessel_wetted[i]``.
@@ -721,7 +779,7 @@ class HydDown:
         if has_cold and m_ww > 0:
             Tamb = getattr(self, "Tamb", Tw)
             A_wet = self.surf_area_inner * frac_wet
-            Q_ws = self.solid_h_inner * A_wet * (Tw - T_cold)  # wall -> cold phase
+            Q_ws = self._wetted_wall_htc(Tw, T_cold) * A_wet * (Tw - T_cold)  # wall -> cold phase
             Q_out = h_out * self.surf_area_outer * frac_wet * (Tamb - Tw)
             Tw = Tw + dt * (Q_out - Q_ws) / (m_ww * cp_wall)
         self.tz_T_wall_wet = Tw
