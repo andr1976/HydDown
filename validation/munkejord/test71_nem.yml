@@ -1,0 +1,58 @@
+# Munkejord/SINTEF Test 71 (8 mm nozzle, no riser, dense-phase CO2 blowdown) run PROPERLY
+# through HydDown's non-equilibrium (NEM) energy balance.
+#
+# Ref: Hoydalsvik, Austegard, Deng, Blakseth, Hafner, Munkejord, Appl. Therm. Eng. 306 (2026)
+#      133032. Actual initial state 122.6 bar / 25.2 C (dense single phase). HydDown cannot yet
+#      initialise a dense single phase, so the run STARTS AT THE TWO-PHASE ONSET the paper
+#      reports for the 25 C tests (~52 bar), which is exactly where NEM applies. The ~2 kg
+#      discharged in the ~1 s dense prelude leaves as liquid (forms no dry ice), so the initial
+#      mass here (~47 kg) is the inventory that actually reaches the triple point.
+#
+# No-riser -> vapour (top) draw once stratified -> release type "gas" (as the CARDICE gas tests).
+# NEM gives separate gas/liquid temperatures + a geometry-driven phase draw, instead of the
+# paper's fitted 17 s stratification ramp.
+vessel:
+  length: 1.0                  # internal height 1000 mm (vertical cylinder)
+  diameter: 0.273              # inner diameter 273 mm
+  thickness: 0.0254            # 25.4 mm side wall (uniform); geometry -> ~222 kg steel,
+                               # i.e. the nominal participating thermal mass
+  heat_capacity: 500           # SS316 cp (paper Table 1)
+  density: 7950                # SS316
+  orientation: "vertical"
+  liquid_level: 0.99           # nearly full of saturated liquid at the 52 bar flash onset
+                               # -> m0 ~ 47 kg (inventory remaining after the dense prelude)
+  type: "Flat-end"
+initial:
+  temperature: 289.06          # 15.9 C: saturation temperature at 52 bar (two-phase onset)
+  pressure: 5200000            # 52 bar - the two-phase onset for the 25 C tests (paper)
+  fluid: "CO2"
+  gas_temperature: 289.06      # gas at the flash onset (= Tsat)
+  wall_temperature: 298.35     # 25.2 C: the wall is still ~warm at flash onset (large thermal
+                               # mass barely cools during the ~1 s dense prelude)
+calculation:
+  type: "energybalance"
+  time_step: 0.2               # small dt for the fast (~200 s) blowdown (paper used 0.1 s)
+  end_time: 400.
+  non_equilibrium: true        # NEM: separate gas + liquid energy balances
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "none"
+  back_pressure: 101325.
+release:
+  type: "gas"                  # no riser -> vapour (top) draw
+  diameter: 0.008              # 8 mm throat (Test 71)
+  discharge_coef: 1.0          # smooth converging nozzle (paper: frictionless HEM)
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "CoolProp"              # thermopack-free backend
+  solid_in_vessel: true        # crosses the triple point -> dry ice forms in-vessel
+  solid_h_inner: "cooper"      # below-triple wall<->cold-phase HTC from the Cooper correlation
+  solid_h_gas_wall: "calc"     # natural-convection gas->wall HTC below triple
+  solid_h_gas_liquid: 0.0
+  solid_h_gas_solid: 3.0
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 298.35         # 25.2 C
+  h_outer: 0.0                 # adiabatic outer boundary (paper: validated over the ~200 s event)
+  h_inner: "calc"              # Rohsenow wetted-wall / free-convection dry-wall (above triple)
