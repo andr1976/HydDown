@@ -3713,6 +3713,10 @@ class HydDown:
             )
             # CO2 release / dry-ice atmospheric state (appended so column indices are stable)
             if self.has_release:
+                # In-vessel inventory breakdown (gas / liquid / solid dry ice)
+                df["Vessel gas mass (kg)"] = self.m_gas
+                df["Vessel liquid mass (kg)"] = self.m_liquid
+                df["Vessel dry-ice mass (kg)"] = self.m_solid
                 df["Release mass rate (kg/s)"] = self.release_rate
                 df["Atmospheric temperature (oC)"] = self.T_atm - 273.15
                 df["Atmospheric vapour mass fraction (-)"] = self.x_vap_atm
