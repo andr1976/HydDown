@@ -1,6 +1,6 @@
 """Solid CO2 (dry-ice) property tables for HydDown's CoolProp-only CO2 release model.
 
-Generated OFFLINE by scratchpad/gen_solid.py from thermopack GERG-2008 + the Hammer solid-CO2
+Generated OFFLINE by scripts/gen_co2_solid.py from thermopack GERG-2008 + the Hammer solid-CO2
 model, then re-referenced into CoolProp's enthalpy/entropy basis via the physical latent heat of
 sublimation at each temperature. The RUNTIME needs only CoolProp + numpy - NOT thermopack.
 
