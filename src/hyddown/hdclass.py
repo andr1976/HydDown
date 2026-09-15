@@ -412,6 +412,9 @@ class HydDown:
         """
         self.vol = self.inner_vol.V_total
         self.vol_tot = self.outer_vol.V_total
+        # Default off; set True only for a CO2 release started as a single dense phase (below).
+        # Defined unconditionally so the main loop can reference it for any calculation type.
+        self.single_phase_dense = False
         self.vol_solid = self.vol_tot - self.vol
         self.surf_area_outer = self.outer_vol.A
         self.surf_area_inner = self.inner_vol.A
