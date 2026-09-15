@@ -1,24 +1,3 @@
-# CARDICE Test 9 - RECONCILED discharge sensitivity case.
-#
-# Same physical calibration (mass, temperatures, wall, HTCs) as the baseline
-# validation/CARDICE_test9.yml; ONLY the discharge parameterisation is changed, to use the TRUE
-# restriction-orifice sizes reported in SSRN 4292065 (GHGT-16, Drescher et al., Table 1:
-# 3/4/6 mm) instead of an orifice inferred from the gas rate at a single Cd.
-#
-# Reconciliation (calibrated to the raw 1 Hz Ineris data, CO2_blowdown-DJa):
-#   * true orifice           : 4 mm (SSRN Table 1)
-#   * Cd_gas = 0.84          : canonical sharp-edged gas-orifice coefficient. (The raw data
-#                              gives 0.87-0.92, mean 0.89, constant along each pressure
-#                              decline; 0.84 adopted here.) Used for a gas release and for
-#                              the gas tail of a liquid release.
-#   * Cd_liquid = 0.62       : two-phase / flashing sharp-orifice coefficient (Darby / API
-#                              520). Used for the liquid discharge only.
-#   * liquid_nonequilibrium N: delayed/metastable flashing boost on top of Cd_liquid,
-#                              calibrated to the measured steady liquid-drain rate
-#                              (T6 0.174, T8 0.525, T10 0.020; T8 flashes fastest, ~2.6x HEM).
-#
-# Fallback: the baseline single-Cd files remain in validation/ unchanged.
-
 vessel:
   length: 0.0
   diameter: 1.58
@@ -49,7 +28,7 @@ release:
   discharge_coef: 0.84
   back_pressure: 101325.0
   atm_pressure: 101325.0
-  eos: tcPR
+  eos: CoolProp
   solid_in_vessel: true
   solid_h_inner: 150.0
   solid_h_gas_wall: calc

@@ -320,7 +320,10 @@ class HydDown:
             self.solid_h_gas_wall = rel.get("solid_h_gas_wall", 15.0)
             self.solid_h_gas_liquid = rel.get("solid_h_gas_liquid", 0.0)  # plateau (gas<->liquid)
             self.solid_h_gas_solid = rel.get("solid_h_gas_solid", 0.0)  # descent (gas<->dry ice)
-            self.solid_gas_wall_frac = rel.get("solid_gas_wall_frac", 0.5)
+            # Gas/condensate split of the inner wall below the triple point. Default None ->
+            # computed each step from the actual phase volumes and the vessel geometry
+            # (_gas_contact_area); a number here overrides with a fixed fraction of the inner area.
+            self.solid_gas_wall_frac = rel.get("solid_gas_wall_frac", None)
             # Non-equilibrium factor for a LIQUID discharge (delayed/metastable flashing
             # through a short orifice): 0 = equilibrium HEM, 1 = frozen all-liquid.
             self.liquid_nonequilibrium = rel.get("liquid_nonequilibrium", 0.0)
@@ -878,6 +881,23 @@ class HydDown:
                 return 15.0
         return float(hgw)
 
+    def _gas_contact_area(self, V_condensed):
+        """Inner-wall area in contact with the GAS below the triple point [m2].
+
+        The condensed phase (liquid + dry ice) of volume ``V_condensed`` settles at the bottom;
+        the gas contacts the wall above it. Derived from the actual vessel geometry (orientation
+        and head shape) through the existing ``fluids.TANK`` object (``inner_vol``), so it is not a
+        hard-coded fraction: with no condensate the gas sees the whole inner wall, and the
+        gas-contact area shrinks as dry ice/liquid accumulates. If ``release.solid_gas_wall_frac``
+        was set explicitly, that fixed fraction is used instead.
+        """
+        if self.solid_gas_wall_frac is not None:
+            return self.surf_area_inner * self.solid_gas_wall_frac
+        if V_condensed <= 1e-9:
+            return self.surf_area_inner
+        lvl = self.inner_vol.h_from_V(min(max(V_condensed, 0.0), self.vol))
+        return max(self.surf_area_inner - self.inner_vol.SA_from_h(lvl), 0.0)
+
     def _wetted_wall_htc(self, Tw, T_cold):
         """Below-triple wetted-wall HTC [W/m2 K]: the fixed ``solid_h_inner``, or a boiling
         correlation selected by ``solid_h_inner``:
@@ -920,7 +940,7 @@ class HydDown:
             pass
         return self.solid_h_inner
 
-    def _wetted_wall_step(self, i, T_cold, has_cold):
+    def _wetted_wall_step(self, i, T_cold, has_cold, A_wet=None):
         """Evolve the below-triple wetted (liquid/solid-contact) wall node and store it in
         ``T_vessel_wetted[i]``.
 
@@ -940,14 +960,17 @@ class HydDown:
         m_wall = getattr(self, "vessel_density", 0.0) * self.vol_solid
         cp_wall = getattr(self, "vessel_cp", 500.0)
         h_out = getattr(self, "h_out", 0.0)
-        frac_wet = max(1.0 - self.solid_gas_wall_frac, 0.0)
+        # Wetted (condensate-contact) wall area: from the caller's geometry-based split, else a
+        # fixed fraction if release.solid_gas_wall_frac was set explicitly.
+        if A_wet is None:
+            A_wet = self.surf_area_inner * max(1.0 - (self.solid_gas_wall_frac or 0.0), 0.0)
+        frac_wet = A_wet / self.surf_area_inner if self.surf_area_inner > 0 else 0.0
         if self.tz_T_wall_wet is None:
             self.tz_T_wall_wet = self.T_vessel_wetted[i - 1]
         Tw = self.tz_T_wall_wet
         m_ww = m_wall * frac_wet
         if has_cold and m_ww > 0:
             Tamb = getattr(self, "Tamb", Tw)
-            A_wet = self.surf_area_inner * frac_wet
             Q_ws = self._wetted_wall_htc(Tw, T_cold) * A_wet * (Tw - T_cold)  # wall -> cold phase
             Q_out = h_out * self.surf_area_outer * frac_wet * (Tamb - Tw)
             Tw = Tw + dt * (Q_out - Q_ws) / (m_ww * cp_wall)
@@ -969,7 +992,9 @@ class HydDown:
 
         T_g_prev = rm.gas_T_from_u(self.tz_U_gas / self.tz_m_gas)
         Twall_prev = self.T_vessel[i - 1]
-        A_g = self.surf_area_inner * self.solid_gas_wall_frac
+        # Gas-contact wall area from the actual condensate (liquid + dry ice) volume + geometry.
+        V_cond = self.m_liquid[i - 1] * rm.v_l + self.m_solid[i - 1] * rm.v_s
+        A_g = self._gas_contact_area(V_cond)
         Q_wg = self._h_gas_wall(T_g_prev, Twall_prev, self.P[i - 1]) * A_g * (Twall_prev - T_g_prev)  # wall -> gas
         Q_gl = self.solid_h_gas_liquid * A_g * (T_g_prev - rm.T_TRIPLE_EOS)  # gas -> L/S
 
@@ -980,14 +1005,17 @@ class HydDown:
         self.tz_m_gas, self.tz_U_gas = r["m_g"], r["U_g"]
         self.tz_M_ls, self.tz_U_ls = r["M_ls"], r["U_ls"]
 
-        # lumped wall: exchanges with the gas and ambient (liquid/solid zone is adiabatic)
-        m_wall = getattr(self, "vessel_density", 0.0) * self.vol_solid
+        # Gas-contact wall node: only its OWN share (frac_gas) of the wall mass and outer area;
+        # the complementary wetted node owns the rest, so the total thermal mass is not
+        # double-counted across the two nodes. It exchanges Q_wg with the gas and h_out with ambient.
         cp_wall = getattr(self, "vessel_cp", 500.0)
         h_out = getattr(self, "h_out", 0.0)
         Tamb = getattr(self, "Tamb", T_g_prev)
-        Q_out = h_out * self.surf_area_outer * (Tamb - Twall_prev)
+        frac_gas = A_g / self.surf_area_inner if self.surf_area_inner > 0 else 1.0
+        m_gw = getattr(self, "vessel_density", 0.0) * self.vol_solid * frac_gas
+        Q_out = h_out * self.surf_area_outer * frac_gas * (Tamb - Twall_prev)
         self.T_vessel[i] = (
-            Twall_prev + dt * (Q_out - Q_wg) / (m_wall * cp_wall) if m_wall > 0 else Twall_prev
+            Twall_prev + dt * (Q_out - Q_wg) / (m_gw * cp_wall) if m_gw > 0 else Twall_prev
         )
 
         m_s = max(r["m_s"], 0.0)
@@ -1000,7 +1028,7 @@ class HydDown:
         self.T_liquid[i] = rm.T_TRIPLE_EOS
         self.T_fluid[i] = r["T_g"]
         # wetted wall tracks the cold liquid/solid at the triple point (not the gas wall)
-        self._wetted_wall_step(i, rm.T_TRIPLE_EOS, True)
+        self._wetted_wall_step(i, rm.T_TRIPLE_EOS, True, self.surf_area_inner - A_g)
         self.m_solid[i] = m_s
         self.m_liquid[i] = m_l
         self.m_gas[i] = m_g
@@ -1033,26 +1061,38 @@ class HydDown:
 
         T_g_prev = rm._gas_T_from_u_P(self.tz_U_gas / self.tz_m_gas, self.P[i - 1])
         Twall_prev = self.T_vessel[i - 1]
-        A_g = self.surf_area_inner * self.solid_gas_wall_frac
+        # Gas-contact wall area from the actual dry-ice volume + geometry (full wall when no solid).
+        A_g = self._gas_contact_area(self.tz_m_solid * rm.v_s)
         Q_wg = self._h_gas_wall(T_g_prev, Twall_prev, self.P[i - 1]) * A_g * (Twall_prev - T_g_prev)
         UA_gs = self.solid_h_gas_solid * A_g  # gas->dry-ice interphase conductance [W/K]
 
         if self.P[i - 1] <= self.release_back_pressure * 1.002:
-            r = {"m_g": self.tz_m_gas, "U_g": self.tz_U_gas, "m_solid": self.tz_m_solid,
-                 "T_g": T_g_prev, "T_s": rm._T_sub_of_P(self.P[i - 1]),
-                 "P": self.P[i - 1], "mdot": 0.0}
+            # Leak has essentially stopped, but the warm wall keeps reheating the residual gas -
+            # heat ingress is NEVER killed. Explicit gas energy balance at the back pressure:
+            # the wall adds Q_wg, a trickle vents its enthalpy, and the gas warms back up.
+            Pb = self.P[i - 1]
+            h_g = rm._gas2d(rm._g2_h, T_g_prev, Pb)
+            mdot = rm.gas_leak_rate(T_g_prev, Pb, self.CD_release_gas, area)["mdot"]
+            m_g_new = max(self.tz_m_gas - mdot * dt, 1e-9)
+            U_g_tot = self.tz_U_gas + dt * (Q_wg - mdot * h_g)
+            T_g_new = rm._gas_T_from_u_P(U_g_tot / m_g_new, Pb)
+            r = {"m_g": m_g_new, "U_g": U_g_tot, "m_solid": self.tz_m_solid,
+                 "T_g": T_g_new, "T_s": rm._T_sub_of_P(Pb), "P": Pb, "mdot": mdot}
         else:
             r = rm.two_zone_descent_step(self.tz_m_gas, self.tz_U_gas, self.tz_m_solid,
                                          self.P[i - 1], Q_wg, UA_gs, dt, self.CD_release_gas, area, V)
         self.tz_m_gas, self.tz_U_gas, self.tz_m_solid = r["m_g"], r["U_g"], r["m_solid"]
 
-        m_wall = getattr(self, "vessel_density", 0.0) * self.vol_solid
+        # Gas-contact wall node: only its OWN share (frac_gas) of the wall mass and outer area
+        # (the wetted node owns the rest) - no double-counting of the wall thermal mass.
         cp_wall = getattr(self, "vessel_cp", 500.0)
         h_out = getattr(self, "h_out", 0.0)
         Tamb = getattr(self, "Tamb", T_g_prev)
-        Q_out = h_out * self.surf_area_outer * (Tamb - Twall_prev)
+        frac_gas = A_g / self.surf_area_inner if self.surf_area_inner > 0 else 1.0
+        m_gw = getattr(self, "vessel_density", 0.0) * self.vol_solid * frac_gas
+        Q_out = h_out * self.surf_area_outer * frac_gas * (Tamb - Twall_prev)
         self.T_vessel[i] = (
-            Twall_prev + dt * (Q_out - Q_wg) / (m_wall * cp_wall) if m_wall > 0 else Twall_prev
+            Twall_prev + dt * (Q_out - Q_wg) / (m_gw * cp_wall) if m_gw > 0 else Twall_prev
         )
 
         atm = rm.atm_split(rm._gas2d(rm._g2_h, r["T_g"], r["P"]))
@@ -1068,7 +1108,7 @@ class HydDown:
         # once the solid is gone (liquid drain -> residual gas) the wetted wall is meaningless,
         # so relax it toward the gas-contact wall instead.
         if r["m_solid"] > 1e-2:
-            self._wetted_wall_step(i, r["T_s"], True)
+            self._wetted_wall_step(i, r["T_s"], True, self.surf_area_inner - A_g)
         else:
             self.T_vessel_wetted[i] = self.T_vessel[i]
             self.tz_T_wall_wet = self.T_vessel[i]
@@ -1111,9 +1151,15 @@ class HydDown:
             )
         # Only the detailed single-layer wall places the inner face at the last node.
         inner_first = not (mode == "nem" and not composite)
-        if mode == "fire":
+        if mode == "fire" or getattr(self, "h_out", 0.0) < 10.0:
+            # Fire, or an INSULATED / near-adiabatic vessel: before blowdown the steel wall has
+            # equilibrated with the fill fluid - any insulation carries the temperature drop to
+            # ambient OUTSIDE the steel - so seed it UNIFORM at the fluid temperature T0. A
+            # T0->Tamb conduction gradient (bare-wall assumption) would store excess heat in the
+            # outer wall and spuriously re-pressurise the vessel at the start of the release.
             init_ends, init_guess = (self.T0, self.T0), self.T0
         else:
+            # Bare wall exposed to ambient convection: steady conduction gradient T0 -> Tamb.
             init_ends, init_guess = (self.T0, self.Tamb), 0.5 * (self.T0 + self.Tamb)
         sets_vessel = mode == "fire"
         # The detailed composite wall advances the wetted face every step (no liquid guard).
@@ -2009,12 +2055,27 @@ class HydDown:
                     # detailed wall model into the below-triple wetted-wall node, so it keeps
                     # cooling with the liquid/solid instead of resetting to the gas-side wall.
                     self.tz_T_wall_wet = self.T_vessel_wetted[i - 1]
+                    # If the above-triple wall was resolved by thermesh, the fluid saw the 1-D
+                    # inner-face temperatures, not the parallel lumped T_vessel. Continue the
+                    # below-triple two-zone wall from those inner faces so the wall the fluid sees
+                    # is continuous across the triple point (no step at the handoff).
+                    if "thermal_conductivity" in self.input["vessel"]:
+                        self.T_vessel[i - 1] = self.T_inner_wall[i - 1]
+                        self.tz_T_wall_wet = self.T_inner_wall_wetted[i - 1]
                     self.M_vessel = self.m_liquid[i - 1] + self.m_gas[i - 1]
                     _ml, _mg, self.U_vessel = rm.triple_LG_from_MV(
                         self.M_vessel, self.vol
                     )
                 if self.solid_regime:
                     self._solid_regime_step(i)
+                    # Below the triple point the two-zone model drives the lumped T_vessel /
+                    # T_vessel_wetted. Mirror them into the 1-D wall report arrays so the detailed
+                    # wall trace stays continuous (instead of the thermesh arrays sitting at 0).
+                    if "thermal_conductivity" in self.input["vessel"]:
+                        self.T_inner_wall[i] = self.T_vessel[i]
+                        self.T_outer_wall[i] = self.T_vessel[i]
+                        self.T_inner_wall_wetted[i] = self.T_vessel_wetted[i]
+                        self.T_outer_wall_wetted[i] = self.T_vessel_wetted[i]
                     continue
             elif self.has_release and not self.release_frozen:
                 # Default freeze: the 15% margin covers a single step's pressure drop so

@@ -1,0 +1,49 @@
+# Munkejord Test 53 - RISER (liquid draw) test, 8 mm nozzle, 119.5 bar / 24.4 C.
+# The riser inlet sits ~9 mm above the floor, so it draws liquid from the bottom until the
+# liquid phase is DEPLETED (the churning flash keeps the low inlet liquid-fed to depletion -
+# no heel modelled), then flips to the vapour tail. Current machinery only:
+#   * dense single-phase start (phase-agnostic dense_leak_rate, NO non-equilibrium boost)
+#   * after flash: release type "liquid" -> saturated-liquid HEM with the liquid_nonequilibrium
+#     (HNE / delayed-flashing) boost applied to the LIQUID rate ONLY (co2_release gates it on
+#     phase=="liquid"; dense and the gas tail are plain HEM).
+#   * liquid depletion (m_liquid -> 0) switches the release to the vapour tail.
+vessel:
+  length: 1.0
+  diameter: 0.273
+  thickness: 0.0254
+  heat_capacity: 500
+  density: 7950
+  orientation: "vertical"
+  type: "Flat-end"
+initial:
+  temperature: 297.55          # 24.4 C
+  pressure: 11950000           # 119.5 bar (dense subcooled liquid)
+  fluid: "CO2"
+calculation:
+  type: "energybalance"
+  time_step: 0.02
+  end_time: 400.
+  non_equilibrium: true
+  h_gas_liquid: "calc_two_sided"
+valve:
+  flow: "discharge"
+  type: "none"
+  back_pressure: 101325.
+release:
+  type: "liquid"               # RISER: draw liquid from the bottom
+  diameter: 0.008              # 8 mm smooth nozzle
+  discharge_coef: 1.0          # smooth converging nozzle (Cd ~ 1, HEM)
+  liquid_nonequilibrium: 0.0   # pure HEM: at 8 mm (smallest HEM deficit) N=0 matches P/mass/rate/changeover best
+  back_pressure: 101325.
+  atm_pressure: 101325.
+  eos: "CoolProp"
+  solid_in_vessel: true
+  solid_h_inner: "cooper"
+  solid_h_gas_wall: "calc"
+  solid_h_gas_liquid: 0.0
+  solid_h_gas_solid: 3.0
+heat_transfer:
+  type: "specified_h"
+  temp_ambient: 297.55
+  h_outer: 0.0
+  h_inner: "calc"
