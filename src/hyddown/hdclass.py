@@ -457,7 +457,12 @@ class HydDown:
             self.fluid.update(CP.PT_INPUTS, self.p0, self.T0)
             self.liquid_level0 = 0.0
             self.Q0 = self.fluid.Q()
-            self.vent_fluid.update(CP.PT_INPUTS, self.p0, self.T0)
+            try:
+                self.vent_fluid.update(CP.PT_INPUTS, self.p0, self.T0)
+            except ValueError:
+                # Dense/subcooled-liquid start: the forced-gas vent state does not exist at
+                # (p0, T0). Use a gas state at the back pressure as the vent reference instead.
+                self.vent_fluid.update(CP.PT_INPUTS, getattr(self, "p_back", 101325.0), self.T0)
 
         self.res_fluid = CP.AbstractState("HEOS", self.comp)
         self.res_fluid.set_mole_fractions(self.molefracs)
@@ -475,6 +480,10 @@ class HydDown:
             self.fluid_liquid.set_mole_fractions(self.molefracs)
 
             # Initialize at saturation conditions (equilibrium at t=0)
+            # single_phase_dense: True for a CO2 release started as a single dense (subcooled /
+            # supercritical-pressure) phase, which is discharged and depressurised until it
+            # flashes into the two-phase region, where the standard NEM takes over.
+            self.single_phase_dense = False
             if "liquid_level" in self.input["vessel"]:
                 # Two-phase initial condition. The liquid zone is saturated liquid at p0.
                 # The gas zone is saturated vapour by default, or - if
@@ -497,12 +506,34 @@ class HydDown:
                 V_vapour = self.inner_vol.V_total - V_liquid
                 self.m_gas0 = V_vapour * self.fluid_gas.rhomass()
             else:
-                # Single-phase gas initial condition
-                self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T0)
-                self.T_gas0 = self.T0
-                self.m_gas0 = self.fluid_gas.rhomass() * self.vol
-                self.m_liquid0 = 0.0
-                self.T_liquid0 = self.T0  # Not used if no liquid
+                # Single-phase initial condition (no liquid_level). For a CO2 release the
+                # start may be a DENSE / subcooled liquid (T < Tcrit, P > Psat) or supercritical
+                # pressure - carry it in the liquid zone and flag the dense pre-phase, so it is
+                # discharged as a single phase until it flashes. Otherwise it is a normal
+                # single-phase gas blowdown (unchanged).
+                dense_liquid = False
+                if getattr(self, "has_release", False):
+                    try:
+                        Tc = PropsSI("Tcrit", self.comp)
+                        Psat = PropsSI("P", "T", min(self.T0, Tc - 0.5), "Q", 0, self.comp)
+                        dense_liquid = (self.T0 < Tc and self.p0 > Psat) or (
+                            self.p0 > PropsSI("Pcrit", self.comp))
+                    except Exception:
+                        dense_liquid = False
+                if dense_liquid:
+                    self.fluid_liquid.update(CP.PT_INPUTS, self.p0, self.T0)
+                    self.T_liquid0 = self.T0
+                    self.m_liquid0 = self.fluid_liquid.rhomass() * self.vol
+                    self.m_gas0 = 0.0
+                    self.T_gas0 = self.T0
+                    self.single_phase_dense = True
+                else:
+                    # Single-phase gas initial condition
+                    self.fluid_gas.update(CP.PT_INPUTS, self.p0, self.T0)
+                    self.T_gas0 = self.T0
+                    self.m_gas0 = self.fluid_gas.rhomass() * self.vol
+                    self.m_liquid0 = 0.0
+                    self.T_liquid0 = self.T0  # Not used if no liquid
 
         # data storage
         data_len = int(self.time_tot / self.tstep)
@@ -676,6 +707,23 @@ class HydDown:
         ):
             return 0.0
 
+        if getattr(self, "single_phase_dense", False):
+            # Dense single-phase discharge (phase-agnostic): the saturated stagnation is
+            # undefined here (P may be >= P_crit), so use the dense state (T from the vessel).
+            from CoolProp.CoolProp import PropsSI
+            T = PropsSI("T", "Dmass", self.mass_fluid[i] / self.vol, "Umass",
+                        self.U_liquid[i], self.comp)
+            rate = self.release_model.dense_leak_rate(
+                T, P, self.CD_release, self.D_release ** 2 / 4 * math.pi)
+            atm = self.release_model.atm_split(rate["h0"])
+            self.T_atm[i] = atm["T"]
+            self.x_vap_atm[i] = atm["vapour_frac"]
+            self.x_solid_atm[i] = atm["solid_frac"]
+            self.solid_frac_throat[i] = rate["solid_frac_throat"]
+            self.release_choked[i] = 1.0 if rate["choked"] else 0.0
+            self.release_rate[i] = rate["mdot"]
+            return rate["mdot"]
+
         rate, atm = self.release_model.release_state(
             P,
             self.release_phase,
@@ -689,6 +737,119 @@ class HydDown:
         self.release_choked[i] = 1.0 if rate["choked"] else 0.0
         self.release_rate[i] = rate["mdot"]
         return rate["mdot"]
+
+    def _dense_phase_step(self, i):
+        """One timestep while the vessel is a single DENSE phase (subcooled/supercritical),
+        before it flashes into the two-phase region.
+
+        The vessel is run as a degenerate single NEM zone: the dense fluid is carried in the
+        liquid slot (m_gas = 0), both zone temperatures equal, and a single natural-convection
+        wall node. Discharge is the phase-agnostic dense HEM rate (``dense_leak_rate``) - while
+        single-phase there is only one phase, so a liquid-space or vapour-space outlet both
+        draw it. When the depressurising state crosses saturation (0 <= Q <= 1), the two-phase
+        gas/liquid split is seeded from the flash and ``single_phase_dense`` is cleared, handing
+        off to the standard NEM at the next step.
+        """
+        from CoolProp.CoolProp import PropsSI
+        c = self.comp
+        dt = self.tstep
+        M = self.mass_fluid[i - 1]
+        u = self.U_liquid[i - 1]                    # dense zone specific internal energy [J/kg]
+        rho = M / self.vol
+        P = PropsSI("P", "Dmass", rho, "Umass", u, c)
+        T = PropsSI("T", "Dmass", rho, "Umass", u, c)
+        Qcur = PropsSI("Q", "Dmass", rho, "Umass", u, c)
+        area = self.D_release ** 2 / 4 * math.pi
+        if 0.0 <= Qcur <= 1.0:
+            # Early two-phase, held as ONE equilibrium zone until the vapour node is big enough
+            # for a stable NEM split: a top (gas) outlet draws saturated vapour.
+            r = self.release_model.hem_rate(P, "gas", self.CD_release_gas, area)
+            h_out = PropsSI("Hmass", "P", P, "Q", 1, c)          # saturated vapour leaves
+        else:
+            # Dense single phase: phase-agnostic dense discharge (bypasses the saturated
+            # stagnation / P >= P_crit guard) - only one phase, so it feeds any outlet.
+            r = self.release_model.dense_leak_rate(T, P, self.CD_release, area)
+            h_out = PropsSI("Hmass", "Dmass", rho, "Umass", u, c)
+        mdot = r["mdot"]
+        atm = self.release_model.atm_split(r["h0"])
+
+        # single natural-convection wall node (both zones at the dense-fluid temperature)
+        Tw = self.T_vessel[i - 1]
+        L = self.diameter if self.vessel_orientation == "horizontal" else self.length
+        try:
+            self.fluid_liquid.update(CP.PT_INPUTS, P, T)
+            hconv = tp.h_inside_liquid(L, Tw, T, self.fluid_liquid)
+        except Exception:
+            hconv = 50.0
+        Q_wall = hconv * self.surf_area_inner * (Tw - T)          # W into the fluid (Tw > T)
+        m_wall = getattr(self, "vessel_density", 0.0) * getattr(self, "vol_solid", 0.0)
+        cp_wall = getattr(self, "vessel_cp", 500.0)
+
+        # explicit-Euler mass + energy update
+        M2 = M - mdot * dt
+        U2 = u * M + (Q_wall - mdot * h_out) * dt
+        u2 = U2 / M2
+        Tw2 = Tw - Q_wall / (m_wall * cp_wall) * dt if m_wall > 0 else Tw
+        rho2 = M2 / self.vol
+        Q2 = PropsSI("Q", "Dmass", rho2, "Umass", u2, c)
+        P2 = PropsSI("P", "Dmass", rho2, "Umass", u2, c)
+
+        # common outputs at i
+        self.mass_fluid[i] = M2
+        self.rho[i] = rho2
+        self.P[i] = P2
+        self.mass_rate[i] = mdot
+        self.release_rate[i] = mdot
+        self.solid_frac_throat[i] = r["solid_frac_throat"]
+        self.release_choked[i] = 1.0 if r["choked"] else 0.0
+        self.T_atm[i] = atm["T"]
+        self.x_vap_atm[i] = atm["vapour_frac"]
+        self.x_solid_atm[i] = atm["solid_frac"]
+        for arr in (self.T_vessel, self.T_inner_wall, self.T_outer_wall,
+                    self.T_vessel_wetted, self.T_inner_wall_wetted, self.T_outer_wall_wetted):
+            arr[i] = Tw2
+        self.liquid_level[i] = self.liquid_level[i - 1]
+
+        if 0.0 <= Q2 <= 1.0:
+            Tsat = PropsSI("T", "P", P2, "Q", 0, c)
+            rhov = PropsSI("Dmass", "P", P2, "Q", 1, c)
+            rhol = PropsSI("Dmass", "P", P2, "Q", 0, c)
+            mg = Q2 * M2
+            vapfrac = (mg / rhov) / self.vol            # vapour VOLUME fraction
+            if vapfrac >= 0.015:
+                # enough vapour for a stable gas node -> seed the two-phase NEM split and hand off
+                self.single_phase_dense = False
+                self.m_gas[i] = mg
+                self.m_liquid[i] = (1.0 - Q2) * M2
+                self.U_gas[i] = PropsSI("Umass", "P", P2, "Q", 1, c)
+                self.U_liquid[i] = PropsSI("Umass", "P", P2, "Q", 0, c)
+                self.rho_liquid[i] = rhol
+                self.rho_gas[i] = rhov
+                self.T_gas[i] = Tsat
+                self.T_liquid[i] = Tsat
+                self.T_fluid[i] = Tsat
+            else:
+                # just flashed but the vapour node is still tiny: keep it as ONE equilibrium
+                # zone (whole inventory in the liquid slot, both zone temps = Tsat) for a few
+                # more steps until the vapour grows enough to hand off cleanly to the NEM.
+                self.m_liquid[i] = M2
+                self.m_gas[i] = 0.0
+                self.U_liquid[i] = u2                    # mixture specific u carried in the slot
+                self.U_gas[i] = 0.0
+                self.rho_liquid[i] = rho2
+                self.T_liquid[i] = Tsat
+                self.T_gas[i] = Tsat
+                self.T_fluid[i] = Tsat
+        else:
+            # still a single dense phase (carried in the liquid slot)
+            self.m_liquid[i] = M2
+            self.m_gas[i] = 0.0
+            self.U_liquid[i] = u2
+            self.U_gas[i] = 0.0
+            self.rho_liquid[i] = rho2
+            self.T_liquid[i] = T2 = PropsSI("T", "Dmass", rho2, "Umass", u2, c)
+            self.T_gas[i] = T2
+            self.T_fluid[i] = T2
 
     def _h_gas_wall(self, T_gas, T_wall, P):
         """Gas->wall heat-transfer coefficient below the triple point [W/m2K].
@@ -1536,8 +1697,13 @@ class HydDown:
             self.m_gas[0] = self.m_gas0
             self.m_liquid[0] = self.m_liquid0
             if self.m_liquid0 > 0:
-                # Two-phase: try saturation, fall back to +1°C superheat
-                self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)
+                if self.single_phase_dense:
+                    # Dense/subcooled liquid: properties at (P,T), NOT saturation (the state
+                    # is off the saturation line until it flashes).
+                    self.fluid_liquid.update(CP.PT_INPUTS, self.p0, self.T_liquid0)
+                else:
+                    # Two-phase: try saturation, fall back to +1°C superheat
+                    self.fluid_liquid.update(CP.PQ_INPUTS, self.p0, 0.0)
                 self.U_liquid[0] = self.fluid_liquid.umass()
                 self.rho_liquid[0] = self.fluid_liquid.rhomass()
                 if "gas_temperature" in self.input["initial"]:
@@ -1716,6 +1882,14 @@ class HydDown:
             total=len(self.time_array),
         ):
             self.time_array[i] = self.time_array[i - 1] + self.tstep
+
+            # ---- dense single-phase pre-branch (release started above the two-phase region) ----
+            # Run the vessel as one degenerate NEM zone (dense fluid in the liquid slot) until it
+            # flashes; _dense_phase_step seeds the two-phase split and clears the flag at the
+            # crossing, after which the standard NEM below takes over.
+            if self.single_phase_dense:
+                self._dense_phase_step(i)
+                continue
 
             # ---- CO2 triple-point handling (release) ----
             # The CoolProp vessel solver fails once the tank drops below the triple point.

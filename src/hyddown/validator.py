@@ -1157,9 +1157,8 @@ def release_validation(input):
     if calc.get("type") != "energybalance":
         print("release: requires calculation.type = 'energybalance'")
         retval = False
-    if "liquid_level" not in input.get("vessel", {}):
-        print("release: requires vessel.liquid_level (initial state is two-phase)")
-        retval = False
+    # vessel.liquid_level is required for a two-phase start; it may be omitted for a single
+    # dense-phase start (the model discharges the dense phase until it flashes into two-phase).
     return retval
 
 
