@@ -70,6 +70,7 @@ from hyddown import transport as tp
 from hyddown import validator
 from hyddown import fire
 from hyddown import thermesh as tm
+from hyddown.wall import WallConduction
 import fluids
 
 
@@ -415,6 +416,10 @@ class HydDown:
         # Default off; set True only for a CO2 release started as a single dense phase (below).
         # Defined unconditionally so the main loop can reference it for any calculation type.
         self.single_phase_dense = False
+        # Detailed 1-D wall-conduction objects (unwetted / wetted faces); lazily built on the
+        # first detailed timestep by _step_detailed_wall(). None => not yet constructed.
+        self._wall = None
+        self._wall_wetted = None
         self.vol_solid = self.vol_tot - self.vol
         self.surf_area_outer = self.outer_vol.A
         self.surf_area_inner = self.inner_vol.A
@@ -1080,6 +1085,91 @@ class HydDown:
         self.T_atm[i] = atm["T"]
         self.x_vap_atm[i] = atm["vapour_frac"]
         self.x_solid_atm[i] = atm["solid_frac"]
+
+    def _step_detailed_wall(self, i, wetted_area, mode):
+        """Advance the detailed 1-D wall (unwetted + wetted faces) by one macro timestep.
+
+        Wraps :class:`hyddown.wall.WallConduction`, replacing the mesh/domain/solve boilerplate
+        that was previously inlined and duplicated for the ``specified_h``/``detailed`` path
+        (``mode="nem"``) and the fire / Stefan-Boltzmann path (``mode="fire"``). The two paths
+        differ in node convention, initial-profile boundary conditions, whether they also write
+        ``T_vessel``/``T_vessel_wetted``, and (for the detailed composite wall) whether the wetted
+        face is advanced every step; all of that is reproduced exactly here.
+        """
+        vessel = self.input["vessel"]
+        theta = 0.5  # Crank-Nicolson (unconditionally stable, 2nd order)
+        dt = self.tstep / 10  # sub-step for the FE solver
+        k, rho, cp = vessel["thermal_conductivity"], self.vessel_density, self.vessel_cp
+        composite = "liner_thermal_conductivity" in vessel
+        liner = None
+        if composite:
+            liner = (
+                vessel["liner_thickness"],
+                vessel["liner_thermal_conductivity"],
+                vessel["liner_density"],
+                vessel["liner_heat_capacity"],
+            )
+        # Only the detailed single-layer wall places the inner face at the last node.
+        inner_first = not (mode == "nem" and not composite)
+        if mode == "fire":
+            init_ends, init_guess = (self.T0, self.T0), self.T0
+        else:
+            init_ends, init_guess = (self.T0, self.Tamb), 0.5 * (self.T0 + self.Tamb)
+        sets_vessel = mode == "fire"
+        # The detailed composite wall advances the wetted face every step (no liquid guard).
+        wetted_always = mode == "nem" and composite
+
+        first = self._wall is None
+        if first:
+            self._wall = WallConduction(
+                self.thickness, k, rho, cp, init_ends, init_guess,
+                n_nodes=11, theta=theta, liner=liner, inner_first=inner_first,
+            )
+            self._wall_wetted = WallConduction(
+                self.thickness, k, rho, cp, init_ends, init_guess,
+                n_nodes=11, theta=theta, liner=liner, inner_first=inner_first,
+            )
+            self.z = self._wall.z
+
+        has_liquid = self.liquid_level[i - 1] > 0 and wetted_area > 0
+
+        # --- unwetted (gas-contact) face ---
+        # On the first step the wall keeps its steady initial profile (no transient advance).
+        if first:
+            Ti, To, Tb = self._wall.faces()
+        else:
+            Ti, To, Tb = self._wall.step(
+                self.q_inner[i], self.q_outer[i], dt, self.tstep
+            )
+        self.T_inner_wall[i] = Ti
+        self.T_outer_wall[i] = To
+        if composite:
+            self.T_bonded_wall[i] = Tb
+        if sets_vessel:
+            self.T_vessel[i] = self._wall.profile.mean()
+        self.temp_profile.append(self._wall.profile)
+
+        # --- wetted (liquid-contact) face ---
+        # A composite wall never takes a transient step on the init step; a single-layer wall
+        # does if liquid is already present. When there is no liquid the wetted face mirrors the
+        # unwetted face and its stored profile stays frozen.
+        if first and composite:
+            Tiw, Tow, Tbw = self._wall_wetted.faces()
+            prof_w = self._wall_wetted.profile
+        elif wetted_always or has_liquid:
+            Tiw, Tow, Tbw = self._wall_wetted.step(
+                self.q_inner_wetted[i], self.q_outer_wetted[i], dt, self.tstep
+            )
+            prof_w = self._wall_wetted.profile
+        else:
+            Tiw, Tow, Tbw = Ti, To, Tb
+            prof_w = self._wall.profile
+        self.T_inner_wall_wetted[i] = Tiw
+        self.T_outer_wall_wetted[i] = Tow
+        if composite:
+            self.T_bonded_wall_wetted[i] = Tbw
+        if sets_vessel:
+            self.T_vessel_wetted[i] = prof_w.mean()
 
     def _solid_regime_step(self, i):
         """One timestep of the opt-in solid-in-vessel model (below the triple point).
@@ -1875,7 +1965,6 @@ class HydDown:
         # ============================================================================
 
         # Initialize heat transfer variables
-        T_profile, T_profile2 = 0, 0  # Temperature profiles for detailed wall model
         relief_area = []  # Track relief valve area changes
 
         for i in tqdm(
@@ -2281,216 +2370,7 @@ class HydDown:
                     # Time integration: Crank-Nicolson (theta=0.5) for stability
                     # Spatial discretization: Linear finite elements with 11 nodes
                     if "thermal_conductivity" in self.input["vessel"].keys():
-                        theta = 0.5  # Crank-Nicolson scheme (unconditionally stable, 2nd order)
-                        dt = (
-                            self.tstep / 10
-                        )  # Sub-step for thermal solver (finer time resolution)
-                        k, rho, cp = (
-                            self.input["vessel"]["thermal_conductivity"],
-                            self.vessel_density,
-                            self.vessel_cp,
-                        )
-                        # Check if single-layer or composite (liner + shell) construction
-                        if (
-                            "liner_thermal_conductivity"
-                            not in self.input["vessel"].keys()
-                        ):
-                            # Single-layer wall construction
-                            nn = 11  # number of nodes through wall thickness
-                            z = np.linspace(0, self.thickness, nn)
-                            self.z = z
-                            # Create meshes for unwetted and wetted regions
-                            mesh = tm.Mesh(z, tm.LinearElement)
-                            mesh_w = tm.Mesh(z, tm.LinearElement)
-                            # Material model with constant properties
-                            cpeek = tm.isothermal_model(k, rho, cp)
-                            cpeek_w = tm.isothermal_model(k, rho, cp)
-
-                            # Initialize temperature profile on first time step
-                            if type(T_profile) == type(int()) and T_profile == 0:
-                                bc = [
-                                    {"T": self.T0},
-                                    {"T": self.Tamb},
-                                ]
-                                domain = tm.Domain(mesh, [cpeek], bc)
-                                domain.set_T(
-                                    (self.Tamb + self.T0) / 2 * np.ones(len(mesh.nodes))
-                                )
-                                solver = {
-                                    "dt": 100,
-                                    "t_end": 10000,
-                                    "theta": theta,
-                                }
-                                t_bonded, T_profile = tm.solve_ht(domain, solver)
-
-                                bc_w = [
-                                    {"T": self.T0},
-                                    {"T": self.Tamb},
-                                ]
-                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
-                                domain_w.set_T(
-                                    (self.Tamb + self.T0)
-                                    / 2
-                                    * np.ones(len(mesh_w.nodes))
-                                )
-                                solver_w = {
-                                    "dt": 100,
-                                    "t_end": 10000,
-                                    "theta": theta,
-                                }
-                                t_bonded_w, T_profile_w = tm.solve_ht(
-                                    domain_w, solver_w
-                                )
-                            else:
-                                # Boundary conditions: z=0 is outer wall, z=L is inner wall
-                                bc = [
-                                    {
-                                        "q": self.q_outer[i]
-                                        # / (self.surf_area_outer - wetted_area_outer)
-                                    },
-                                    {
-                                        "q": -self.q_inner[i]
-                                        # / (self.surf_area_inner - wetted_area)
-                                    },
-                                ]
-                                domain = tm.Domain(mesh, [cpeek], bc)
-                                domain.set_T(T_profile[-1, :])
-                                solver = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_bonded, T_profile = tm.solve_ht(domain, solver)
-                                # Wetted wall will be solved below if liquid is present
-
-                            self.temp_profile.append(T_profile[-1, :])
-                            self.T_outer_wall[i] = T_profile[-1, 0]
-                            self.T_inner_wall[i] = T_profile[-1, -1]
-
-                            # Only solve wetted wall if liquid is present
-                            if self.liquid_level[i - 1] > 0 and wetted_area > 0:
-                                bc_w = [
-                                    {
-                                        "q": self.q_outer_wetted[i]
-                                    },  # / wetted_area_outer},
-                                    {"q": -self.q_inner_wetted[i]},  # / wetted_area},
-                                ]
-                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
-                                domain_w.set_T(T_profile_w[-1, :])
-                                solver_w = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_w, T_profile_w = tm.solve_ht(domain_w, solver_w)
-                                self.T_outer_wall_wetted[i] = T_profile_w[-1, 0]
-                                self.T_inner_wall_wetted[i] = T_profile_w[-1, -1]
-                            else:
-                                # No liquid - wetted wall same as unwetted
-                                self.T_outer_wall_wetted[i] = T_profile[-1, 0]
-                                self.T_inner_wall_wetted[i] = T_profile[-1, -1]
-                        else:
-                            k_liner = self.input["vessel"]["liner_thermal_conductivity"]
-                            rho_liner = self.input["vessel"]["liner_density"]
-                            cp_liner = self.input["vessel"]["liner_heat_capacity"]
-                            liner = tm.isothermal_model(k_liner, rho_liner, cp_liner)
-                            shell = tm.isothermal_model(k, rho, cp)
-                            liner_w = tm.isothermal_model(k_liner, rho_liner, cp_liner)
-                            shell_w = tm.isothermal_model(k, rho, cp)
-
-                            thk = self.input["vessel"]["thickness"]  # thickness in m
-                            nn = 11  # number of nodes
-                            z_shell = np.linspace(0, thk, nn)  # node locations
-
-                            thk = self.input["vessel"]["liner_thickness"]
-                            z_liner = np.linspace(-thk, 0, nn)  # node locations
-                            z2 = np.hstack((z_liner, z_shell[1:]))
-                            self.z = z2
-                            mesh2 = tm.Mesh(z2, tm.LinearElement)
-                            mesh2_w = tm.Mesh(z2, tm.LinearElement)
-                            for j, elem in enumerate(mesh2.elem):
-                                if elem.nodes.mean() > 0.0:
-                                    mesh2.subdomain[j] = 1
-                                    mesh2_w.subdomain[j] = 1
-
-                            if type(T_profile2) == type(int()) and T_profile2 == 0:
-                                bc = [
-                                    {"T": self.T0},
-                                    {"T": self.Tamb},
-                                ]
-                                domain2 = tm.Domain(mesh2, [liner, shell], bc)
-                                domain2.set_T(
-                                    (self.Tamb + self.T0)
-                                    / 2
-                                    * np.ones(len(mesh2.nodes))
-                                )
-                                solver2 = {
-                                    "dt": 100,
-                                    "t_end": 10000,
-                                    "theta": theta,
-                                }
-                                t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
-                                bc_w = [
-                                    {"T": self.T0},
-                                    {"T": self.Tamb},
-                                ]
-                                domain2_w = tm.Domain(mesh2_w, [liner_w, shell_w], bc_w)
-                                domain2_w.set_T(
-                                    (self.Tamb + self.T0)
-                                    / 2
-                                    * np.ones(len(mesh2.nodes))
-                                )
-                                solver2_w = {
-                                    "dt": 100,
-                                    "t_end": 10000,
-                                    "theta": theta,
-                                }
-                                t_bonded_w, T_profile2_w = tm.solve_ht(
-                                    domain2_w, solver2_w
-                                )
-                            else:
-                                # Boundary conditions: z=-liner_thickness is inner, z=thickness is outer
-                                bc = [
-                                    {
-                                        "q": -self.q_inner[i]
-                                        # / (self.surf_area_inner - wetted_area)
-                                    },
-                                    {
-                                        "q": self.q_outer[i]
-                                        # / (self.surf_area_outer - wetted_area_outer)
-                                    },
-                                ]
-                                domain2 = tm.Domain(mesh2, [liner, shell], bc)
-                                domain2.set_T(T_profile2[-1, :])
-                                solver2 = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
-                                bc_w = [
-                                    {"q": -self.q_inner_wetted[i]},  #  / wetted_area},
-                                    {
-                                        "q": self.q_outer_wetted[i]
-                                    },  # / wetted_area_outer},
-                                ]
-                                domain2_w = tm.Domain(mesh2_w, [liner_w, shell_w], bc_w)
-                                domain2_w.set_T(T_profile2_w[-1, :])
-                                solver2_w = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_bonded_w, T_profile2_w = tm.solve_ht(
-                                    domain2_w, solver2_w
-                                )
-                            self.T_outer_wall[i] = T_profile2[-1, -1]
-                            self.T_inner_wall[i] = T_profile2[-1, 0]
-                            self.T_bonded_wall[i] = T_profile2[-1, (nn - 1)]
-                            self.T_outer_wall_wetted[i] = T_profile2_w[-1, -1]
-                            self.T_inner_wall_wetted[i] = T_profile2_w[-1, 0]
-                            self.T_bonded_wall_wetted[i] = T_profile2_w[-1, (nn - 1)]
-                            self.temp_profile.append(T_profile2[-1, :])
+                        self._step_detailed_wall(i, wetted_area, "nem")
                     else:
                         # Lumped capacitance model (no 1D heat transfer)
                         self.T_inner_wall[i] = self.T_vessel[i]
@@ -2722,232 +2602,7 @@ class HydDown:
                     # This section is activated when thermal_conductivity is specified.
                     # Otherwise, falls back to simple lumped capacitance model below.
                     if "thermal_conductivity" in self.input["vessel"].keys():
-                        theta = 0.5  # Crank-Nicolson scheme (unconditionally stable, 2nd order)
-                        dt = (
-                            self.tstep / 10
-                        )  # Sub-step for thermal solver (finer time resolution)
-                        k, rho, cp = (
-                            self.input["vessel"]["thermal_conductivity"],
-                            self.vessel_density,
-                            self.vessel_cp,
-                        )
-                        # Check if single-layer or composite (liner + shell) construction
-                        if (
-                            "liner_thermal_conductivity"
-                            not in self.input["vessel"].keys()
-                        ):
-                            # Single-layer wall construction
-                            nn = 11  # number of nodes through wall thickness
-                            z = np.linspace(0, self.thickness, nn)
-                            self.z = z
-                            # Create meshes for unwetted and wetted regions
-                            mesh = tm.Mesh(z, tm.LinearElement)
-                            mesh_w = tm.Mesh(z, tm.LinearElement)
-                            # Material model with constant properties
-                            cpeek = tm.isothermal_model(k, rho, cp)
-                            cpeek_w = tm.isothermal_model(k, rho, cp)
-
-                            # Initialize temperature profile on first time step
-                            if type(T_profile) == type(int()) and T_profile == 0:
-                                bc = [
-                                    {"T": self.T0},
-                                    {"T": self.T0},
-                                ]
-                                domain = tm.Domain(mesh, [cpeek], bc)
-                                domain.set_T(self.T0 * np.ones(len(mesh.nodes)))
-                                solver = {
-                                    "dt": 100,
-                                    "t_end": 10000,
-                                    "theta": theta,
-                                }
-                                t_bonded, T_profile = tm.solve_ht(domain, solver)
-
-                                bc_w = [
-                                    {"T": self.T0},
-                                    {"T": self.T0},
-                                ]
-                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
-                                domain_w.set_T(self.T0 * np.ones(len(mesh_w.nodes)))
-                                solver_w = {
-                                    "dt": 100,
-                                    "t_end": 10000,
-                                    "theta": theta,
-                                }
-                                t_bonded_w, T_profile_w = tm.solve_ht(
-                                    domain_w, solver_w
-                                )
-                            else:
-                                # Boundary conditions: z=0 is inner wall, z=L is outer wall
-                                bc = [
-                                    {
-                                        "q": -self.q_inner[i]
-                                        # / (self.surf_area_inner - wetted_area)
-                                    },
-                                    {
-                                        "q": self.q_outer[i]
-                                        # / (self.surf_area_outer - wetted_area_outer)
-                                    },
-                                ]
-                                domain = tm.Domain(mesh, [cpeek], bc)
-                                domain.set_T(T_profile[-1, :])
-                                solver = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_bonded, T_profile = tm.solve_ht(domain, solver)
-                                # Wetted wall boundary conditions will be set below
-                                # in the conditional block that checks liquid_level
-
-                            # Only solve wetted wall if liquid is present
-                            # Check liquid_level to handle both gas-only and liquid-depleted cases
-                            if self.liquid_level[i - 1] > 0 and wetted_area > 0:
-                                bc_w = [
-                                    {"q": -self.q_inner_wetted[i]},  # / wetted_area},
-                                    {
-                                        "q": self.q_outer_wetted[i]
-                                    },  # , / wetted_area_outer},
-                                ]
-                                domain_w = tm.Domain(mesh_w, [cpeek_w], bc_w)
-                                domain_w.set_T(T_profile_w[-1, :])
-                                solver_w = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_w, T_profile_w = tm.solve_ht(domain_w, solver_w)
-                                self.T_inner_wall_wetted[i] = T_profile_w[-1, 0]
-                                self.T_outer_wall_wetted[i] = T_profile_w[-1, -1]
-                                self.T_vessel_wetted[i] = T_profile_w[-1, :].mean()
-                            else:
-                                # No liquid - wetted wall same as unwetted
-                                self.T_inner_wall_wetted[i] = T_profile[-1, 0]
-                                self.T_outer_wall_wetted[i] = T_profile[-1, -1]
-                                self.T_vessel_wetted[i] = T_profile[-1, :].mean()
-
-                            self.temp_profile.append(T_profile[-1, :])
-                            self.T_inner_wall[i] = T_profile[-1, 0]
-                            self.T_outer_wall[i] = T_profile[-1, -1]
-                            # Update mean vessel temperature from wall temperatures
-                            self.T_vessel[i] = T_profile[-1, :].mean()
-                        else:
-                            # Composite wall construction (liner + shell)
-                            k_liner = self.input["vessel"]["liner_thermal_conductivity"]
-                            rho_liner = self.input["vessel"]["liner_density"]
-                            cp_liner = self.input["vessel"]["liner_heat_capacity"]
-                            liner = tm.isothermal_model(k_liner, rho_liner, cp_liner)
-                            shell = tm.isothermal_model(k, rho, cp)
-                            liner_w = tm.isothermal_model(k_liner, rho_liner, cp_liner)
-                            shell_w = tm.isothermal_model(k, rho, cp)
-
-                            thk = self.input["vessel"]["thickness"]  # thickness in m
-                            nn = 11  # number of nodes
-                            z_shell = np.linspace(0, thk, nn)  # node locations
-
-                            thk = self.input["vessel"]["liner_thickness"]
-                            z_liner = np.linspace(-thk, 0, nn)  # node locations
-                            z2 = np.hstack((z_liner, z_shell[1:]))
-                            self.z = z2
-                            mesh2 = tm.Mesh(z2, tm.LinearElement)
-                            mesh2_w = tm.Mesh(z2, tm.LinearElement)
-                            for j, elem in enumerate(mesh2.elem):
-                                if elem.nodes.mean() > 0.0:
-                                    mesh2.subdomain[j] = 1
-                                    mesh2_w.subdomain[j] = 1
-
-                            if type(T_profile2) == type(int()) and T_profile2 == 0:
-                                bc = [
-                                    {"T": self.T0},
-                                    {"T": self.T0},
-                                ]
-                                domain2 = tm.Domain(mesh2, [liner, shell], bc)
-                                domain2.set_T(self.T0 * np.ones(len(mesh2.nodes)))
-                                solver2 = {
-                                    "dt": 100,
-                                    "t_end": 10000,
-                                    "theta": theta,
-                                }
-                                t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
-                                bc_w = [
-                                    {"T": self.T0},
-                                    {"T": self.T0},
-                                ]
-                                domain2_w = tm.Domain(mesh2_w, [liner_w, shell_w], bc_w)
-                                domain2_w.set_T(self.T0 * np.ones(len(mesh2.nodes)))
-                                solver2_w = {
-                                    "dt": 100,
-                                    "t_end": 10000,
-                                    "theta": theta,
-                                }
-                                t_bonded_w, T_profile2_w = tm.solve_ht(
-                                    domain2_w, solver2_w
-                                )
-                            else:
-                                # Boundary conditions: z=-liner_thickness is inner, z=thickness is outer
-                                bc = [
-                                    {
-                                        "q": -self.q_inner[i]
-                                        # / (self.surf_area_inner - wetted_area)
-                                    },
-                                    {
-                                        "q": self.q_outer[i]
-                                        # / (self.surf_area_outer - wetted_area_outer)
-                                    },
-                                ]
-                                domain2 = tm.Domain(mesh2, [liner, shell], bc)
-                                domain2.set_T(T_profile2[-1, :])
-                                solver2 = {
-                                    "dt": dt,
-                                    "t_end": self.tstep,
-                                    "theta": theta,
-                                }
-                                t_bonded, T_profile2 = tm.solve_ht(domain2, solver2)
-
-                                # Only solve wetted wall if liquid is present
-                                # Check liquid_level to handle both gas-only and liquid-depleted cases
-                                if self.liquid_level[i - 1] > 0 and wetted_area > 0:
-                                    bc_w = [
-                                        {
-                                            "q": -self.q_inner_wetted[i]
-                                        },  # / wetted_area},
-                                        {
-                                            "q": self.q_outer_wetted[i]
-                                            # / wetted_area_outer
-                                        },
-                                    ]
-                                    domain2_w = tm.Domain(
-                                        mesh2_w, [liner_w, shell_w], bc_w
-                                    )
-                                    domain2_w.set_T(T_profile2_w[-1, :])
-                                    solver2_w = {
-                                        "dt": dt,
-                                        "t_end": self.tstep,
-                                        "theta": theta,
-                                    }
-                                    t_bonded_w, T_profile2_w = tm.solve_ht(
-                                        domain2_w, solver2_w
-                                    )
-                                    self.T_inner_wall_wetted[i] = T_profile2_w[-1, 0]
-                                    self.T_outer_wall_wetted[i] = T_profile2_w[-1, -1]
-                                    self.T_bonded_wall_wetted[i] = T_profile2_w[
-                                        -1, (nn - 1)
-                                    ]
-                                    self.T_vessel_wetted[i] = T_profile2_w[-1, :].mean()
-                                else:
-                                    # No liquid - wetted wall same as unwetted
-                                    self.T_inner_wall_wetted[i] = T_profile2[-1, 0]
-                                    self.T_outer_wall_wetted[i] = T_profile2[-1, -1]
-                                    self.T_bonded_wall_wetted[i] = T_profile2[
-                                        -1, (nn - 1)
-                                    ]
-                                    self.T_vessel_wetted[i] = T_profile2[-1, :].mean()
-
-                            self.T_inner_wall[i] = T_profile2[-1, 0]
-                            self.T_outer_wall[i] = T_profile2[-1, -1]
-                            self.T_bonded_wall[i] = T_profile2[-1, (nn - 1)]
-                            self.temp_profile.append(T_profile2[-1, :])
-                            # Update mean vessel temperature from wall temperatures
-                            self.T_vessel[i] = T_profile2[-1, :].mean()
+                        self._step_detailed_wall(i, wetted_area, "fire")
                     else:
                         # ================================================================
                         # SIMPLE LUMPED CAPACITANCE MODEL (No thermal gradient)
