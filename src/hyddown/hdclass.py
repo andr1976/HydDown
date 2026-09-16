@@ -288,6 +288,12 @@ class HydDown:
             self.release_type = rel["type"]  # 'liquid' (liquid space) or 'gas' (vapour space)
             self.D_release = rel["diameter"]
             self.CD_release = rel["discharge_coef"]
+            # Elevation of a liquid-space discharge inlet (e.g. a riser/dip-tube) above the vessel
+            # bottom [m]. A liquid draw switches to vapour once the liquid LEVEL falls to this
+            # elevation - not at full depletion - so a heel of liquid below the inlet is left
+            # behind (it then freezes to a small dry-ice residue below the triple point, and the
+            # remaining vapour re-warms). Default 0.0 -> draw liquid to depletion (old behaviour).
+            self.discharge_location = rel.get("discharge_location", 0.0)
             # Separate discharge coefficient for a GAS discharge - a gas-space release, or the
             # gas tail of a liquid release once the liquid is exhausted. Defaults to the single
             # discharge_coef so existing inputs are unchanged. This lets a liquid release use a
@@ -317,7 +323,9 @@ class HydDown:
             self.solid_h_inner = 150.0 if isinstance(_shi, str) else _shi
             # Two-zone plateau HTCs: wall->gas keeps the gas warm; gas->liquid/solid
             # interphase is kept ~0 so heat does not melt the freezing dry ice.
-            self.solid_h_gas_wall = rel.get("solid_h_gas_wall", 15.0)
+            # Default below-triple gas->wall law: Churchill-Chu free convection on the vapour
+            # column (Munkejord et al. 2026), i.e. the same correlation as the reference model.
+            self.solid_h_gas_wall = rel.get("solid_h_gas_wall", "churchill")
             self.solid_h_gas_liquid = rel.get("solid_h_gas_liquid", 0.0)  # plateau (gas<->liquid)
             self.solid_h_gas_solid = rel.get("solid_h_gas_solid", 0.0)  # descent (gas<->dry ice)
             # Gas/condensate split of the inner wall below the triple point. Default None ->
@@ -862,24 +870,62 @@ class HydDown:
             self.T_gas[i] = T2
             self.T_fluid[i] = T2
 
-    def _h_gas_wall(self, T_gas, T_wall, P):
+    def _h_gas_wall(self, T_gas, T_wall, P, V_cond=0.0):
         """Gas->wall heat-transfer coefficient below the triple point [W/m2K].
 
-        ``release.solid_h_gas_wall`` is either a fixed number (default 15) or the string
-        ``"calc"`` for a natural-convection estimate. The correlation (transport.h_inner:
-        Pr, Gr -> Ra -> Nu, h = Nu*k/L) uses CoolProp's ``T|gas`` phase spec, which is valid
-        for CO2 vapour below the triple point (verified down to ~1 bar). Falls back to 15 on
-        any CoolProp failure or a negligible gas/wall temperature difference.
+        ``release.solid_h_gas_wall`` is either a fixed number (default 15) or one of two
+        natural-convection estimates, both using CoolProp's ``T|gas`` phase spec (valid for
+        CO2 vapour below the triple point, verified down to ~1 bar):
+
+          * ``"calc"``      -> Geankoplis piecewise vertical-plate/cylinder Nu
+                               (transport.h_inner; L = vessel height for a vertical vessel).
+          * ``"churchill"`` -> Churchill & Chu single-equation vertical-plate correlation,
+                               the law Munkejord et al. (2026) use for the vapour region, with
+                               the characteristic length the *vapour-column height* above the
+                               condensate (``L_v = (1 - a_l) L_z``), which shrinks as dry ice
+                               and liquid accumulate.
+
+        ``V_cond`` is the condensate (liquid+solid) volume, used only by ``"churchill"`` to set
+        the vapour-column height. Falls back to 15 on any CoolProp failure or a negligible
+        gas/wall temperature difference.
         """
         hgw = self.solid_h_gas_wall
-        if isinstance(hgw, str) and hgw.lower() == "calc":
+        if isinstance(hgw, str) and hgw.lower() in ("calc", "churchill"):
             if abs(T_wall - T_gas) < 0.1:
                 return 15.0
             try:
-                return tp.h_inner(self.inner_vol.D, T_gas, T_wall, P, "HEOS::CO2")
+                if hgw.lower() == "churchill":
+                    Lv = self._vapour_column_height(V_cond)
+                    h = tp.h_inner_churchill_chu(Lv, T_gas, T_wall, P, "HEOS::CO2")
+                else:
+                    # Natural-convection characteristic length: the vertical extent for a vertical
+                    # vessel (height) or the diameter when horizontal - matching the boiling path.
+                    L = self.diameter if self.vessel_orientation == "horizontal" else self.length
+                    h = tp.h_inner(L, T_gas, T_wall, P, "HEOS::CO2")
+                # CoolProp can return a silent nan (not an exception) for an out-of-range film
+                # state; fall back rather than poison the gas energy balance.
+                return h if math.isfinite(h) and h > 0 else 15.0
             except Exception:
                 return 15.0
         return float(hgw)
+
+    def _vapour_column_height(self, V_cond):
+        """Vapour-column height above the settled condensate [m] (Munkejord's L_v).
+
+        Derived from the actual vessel geometry (``inner_vol``): the condensate of volume
+        ``V_cond`` settles at the bottom to a level, and the vapour column occupies the rest
+        of the internal vertical extent. The full extent is the vessel height for a vertical
+        vessel or the diameter for a horizontal one (a sphere/horizontal cylinder has
+        ``length = 0``), matching the ``h_inner`` characteristic-length convention. Clamped
+        to a small positive value so the correlation stays finite when nearly full of condensate.
+        """
+        H_full = self.diameter if self.vessel_orientation == "horizontal" else self.length
+        if H_full <= 0.0:
+            H_full = self.diameter
+        if V_cond <= 1e-9:
+            return H_full
+        lvl = self.inner_vol.h_from_V(min(max(V_cond, 0.0), self.vol))
+        return max(H_full - lvl, 1e-3)
 
     def _gas_contact_area(self, V_condensed):
         """Inner-wall area in contact with the GAS below the triple point [m2].
@@ -897,6 +943,22 @@ class HydDown:
             return self.surf_area_inner
         lvl = self.inner_vol.h_from_V(min(max(V_condensed, 0.0), self.vol))
         return max(self.surf_area_inner - self.inner_vol.SA_from_h(lvl), 0.0)
+
+    def _gas_solid_interface_area(self, V_cond):
+        """Gas<->solid interface area [m2]: the horizontal cross-section at the TOP of the settled
+        condensate bed, i.e. ``dV/dh`` at the fill level implied by the condensate volume (the
+        solid mass from the balance, ``V_cond = m_s * v_s``). This is the area across which the
+        gas actually exchanges heat with the ice - far smaller than the gas-WALL contact area, so
+        it does not over-couple the well-mixed gas to the cold ice and drag it toward T_sub.
+        """
+        if V_cond <= 1e-9:
+            return 0.0
+        V = min(max(V_cond, 0.0), self.vol)
+        lvl = self.inner_vol.h_from_V(V)
+        d = max(self.diameter * 1e-3, 1e-5)
+        lo = max(lvl - d, 0.0)
+        hi = lvl + d
+        return max((self.inner_vol.V_from_h(hi) - self.inner_vol.V_from_h(lo)) / (hi - lo), 0.0)
 
     def _wetted_wall_htc(self, Tw, T_cold):
         """Below-triple wetted-wall HTC [W/m2 K]: the fixed ``solid_h_inner``, or a boiling
@@ -995,12 +1057,22 @@ class HydDown:
         # Gas-contact wall area from the actual condensate (liquid + dry ice) volume + geometry.
         V_cond = self.m_liquid[i - 1] * rm.v_l + self.m_solid[i - 1] * rm.v_s
         A_g = self._gas_contact_area(V_cond)
-        Q_wg = self._h_gas_wall(T_g_prev, Twall_prev, self.P[i - 1]) * A_g * (Twall_prev - T_g_prev)  # wall -> gas
+        Q_wg = self._h_gas_wall(T_g_prev, Twall_prev, self.P[i - 1], V_cond) * A_g * (Twall_prev - T_g_prev)  # wall -> gas
         Q_gl = self.solid_h_gas_liquid * A_g * (T_g_prev - rm.T_TRIPLE_EOS)  # gas -> L/S
+        # While liquid is present the condensate-region wall is boiling-cooled by the liquid
+        # (Cooper/Rohsenow via _wetted_wall_htc), NOT gas-heated: the heat flows wall -> boiling
+        # liquid and INTO the L/S zone (boiling some liquid off), and the wall tracks the cold
+        # triple-point liquid. The dry-ice descent switches this wall to gas natural convection
+        # once the liquid is depleted.
+        A_wet = max(self.surf_area_inner - A_g, 0.0)
+        if self.tz_T_wall_wet is None:
+            self.tz_T_wall_wet = self.T_vessel_wetted[i - 1]
+        Twet_prev = self.tz_T_wall_wet
+        Q_wl = self._wetted_wall_htc(Twet_prev, rm.T_TRIPLE_EOS) * A_wet * (Twet_prev - rm.T_TRIPLE_EOS)
 
         r = rm.two_zone_plateau_step(
             self.tz_m_gas, self.tz_U_gas, self.tz_M_ls, self.tz_U_ls,
-            Q_wg, Q_gl, dt, self.CD_release_gas, area, V,
+            Q_wg, Q_gl, dt, self.CD_release_gas, area, V, Q_wl=Q_wl,
         )
         self.tz_m_gas, self.tz_U_gas = r["m_g"], r["U_g"]
         self.tz_M_ls, self.tz_U_ls = r["M_ls"], r["U_ls"]
@@ -1027,8 +1099,17 @@ class HydDown:
         self.T_gas[i] = r["T_g"]
         self.T_liquid[i] = rm.T_TRIPLE_EOS
         self.T_fluid[i] = r["T_g"]
-        # wetted wall tracks the cold liquid/solid at the triple point (not the gas wall)
-        self._wetted_wall_step(i, rm.T_TRIPLE_EOS, True, self.surf_area_inner - A_g)
+        # Condensate-region wall: loses Q_wl to the boiling liquid (+ ambient over its area
+        # fraction). Its sensible heat is what boils the liquid off during the plateau.
+        frac_wet = A_wet / self.surf_area_inner if self.surf_area_inner > 0 else 0.0
+        m_ww = getattr(self, "vessel_density", 0.0) * self.vol_solid * frac_wet
+        if m_ww > 0:
+            Q_out_wet = h_out * self.surf_area_outer * frac_wet * (Tamb - Twet_prev)
+            Twet_new = Twet_prev + dt * (Q_out_wet - Q_wl) / (m_ww * cp_wall)
+        else:
+            Twet_new = self.T_vessel[i]
+        self.tz_T_wall_wet = Twet_new
+        self.T_vessel_wetted[i] = Twet_new
         self.m_solid[i] = m_s
         self.m_liquid[i] = m_l
         self.m_gas[i] = m_g
@@ -1062,14 +1143,26 @@ class HydDown:
         T_g_prev = rm._gas_T_from_u_P(self.tz_U_gas / self.tz_m_gas, self.P[i - 1])
         Twall_prev = self.T_vessel[i - 1]
         # Gas-contact wall area from the actual dry-ice volume + geometry (full wall when no solid).
-        A_g = self._gas_contact_area(self.tz_m_solid * rm.v_s)
-        Q_wg = self._h_gas_wall(T_g_prev, Twall_prev, self.P[i - 1]) * A_g * (Twall_prev - T_g_prev)
-        UA_gs = self.solid_h_gas_solid * A_g  # gas->dry-ice interphase conductance [W/K]
+        V_cond = self.tz_m_solid * rm.v_s
+        A_g = self._gas_contact_area(V_cond)
+        Q_wg = self._h_gas_wall(T_g_prev, Twall_prev, self.P[i - 1], V_cond) * A_g * (Twall_prev - T_g_prev)
+        # gas->dry-ice interphase conductance [W/K]: HTC over the actual ice-bed TOP surface
+        # (mass-derived cross-section), NOT the large gas-wall area, so the well-mixed gas is not
+        # dragged down to T_sub.
+        UA_gs = self.solid_h_gas_solid * self._gas_solid_interface_area(V_cond)
+        # The dry-ice-region wall is pinned to the cold ice bed it is buried against: it tracks
+        # the sublimation temperature T_sub(P) down the sublimation line rather than being
+        # reheated by the gas - a substantial ice bed keeps the wall cold (the CARDICE gas tests).
+        # No wall->solid heat is applied, so the retained dry ice is unaffected; the gas exchanges
+        # only with the gas-contact wall (Q_wg).
+        A_wet = max(self.surf_area_inner - A_g, 0.0)
+        if self.tz_T_wall_wet is None:
+            self.tz_T_wall_wet = self.T_vessel_wetted[i - 1]
 
         if self.P[i - 1] <= self.release_back_pressure * 1.002:
-            # Leak has essentially stopped, but the warm wall keeps reheating the residual gas -
-            # heat ingress is NEVER killed. Explicit gas energy balance at the back pressure:
-            # the wall adds Q_wg, a trickle vents its enthalpy, and the gas warms back up.
+            # Leak has essentially stopped, but the warm gas-contact wall keeps reheating the
+            # residual gas - heat ingress is NEVER killed. Explicit gas energy balance at the
+            # back pressure: the wall adds Q_wg, a trickle vents its enthalpy, the gas warms up.
             Pb = self.P[i - 1]
             h_g = rm._gas2d(rm._g2_h, T_g_prev, Pb)
             mdot = rm.gas_leak_rate(T_g_prev, Pb, self.CD_release_gas, area)["mdot"]
@@ -1104,14 +1197,15 @@ class HydDown:
         # zone; report the real residual (gas) temperature instead.
         self.T_liquid[i] = r["T_s"] if r["m_solid"] > 1e-2 else r["T_g"]
         self.T_fluid[i] = r["T_g"]
-        # wetted wall tracks the dry ice down the sublimation line while solid is present;
-        # once the solid is gone (liquid drain -> residual gas) the wetted wall is meaningless,
-        # so relax it toward the gas-contact wall instead.
+        # Condensate-region (dry-ice) wall: tracks the sublimation temperature T_sub(P) while dry
+        # ice is present (ice-pinned - the cold bed holds it on the sublimation line); once the
+        # solid is depleted its phase is gone, so it clamps to the surviving gas-contact wall.
         if r["m_solid"] > 1e-2:
-            self._wetted_wall_step(i, r["T_s"], True, self.surf_area_inner - A_g)
+            Twet_new = rm._T_sub_of_P(r["P"])
         else:
-            self.T_vessel_wetted[i] = self.T_vessel[i]
-            self.tz_T_wall_wet = self.T_vessel[i]
+            Twet_new = self.T_vessel[i]
+        self.tz_T_wall_wet = Twet_new
+        self.T_vessel_wetted[i] = Twet_new
         self.m_solid[i] = r["m_solid"]
         self.m_liquid[i] = 0.0
         self.m_gas[i] = r["m_g"]
@@ -3551,11 +3645,13 @@ class HydDown:
                 )
             # Release outflow (thermopack CO2 HEM), additive to any valve rate.
             if self.has_release:
-                # Switch a liquid-space release to vapour once the liquid is exhausted.
+                # Switch a liquid-space release to vapour once the liquid is exhausted, OR once the
+                # liquid level falls to the discharge inlet elevation (riser/dip-tube) - leaving a heel.
                 if (
                     self.release_type == "liquid"
                     and self.release_phase == "liquid"
-                    and self.m_liquid[i] <= 1e-6
+                    and (self.m_liquid[i] <= 1e-6
+                         or self.liquid_level[i] <= self.discharge_location)
                 ):
                     self.release_phase = "gas"
                 self.mass_rate[i] = self.mass_rate[i] + self.compute_release(self.P[i], i)

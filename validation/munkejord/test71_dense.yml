@@ -32,7 +32,7 @@ release:
   eos: "CoolProp"
   solid_in_vessel: true
   solid_h_inner: "cooper"
-  solid_h_gas_wall: "calc"
+  solid_h_gas_wall: churchill
   solid_h_gas_liquid: 0.0
   solid_h_gas_solid: 3.0
 heat_transfer:

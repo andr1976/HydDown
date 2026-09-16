@@ -1121,6 +1121,7 @@ def release_validation(input):
         # Optional separate Cd for a gas discharge (gas release or the gas tail of a
         # liquid release); defaults to discharge_coef when omitted.
         "discharge_coef_gas": {"required": False, "type": "number", "min": 0},
+        "discharge_location": {"required": False, "type": "number", "min": 0},
         "back_pressure": {"required": False, "type": "number", "min": 0},
         "atm_pressure": {"required": False, "type": "number", "min": 0},
         "eos": {"required": False, "type": "string", "allowed": ["CoolProp", "tcPR"]},
@@ -1130,7 +1131,7 @@ def release_validation(input):
             "required": False,
             "anyof": [
                 {"type": "number", "min": 0},
-                {"type": "string", "allowed": ["calc"]},
+                {"type": "string", "allowed": ["calc", "churchill"]},
             ],
         },
         "solid_h_gas_liquid": {"required": False, "type": "number", "min": 0},

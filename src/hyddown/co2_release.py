@@ -214,7 +214,12 @@ class CO2ReleaseModel:
         T_s_prev = self._T_sub_of_P(P_prev)
         # gas -> solid interphase heat (cools the gas, sublimes solid)
         Q_gs = max(UA_gs * (T_g - T_s), 0.0)
-        dm_cool = m_solid * self.cp_solid * max(T_s_prev - T_s, 0.0) / self.L_sub
+        # dm_cool = whole-bed self-cooling along the sublimation line. In reality only the exposed
+        # bed SURFACE follows T_sub(P) quickly; the insulated bulk lags, so scaling by an effective
+        # self-cool fraction (solid_selfcool_frac, default 1.0 = whole bed) is a crude bed-thermal-
+        # resistance knob for experiments.
+        dm_cool = (getattr(self, "solid_selfcool_frac", 1.0)
+                   * m_solid * self.cp_solid * max(T_s_prev - T_s, 0.0) / self.L_sub)
         dm_int = Q_gs * dt / self.L_sub
         dm_sub = min(dm_cool + dm_int, m_solid)
         h_vap_sub = self._gas2d(self._g2_h, T_s, P)  # vapour enthalpy leaving the solid
@@ -670,7 +675,7 @@ class CO2ReleaseModel:
         return tl
 
     # ------------------------------------------------ two-zone plateau (below triple)
-    def two_zone_plateau_step(self, m_g, U_g, M_ls, U_ls, Q_wg, Q_gl, dt, Cd, area, V):
+    def two_zone_plateau_step(self, m_g, U_g, M_ls, U_ls, Q_wg, Q_gl, dt, Cd, area, V, Q_wl=0.0):
         """One timestep of the two-zone triple-point plateau.
 
         A warm (superheated) gas zone and an adiabatic liquid/solid zone, coupled so the
@@ -678,9 +683,14 @@ class CO2ReleaseModel:
         heat into the gas [W] and ``Q_gl`` the (usually small) gas->liquid/solid interphase
         heat [W]; both are supplied by the caller so no wall model lives here.
 
-        Keeping the interphase heat out of the liquid/solid zone is what lets the liquid
-        freeze rather than the warm gas melting it back - the physical lever the CARDICE
-        data shows (35 C gas superheat over a triple-point-pinned liquid/solid).
+        ``Q_wl`` [W] is the wall->boiling-liquid heat (Cooper/Rohsenow) while liquid is present:
+        it enters the liquid/solid zone directly (it comes from the WALL, so - unlike ``Q_gl`` -
+        it is NOT drawn out of the gas). It boils liquid off (raising ``mvap``), i.e. the warm
+        wall's sensible heat vaporises some liquid rather than letting it all freeze.
+
+        Keeping the *gas* interphase heat ``Q_gl`` out of the liquid/solid zone is what lets
+        the liquid freeze rather than the warm gas melting it back - the physical lever the
+        CARDICE data shows (35 C gas superheat over a triple-point-pinned liquid/solid).
 
         Returns the updated (m_g, U_g, M_ls, U_ls) plus the resolved m_l, m_s, T_g [K],
         mdot [kg/s] and the vaporisation rate.
@@ -700,7 +710,7 @@ class CO2ReleaseModel:
                 return 1e12
             Ug2 = U_g + dt * (Q_wg - Q_gl - mdot * h_leave + mvap * self.h_g)
             Mls2 = M_ls - mvap * dt
-            Uls2 = U_ls - dt * mvap * self.h_g + dt * Q_gl
+            Uls2 = U_ls - dt * mvap * self.h_g + dt * (Q_gl + Q_wl)
             ms2 = min(max((Mls2 * self.u_l - Uls2) / (self.u_l - self.u_s), 0.0), Mls2)
             Vg2 = V - ((Mls2 - ms2) * self.v_l + ms2 * self.v_s)
             return mg2 - self.gas_rho_at(self.gas_T_from_u(Ug2 / mg2)) * Vg2
@@ -710,7 +720,7 @@ class CO2ReleaseModel:
         m_g = m_g - mdot * dt + mvap * dt
         U_g = U_g + dt * (Q_wg - Q_gl - mdot * h_leave + mvap * self.h_g)
         M_ls = M_ls - mvap * dt
-        U_ls = U_ls - dt * mvap * self.h_g + dt * Q_gl
+        U_ls = U_ls - dt * mvap * self.h_g + dt * (Q_gl + Q_wl)
         return {"m_g": m_g, "U_g": U_g, "M_ls": M_ls, "U_ls": U_ls,
                 "m_l": m_l, "m_s": m_s, "T_g": T_g, "mdot": mdot, "mvap": mvap,
                 "P": self.P_TRIPLE_EOS}

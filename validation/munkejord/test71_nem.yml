@@ -48,7 +48,7 @@ release:
   eos: "CoolProp"              # thermopack-free backend
   solid_in_vessel: true        # crosses the triple point -> dry ice forms in-vessel
   solid_h_inner: "cooper"      # below-triple wall<->cold-phase HTC from the Cooper correlation
-  solid_h_gas_wall: "calc"     # natural-convection gas->wall HTC below triple
+  solid_h_gas_wall: churchill     # natural-convection gas->wall HTC below triple
   solid_h_gas_liquid: 0.0
   solid_h_gas_solid: 3.0
 heat_transfer:

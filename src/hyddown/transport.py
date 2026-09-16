@@ -186,6 +186,50 @@ def h_inner(L, Tfluid, Tvessel, P, species):
     return h_inner
 
 
+def h_inner_churchill_chu(L, Tfluid, Tvessel, P, species):
+    """Churchill & Chu (1975) free convection on a vertical plate, as used by Munkejord
+    et al. (2026) for the vapour (dry) region above the liquid level (their Eq. 15):
+
+        Nu = ( 0.825 + 0.387 Ra^(1/6) / [ 1 + (0.492/Pr)^(9/16) ]^(8/27) )^2
+
+    Ra and Pr use the vapour properties at the film temperature (Tfluid+Tvessel)/2, and the
+    characteristic length ``L`` is the vapour-column height above the condensate. Unlike the
+    piecewise Geankoplis form (:func:`Nu`) this single equation is smooth across the
+    laminar-turbulent transition. CoolProp's ``T|gas`` phase spec keeps it valid for CO2
+    vapour below the triple point.
+
+    Parameters
+    ----------
+    L : float
+        Characteristic length (vapour-column height above the condensate) [m]
+    Tfluid : float
+        Bulk gas temperature [K]
+    Tvessel : float
+        Wall temperature [K]
+    P : float
+        Pressure [Pa]
+    species : str
+        Fluid definition string (single component)
+
+    Returns
+    ----------
+    h : float
+        Natural-convection heat-transfer coefficient [W/m2 K]
+    """
+    sp = "HEOS::" + species.split("::")[-1]
+    Tf = (Tfluid + Tvessel) / 2.0
+    k = PropsSI("L", "T|gas", Tf, "P", P, sp)
+    mu = PropsSI("V", "T|gas", Tf, "P", P, sp)
+    rho = PropsSI("D", "T|gas", Tf, "P", P, sp)
+    cp = PropsSI("C", "T|gas", Tf, "P", P, sp)
+    beta = PropsSI("isobaric_expansion_coefficient", "T|gas", Tf, "P", P, sp)
+    Pr = mu * cp / k
+    Ra = 9.81 * beta * abs(Tvessel - Tfluid) * L ** 3 * rho ** 2 * cp / (mu * k)
+    NNu = (0.825 + 0.387 * Ra ** (1.0 / 6.0)
+           / (1.0 + (0.492 / Pr) ** (9.0 / 16.0)) ** (8.0 / 27.0)) ** 2
+    return NNu * k / L
+
+
 def h_inside_mixed(L, Tvessel, Tfluid, fluid, mdot, D):
     """
     Calculation of internal mixed natural/forced convective heat transfer coefficient from Nusselt number
