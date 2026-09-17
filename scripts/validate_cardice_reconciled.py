@@ -78,18 +78,32 @@ def main():
             okp = np.isfinite(P.iloc[:, 0].values) & np.isfinite(P.iloc[:, 1].values)
             tP, ps = merge_across_gaps(P.iloc[:, 0].values[okp], P.iloc[:, 1].values[okp])
 
-            hd = HydDown(yaml.safe_load(open(OUT + "CARDICE_test%d.yml" % t)))
+            d = yaml.safe_load(open(OUT + "CARDICE_test%d.yml" % t))
+            hd = HydDown(d)
             hd.run(disable_pbar=True)
             tm_s = np.asarray(hd.time_array); Pm_bar = np.asarray(hd.P) / 1e5
             tm = tm_s / 3600.0
             ET = tm.max()
-            # anchor the measured trace to the model at a mid-blowdown reference pressure
-            p0 = np.nanmax(ps[:120]); Pref = p0 - max(1.0, 0.15 * (p0 - 1.0))
+            # Time-align the measured trace to the model. A GAS release shows a steady pressure
+            # decline from the start, so anchor at a mid-blowdown reference pressure. A LIQUID
+            # release barely moves the pressure while the liquid drains, so a pressure reference
+            # over-shifts (e.g. test 6 by ~180 s, leaving the initial inventory ~30 kg low);
+            # anchor those on the INVENTORY-mass decline onset instead, which keeps the initial
+            # total inventory aligned.
+            tM, mm = merge_across_gaps(M.iloc[:, 0].values, M.iloc[:, 1].values)
+            Mm = np.asarray(hd.mass_fluid)
+            if d["release"]["type"] == "gas":
+                p0 = np.nanmax(ps[:120]); Pref = p0 - max(1.0, 0.15 * (p0 - 1.0))
 
-            def _cross(tt, pp):
-                idx = np.where(pp < Pref)[0]; return tt[idx[0]] if len(idx) else tt[-1]
-            shift = _cross(tP, ps) - _cross(tm_s, Pm_bar)   # seconds to subtract from measured time
-            sh = lambda tt, _s=shift: (np.asarray(tt) - _s) / 3600.0
+                def _cross(tt, pp):
+                    idx = np.where(pp < Pref)[0]; return tt[idx[0]] if len(idx) else tt[-1]
+                shift = _cross(tP, ps) - _cross(tm_s, Pm_bar)
+            else:
+                def _onset(tt, yy):
+                    y0 = np.nanmax(yy[:120]); thr = max(3.0, 0.005 * y0)
+                    idx = np.where(yy < y0 - thr)[0]; return tt[idx[0]] if len(idx) else tt[0]
+                shift = _onset(tM, mm) - _onset(tm_s, Mm)
+            sh = lambda tt, _s=shift: (np.asarray(tt) - _s) / 3600.0   # seconds -> hours, shifted
             alive = np.asarray(hd.mass_fluid) > 0.02
             cond = np.asarray(hd.m_liquid) + np.asarray(hd.m_solid)
 
@@ -102,7 +116,6 @@ def main():
             a.set_ylabel("pressure [bar]"); a.set_title("Pressure"); a.legend(fontsize=8); a.grid(alpha=.3)
             # Inventory
             a = ax[0, 1]
-            tM, mm = merge_across_gaps(M.iloc[:, 0].values, M.iloc[:, 1].values)
             a.plot(sh(tM), mm, color=SLATE, lw=1.6, label="measured CO2 (Masse)")
             a.plot(tm, hd.mass_fluid, color=RED, lw=1.6, ls="--", label="model total")
             a.plot(tm, hd.m_solid, color="k", lw=1, ls=":", label="dry ice")
@@ -138,8 +151,9 @@ def main():
                 fig.savefig(OUT + "CARDICE_test%d_reconciled.%s" % (t, e), dpi=150)
             plt.close(fig)
             meas_ret = M.iloc[:, 1].values; meas_ret = meas_ret[np.isfinite(meas_ret)][-1]
-            print("T%-2d m0=%.0f retained model=%.1f vs meas %.1f | Pref-align shift %.0fs -> CARDICE_test%d_reconciled.pdf"
-                  % (t, hd.mass_fluid[0], hd.m_solid[-1], meas_ret, shift, t), flush=True)
+            align = "P-ref" if d["release"]["type"] == "gas" else "mass-onset"
+            print("T%-2d m0=%.0f retained model=%.1f vs meas %.1f | %s shift %.0fs -> CARDICE_test%d_reconciled.pdf"
+                  % (t, hd.mass_fluid[0], hd.m_solid[-1], meas_ret, align, shift, t), flush=True)
         except Exception as ex:
             print("T%d FAILED: %s" % (t, str(ex)[:150]), flush=True)
     print("ALL DONE", flush=True)

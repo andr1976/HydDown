@@ -48,16 +48,25 @@ def measured(z, name, ET):
         t = pd.to_numeric(dat[col[tn]], errors="coerce").values
         v = pd.to_numeric(dat[col[vn]], errors="coerce").values
         m = np.isfinite(t) & np.isfinite(v); return t[m], v[m]
-    # blowdown onset from PT163: the dense flash happens within the first sample, so take the
-    # early peak and the onset as the first drop >5 bar below it.
-    tp, p = raw("tPT163", "PT163"); p0 = np.nanmax(p[:200])
+    # Vessel pressure: normally (PT162 + PT163)/2, but the bottom sensor PT163 is DEAD (reads 0)
+    # in some riser tests (Exp52, Exp57). Average only the valid sensors - matching the paper,
+    # which plots PT162 alone for those (Fig. A.9(a)). Blowdown onset (the dense flash within the
+    # first sample) is taken from the valid vessel sensor: the early peak, then the first >5 bar drop.
+    def valid(vn):
+        _t, _v = raw("t" + vn, vn); return len(_v) > 0 and np.nanmax(_v) > 5.0
+    v162, v163 = valid("PT162"), valid("PT163")
+    onset_sensor = "PT163" if v163 else "PT162"
+    tp, p = raw("t" + onset_sensor, onset_sensor); p0 = np.nanmax(p[:200])
     below = np.where(p < p0 - 5.0)[0]; t0 = tp[below[0]] if len(below) else 0.0
     tmax = min(tp.max(), ET + t0)
     g = np.arange(0.0, tmax - t0, 0.5)
 
     def I(tn, vn):
         t, v = raw(tn, vn); return np.interp(g, t - t0, v)
-    Pavg = 0.5 * (I("tPT162", "PT162") + I("tPT163", "PT163"))
+    if v162 and v163:
+        Pavg = 0.5 * (I("tPT162", "PT162") + I("tPT163", "PT163"))
+    else:
+        Pavg = I("tPT162", "PT162") if v162 else I("tPT163", "PT163")
     W = I("tWeight", "Weight")
     fluid = np.vstack([I("tTT", c) for c in FLUID])
     iwall = np.vstack([I("tTT", c) for c in IWALL])
@@ -102,7 +111,7 @@ def main():
             fig, ax = plt.subplots(2, 2, figsize=(12, 8))
             fig.suptitle("Munkejord %s  (%.0f bar, %.1f C, %.1f mm, %s) - model (CoolProp) vs 1 Hz data"
                          % (name, P0, T0, noz, kind), color=NAVY, fontsize=12)
-            a = ax[0, 0]; a.plot(g, Pavg, color=SLATE, lw=2, label="measured (PT162+163)/2")
+            a = ax[0, 0]; a.plot(g, Pavg, color=SLATE, lw=2, label="measured vessel P")
             a.plot(t, hd.P / 1e5, color=RED, lw=1.7, ls="--", label="model")
             a.set_ylabel("pressure [bar]"); a.set_title("Pressure"); a.legend(fontsize=8); a.grid(alpha=.3)
             a = ax[0, 1]; a.plot(g, W, color=SLATE, lw=2, label="measured weight")

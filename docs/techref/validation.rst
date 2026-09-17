@@ -18,10 +18,13 @@ Methodology
 
 For every test:
 
-#. **Time base** - the measured trace is aligned to the model at a mid-blowdown **reference
-   pressure** (:math:`P` fallen :math:`\sim` 15 % of its span), which is robust for both the
-   fast gas cases and the slow liquid drains; acquisition gaps in the 1 Hz files (e.g. a
-   385 s outage in test 10) are merged and the temperature step across the gap removed.
+#. **Time base** - the measured trace is time-shifted to the model. A **gas** release
+   declines in pressure from the start, so it is anchored at a mid-blowdown **reference
+   pressure** (:math:`P` fallen :math:`\sim` 15 % of its span). A **liquid** release barely
+   moves the pressure while the liquid drains, so a pressure reference over-shifts it; those
+   are anchored on the **inventory-mass decline onset** instead, which keeps the initial
+   total inventory aligned. Acquisition gaps in the 1 Hz files (e.g. a 385 s outage in test
+   10) are merged and the temperature step across the gap removed.
 #. **Initial mass** - ``vessel.liquid_level`` is calibrated (via the CoolProp initial phase
    masses) to the measured load-cell inventory; all six match within 0.4 %.
 #. **Discharge** - true 3/4/6 mm orifices :cite:`Drescher2022`, a phase-split :math:`C_d`
