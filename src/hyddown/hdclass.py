@@ -886,13 +886,15 @@ class HydDown:
                                and liquid accumulate.
 
         ``V_cond`` is the condensate (liquid+solid) volume, used only by ``"churchill"`` to set
-        the vapour-column height. Falls back to 15 on any CoolProp failure or a negligible
-        gas/wall temperature difference.
+        the vapour-column height. No special-casing of a small gas/wall temperature difference
+        is needed: as :math:`\\Delta T \\to 0` the Churchill-Chu correlation tends to its
+        conduction floor (:math:`\\mathrm{Nu} \\to 0.825^2`, i.e. ``h -> 0.68 k / L_v``) - a
+        finite, physically-correct small value, not a singularity - and the Geankoplis form
+        tends to zero; the heat rate ``h * A * dT`` vanishes there regardless. Falls back to 15
+        only on a non-finite CoolProp film state.
         """
         hgw = self.solid_h_gas_wall
         if isinstance(hgw, str) and hgw.lower() in ("calc", "churchill"):
-            if abs(T_wall - T_gas) < 0.1:
-                return 15.0
             try:
                 if hgw.lower() == "churchill":
                     Lv = self._vapour_column_height(V_cond)

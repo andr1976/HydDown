@@ -52,8 +52,16 @@ class CO2ReleaseModelCP(CO2ReleaseModel):
         self.liquid_ne_pressure_scaled = bool(liquid_ne_pressure_scaled)
         self.liquid_ne_pref = liquid_ne_pref
         self.P_TRIPLE = co2_solid.P_TRIPLE
-        # forced-gas / forced-liquid states for sub-triple queries (CoolProp phase imposition)
+        # TWO separate AbstractState objects with distinct, fixed roles - never cross them:
+        #  * _gas   : PERMANENTLY phase-imposed to gas (specify_phase), for forced-gas sub-triple
+        #             queries (used only in _gasp). It always returns the vapour root.
+        #  * _flash : NEVER phase-imposed - a normal equilibrium flash object for above-triple
+        #             PS/PQ/PT states (which may be two-phase). One flash, many extractions - far
+        #             cheaper than repeated PropsSI calls (each of which re-flashes from scratch).
+        # Because they are separate objects, there is no imposed-phase state to reset between
+        # uses; do NOT call specify_phase on _flash, and do NOT use _gas for an unforced flash.
         self._gas = AbstractState("HEOS", "CO2"); self._gas.specify_phase(CP.iphase_gas)
+        self._flash = AbstractState("HEOS", "CO2")
         self._init_atm_endpoints()
         self._init_triple_point()
         self._init_gas_table()
@@ -126,10 +134,12 @@ class CO2ReleaseModelCP(CO2ReleaseModel):
                 f"Stagnation pressure {P/1e5:.2f} bar >= CO2 critical pressure "
                 f"{P_CRIT/1e5:.2f} bar - saturated stagnation is undefined.")
         Q = 0 if phase == "liquid" else 1
-        Tsat = PropsSI("T", "P", P, "Q", Q, "CO2")
-        h0 = PropsSI("Hmass", "P", P, "Q", Q, "CO2")
-        s0 = PropsSI("Smass", "P", P, "Q", Q, "CO2")  # mass-specific (CoolProp basis)
-        rho0 = PropsSI("Dmass", "P", P, "Q", Q, "CO2")
+        # one PQ-flash, four extractions (mass-specific, CoolProp basis)
+        self._flash.update(CP.PQ_INPUTS, P, Q)
+        Tsat = self._flash.T()
+        h0 = self._flash.hmass()
+        s0 = self._flash.smass()
+        rho0 = self._flash.rhomass()
         return h0, s0, rho0, Tsat
 
     # ------------------------------------------------ isentrope mixture props
@@ -141,10 +151,9 @@ class CO2ReleaseModelCP(CO2ReleaseModel):
         for thermopack's solid-aware psflash. ``s0`` is mass-specific.
         """
         if P >= self.P_TRIPLE_EOS:
-            h = PropsSI("Hmass", "P", P, "Smass", s0, "CO2")
-            rho = PropsSI("Dmass", "P", P, "Smass", s0, "CO2")
-            T = PropsSI("T", "P", P, "Smass", s0, "CO2")
-            return h, rho, T, 0.0
+            # one PS-flash, three extractions (vs three separate PropsSI re-flashes)
+            self._flash.update(CP.PSmass_INPUTS, P, s0)
+            return self._flash.hmass(), self._flash.rhomass(), self._flash.T(), 0.0
         T = co2_solid.T_sub(P)
         hg, sg, vg = self._gasp(T, P)
         hs = co2_solid.h_solid(T); ss = co2_solid.s_solid(T); vs = co2_solid.v_solid(T)
@@ -168,9 +177,8 @@ class CO2ReleaseModelCP(CO2ReleaseModel):
         outlet while the vessel is single-phase, before it flashes: there is only one phase,
         so the draw is phase-agnostic (a liquid-space or vapour-space outlet both draw it).
         Bypasses stagnation()'s P >= P_crit guard by taking the state directly."""
-        h0 = PropsSI("Hmass", "T", T, "P", P, "CO2")
-        s0 = PropsSI("Smass", "T", T, "P", P, "CO2")
-        rho0 = PropsSI("Dmass", "T", T, "P", P, "CO2")
+        self._flash.update(CP.PT_INPUTS, P, T)
+        h0 = self._flash.hmass(); s0 = self._flash.smass(); rho0 = self._flash.rhomass()
         return self.hem_rate_from_stagnation(h0, s0, rho0, T, P, Cd, area)
 
     # ------------------------------------------------------- atmospheric state

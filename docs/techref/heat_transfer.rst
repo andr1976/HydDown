@@ -142,9 +142,15 @@ ice and liquid accumulate; for a sphere/horizontal cylinder (``length = 0``) the
 diameter is used. The single-equation Churchill-Chu form is smooth across the
 laminar-turbulent transition, unlike the piecewise Geankoplis form :eq:`nu`, which remains
 available as ``"calc"``. In the turbulent regime the two agree; the choice only matters in
-the low-Rayleigh tail. A fixed number is also accepted. The coefficient falls back to 15
-W/m\ :sup:`2`\ K on any non-finite CoolProp film state or a negligible gas/wall
-:math:`\Delta T`.
+the low-Rayleigh tail. A fixed number is also accepted.
+
+No special-casing of a small gas/wall :math:`\Delta T` is needed. As
+:math:`\Delta T \to 0` the Churchill-Chu correlation tends to its **conduction floor**
+(:math:`\mathrm{Nu} \to 0.825^2`, i.e. :math:`h_{gw} \to 0.68\,k/L_v`) - a finite,
+physically-correct small value, not a singularity - and the Geankoplis form tends to zero;
+in either case the heat rate :math:`h_{gw}\,A_g\,\Delta T` vanishes there regardless. The
+coefficient therefore returns the correlation value at all :math:`\Delta T`, and falls back
+to a nominal 15 W/m\ :sup:`2`\ K only on a non-finite CoolProp film state.
 
 Nucleate boiling on the wetted wall
 ===================================

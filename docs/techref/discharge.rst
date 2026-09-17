@@ -135,7 +135,8 @@ Orifice and discharge coefficients
 ==================================
 
 The GHGT-16 paper :cite:`Drescher2022` (Table 1) reports the actual restriction-orifice
-sizes: the pure-CO\ :sub:`2` tests use **3, 4 and 6 mm** holes. With the true sizes fixed,
+sizes: the pure-CO\ :sub:`2` tests use **3, 4 and 5 mm** holes (Table 4.1; the 5 mm is
+test 8's reconciled effective size, see the note below). With the true sizes fixed,
 the discharge coefficient is split by phase and calibrated directly against the raw 1 Hz
 Ineris data (:ref:`validation`):
 

@@ -89,7 +89,7 @@ Models employed in each phase
    * - **P1**
      - HEM, saturated-vapour stagnation, :math:`C_{d,\text{gas}}`
      - CoolProp two-zone NEM (gas + liquid), native EoS
-     - two-node wall, Geankoplis natural convection
+     - two-node wall: gas wall Geankoplis natural convection, wetted wall Rohsenow boiling
      - vapour/liquid equilibrium (VLE)
    * - **P2**
      - HEM gas on the sub-triple throat (forms solid), :math:`C_{d,\text{gas}}`
@@ -104,12 +104,12 @@ Models employed in each phase
    * - **L1**
      - HEM liquid **+ HNE boost** :math:`N`, :math:`C_{d,\text{liq}}`
      - CoolProp two-zone NEM (gas + liquid), native EoS
-     - two-node wall, Geankoplis natural convection
+     - two-node wall: gas wall Geankoplis natural convection, wetted wall Rohsenow boiling
      - VLE; liquid boils off as :math:`P` falls
    * - **L2**
      - HEM liquid + :math:`N(P)` (fades toward the triple point), :math:`C_{d,\text{liq}}`
      - two-zone NEM to the heel; ``discharge_location`` sets the gas changeover
-     - two-node wall, natural convection
+     - two-node wall: gas wall natural convection, wetted wall Rohsenow boiling
      - VLE; near-adiabatic warm-gas / cold-liquid split
    * - **L3**
      - HEM gas, :math:`C_{d,\text{gas}}`
