@@ -1,15 +1,27 @@
 .. _experimental:
 
 ============================
-Experimental Basis (CARDICE)
+Experimental Basis
 ============================
 
-The add-on is validated against the **CARDICE** (CARbon Dioxide ICE) Joint
-Industry Project, in which Ineris performed pilot-scale CO\ :sub:`2` blowdown
-experiments in a 2 m\ :sup:`3` sphere. Two papers document the work: the GHGT-15
-paper :cite:`Vaillant2021`, which gives the test matrix and the Vessfire
-comparison, and the IJGGC setup paper :cite:`Jamois2023`, which documents the rig,
-instrumentation and calibration in detail. The open 1 Hz dataset is on Zenodo
+The add-on is validated against **two independent** CO\ :sub:`2` blowdown campaigns that
+together span the pressure range of interest:
+
+* **CARDICE** (Ineris, 2 m\ :sup:`3` sphere) - low/medium pressure (10-20 bar), saturated
+  two-phase, both gas- and liquid-space releases; the source of the in-vessel dry-ice
+  physics.
+* **Høydalsvik/Munkejord** (SINTEF/NTNU, 0.06 m\ :sup:`3` vertical cylinder) - high pressure
+  (120 bar), dense-phase, both no-riser (gas-space) and riser (liquid-draw) releases; a
+  finely instrumented cross-check of the discharge, dry-ice and stratification behaviour.
+
+CARDICE (Ineris 2 m\ :sup:`3` sphere)
+=====================================
+
+The **CARDICE** (CARbon Dioxide ICE) Joint Industry Project, in which Ineris performed
+pilot-scale CO\ :sub:`2` blowdown experiments in a 2 m\ :sup:`3` sphere. Two papers
+document the work: the GHGT-15 paper :cite:`Vaillant2021`, which gives the test matrix and
+the Vessfire comparison, and the IJGGC setup paper :cite:`Jamois2023`, which documents the
+rig, instrumentation and calibration in detail. The open 1 Hz dataset is on Zenodo
 :cite:`CardiceData2024`.
 
 The vessel
@@ -234,3 +246,170 @@ The 1 Hz files include a pre-release period; the true blowdown start :math:`t_0`
 detected from the onset of the inventory-mass decline (and the pressure drop) and
 all comparisons are time-shifted to it (e.g. :math:`t_0 = 438` s for cardice-06).
 Folder ``cardice-0N`` corresponds to test :math:`N`.
+
+Høydalsvik/Munkejord (SINTEF dense-phase cylinder)
+==================================================
+
+The second campaign is the SINTEF/NTNU dense-phase depressurization experiments
+:cite:`Hoydalsvik2026`, which release CO\ :sub:`2` from a small, heavily instrumented
+vertical cylinder at :math:`\sim` 120 bar. Relative to CARDICE it probes a very different
+part of the envelope - **dense-phase (sub-cooled) start, high pressure, thick relative
+wall** - and its dense fluid flashes hard through the nozzle, so it stresses the discharge
+and flash-boiling models rather than the multi-hour in-vessel dry-ice bank. The open
+dataset is on Zenodo (record 19589510, CC BY 4.0).
+
+The vessel
+----------
+
+.. figure:: figures/munke_setup.png
+   :width: 70%
+
+   Schematic of the vessel experimental setup in the ECCSEL depressurization facility: the
+   cylindrical vessel with the removable riser tube, the six fluid/wall thermocouple heights
+   (TT10y-TT15y), the vessel pressure sensors PT162 (top) / PT163 (bottom), the bottom
+   outer-wall sensor TT171, and the nozzle with valve CV101 on the lid.
+
+   From :cite:`Hoydalsvik2026`.
+
+.. figure:: figures/munke_vessel.png
+   :width: 55%
+
+   Picture of the insulated vessel in the ECCSEL depressurization facility.
+
+   From :cite:`Hoydalsvik2026`.
+
+The vessel is a SS316 cylinder with an inner diameter of 273.0 mm and an internal height
+of 1000 mm, a 25.4 mm wall and a 50 mm bottom plate, closed by an 80 mm lid (580 mm
+diameter) on an 83 mm flange and standing on three legs. Its design pressure is 138 bar. It
+is insulated with 50 mm Armaflex LTD (walls/bottom) and a 45 mm inflatable lid cover.
+
+.. list-table:: SINTEF vessel characteristics (from Høydalsvik et al.)
+   :widths: 45 55
+   :header-rows: 1
+
+   * - Property
+     - Value
+   * - Geometry
+     - vertical circular cylinder, three legs
+   * - Inner diameter / internal height
+     - 273.0 mm / 1000 mm
+   * - Internal volume
+     - :math:`\approx` 0.058 m\ :sup:`3`
+   * - Wall / bottom / lid thickness
+     - 25.4 / 50 / 80 mm
+   * - Steel grade (:math:`\rho`, :math:`k`, :math:`c_p`)
+     - SS316 (7950 kg/m\ :sup:`3`, 16.3 W/m/K, 500 J/kg/K)
+   * - Design pressure
+     - 138 bar
+   * - Insulation
+     - 50 mm Armaflex LTD + 45 mm lid cover
+   * - Wall-to-bore ratio :math:`t/D`
+     - :math:`\approx` 0.093 (vs :math:`\approx` 0.046 for the CARDICE sphere)
+
+In HydDown the cylinder is modelled as ``vessel.type: Flat-end``, ``orientation:
+vertical``, ``length: 1.0``, ``diameter: 0.273``, ``thickness: 0.0254``. The thicker
+*relative* wall matters below the triple point: it feeds more lateral heat into the
+dry-ice-contact wall than the CARDICE geometry (:ref:`validation`).
+
+Release configurations
+----------------------
+
+CO\ :sub:`2` is discharged through a converging nozzle in one of two configurations:
+
+* **no-riser (gas-space) release** - the nozzle draws from the top of the vessel; the dense
+  liquid stays in the vessel, giving the gas-draw / in-vessel dry-ice behaviour (the
+  P1-P3 spine of :ref:`model_map`);
+* **riser (liquid-draw) release** - a 20 mm riser tube draws liquid from :math:`\approx`
+  9 mm above the floor to the lid centre (set in the model by ``release.discharge_location``),
+  so the vessel drains as a liquid release and empties before reaching the triple point.
+
+The CO\ :sub:`2` leaves through valve CV101 and a converging nozzle of throat diameter
+**8.0, 6.5 or 4.5 mm** (inlet diameter 32 mm, half-angle :math:`\theta = 60^{\circ}`),
+matching the choked-flow orifice/nozzle study :cite:`Hammer2022` on the same facility.
+
+.. figure:: figures/munke_nozzle.png
+   :width: 75%
+
+   Schematic of the interchangeable converging nozzle, with the inlet diameter
+   :math:`d_i`, throat diameter :math:`d_t` and half-angle :math:`\theta`, and the
+   throat pressure sensors PT160 / PT166.
+
+   From :cite:`Hoydalsvik2026`.
+
+Instrumentation
+---------------
+
+The vessel is densely instrumented with **26 thermocouples, four Keller PA33Xei pressure
+sensors and three scales** (one per leg, for the vessel weight). Fluid and wall temperatures
+are measured at **6 heights** (TT10y at 950 mm down to TT15y at 50 mm from the bottom plate)
+and, per height, at four radial positions - labelled ``TT1xy`` with ``x`` the height and
+``y`` the radial position: ``y = 4`` fluid on the central axis, ``y = 3`` fluid 5.5 mm from
+the wall, ``y = 2`` wall 3 mm inside the inner face, ``y = 1`` outer wall. Vessel pressure is
+the mean of PT162 (170 mm from the top) and PT163 (50 mm from the bottom); PT160 / PT166
+sit just before and at the nozzle throat. Sampling is at 1000 Hz, averaged to 0.5 Hz.
+
+In the validation the fluid and wall temperatures are shown as **upper / lower bands** (the
+top three vs the bottom three sensor heights) to bracket the vertical stratification, and
+each channel is read on its own time base to avoid a clock mismatch between the pressure,
+temperature and weight streams. The blowdown onset is taken from the dense-flash pressure
+drop and all traces are shifted to it.
+
+Test matrix
+-----------
+
+The nine pure-CO\ :sub:`2` cases used here are:
+
+.. list-table:: Høydalsvik/Munkejord test matrix (as modelled)
+   :widths: 14 16 16 16 38
+   :header-rows: 1
+
+   * - Test
+     - :math:`P_0` [bar]
+     - :math:`T_0` [\ :math:`^{\circ}`\ C]
+     - Nozzle
+     - Configuration
+   * - Exp71
+     - 122.6
+     - 25.2
+     - 8.0 mm
+     - no-riser (gas)
+   * - Exp72
+     - 119.0
+     - 24.9
+     - 6.5 mm
+     - no-riser (gas)
+   * - Exp75
+     - 119.0
+     - 25.0
+     - 4.5 mm
+     - no-riser (gas)
+   * - Exp52
+     - 119.9
+     - 15.4
+     - 8.0 mm
+     - riser (liquid)
+   * - Exp53
+     - 119.5
+     - 24.4
+     - 8.0 mm
+     - riser (liquid)
+   * - Exp56
+     - 119.1
+     - 15.2
+     - 6.5 mm
+     - riser (liquid)
+   * - Exp57
+     - 116.8
+     - 24.5
+     - 6.5 mm
+     - riser (liquid)
+   * - Exp45
+     - 119.9
+     - 14.5
+     - 4.5 mm
+     - riser (liquid)
+   * - Exp46
+     - 116.7
+     - 24.4
+     - 4.5 mm
+     - riser (liquid)

@@ -4,188 +4,223 @@
 Validation
 ==========
 
-The CO\ :sub:`2` add-on is validated against the full pure-CO\ :sub:`2` CARDICE set
-(tests 5-10, :ref:`experimental`) using the open 1 Hz Ineris data
-:cite:`CardiceData2024,Vaillant2021`. Each case has a tracked input file in
-``validation/CARDICE_*.yml`` and a four-panel comparison figure.
+The CO\ :sub:`2` add-on is validated against the pure-CO\ :sub:`2` **CARDICE** set (Ineris,
+tests 5-10) and the **Høydalsvik/Munkejord** dense-phase set (SINTEF, 9 cases), both
+described in :ref:`experimental`. Each case has a tracked input file and a four-panel
+comparison figure; the generators are ``scripts/validate_cardice_reconciled.py`` and
+``scripts/validate_munkejord.py``.
+
+CARDICE (Ineris)
+================
 
 Methodology
-===========
+-----------
 
 For every test:
 
-#. **Time base** - the blowdown start :math:`t_0` is detected from the onset of the
-   load-cell mass decline (and the pressure drop); all data are shifted to it.
-#. **Initial mass** - ``vessel.liquid_level`` is calibrated (via the CoolProp initial
-   phase masses) to the measured load-cell inventory. All six match within 0.4 %.
-#. **Discharge** - the baseline figures below use a single physical :math:`C_d = 0.68`
-   with the orifice inferred from the reliable gas discharge and the liquid HNE boost
-   :math:`N`. The *reconciled* sensitivity case - true 3/4/6 mm orifices
-   :cite:`Drescher2022`, phase-split :math:`C_d` and a pressure-scaled :math:`N(P)`
-   (:ref:`discharge`) - is validated separately under ``validation/reconciled/``.
-#. **Gas start** - ``initial.gas_temperature`` = mid-band of the top 3 gas-space
-   thermocouples; the gas-contact wall starts at that temperature and the wetted wall
-   at the liquid temperature (:ref:`heat_transfer`).
-#. **Heat transfer** - ``h_outer`` = 0.4 W/m\ :sup:`2`\ K (Jamois); below the triple
-   point the gas-wall uses ``solid_h_gas_wall: "calc"`` (natural convection) and the
-   wetted wall ``solid_h_inner`` = 150 W/m\ :sup:`2`\ K.
+#. **Time base** - the measured trace is aligned to the model at a mid-blowdown **reference
+   pressure** (:math:`P` fallen :math:`\sim` 15 % of its span), which is robust for both the
+   fast gas cases and the slow liquid drains; acquisition gaps in the 1 Hz files (e.g. a
+   385 s outage in test 10) are merged and the temperature step across the gap removed.
+#. **Initial mass** - ``vessel.liquid_level`` is calibrated (via the CoolProp initial phase
+   masses) to the measured load-cell inventory; all six match within 0.4 %.
+#. **Discharge** - true 3/4/6 mm orifices :cite:`Drescher2022`, a phase-split :math:`C_d`
+   (:math:`C_{d,\text{gas}} = 0.84`, :math:`C_{d,\text{liq}} = 0.62`) and the liquid HNE
+   boost :math:`N` (:ref:`discharge`).
+#. **Below the triple point** - the gas wall uses ``solid_h_gas_wall: churchill``
+   (Churchill-Chu), the plateau wetted wall ``solid_h_inner: cooper`` (Cooper boiling), and
+   the descent dry-ice wall tracks the sublimation line (:ref:`heat_transfer`).
+#. **Heat transfer** - ``h_outer`` = 0.4 W/m\ :sup:`2`\ K (Jamois).
 
 Master comparison
-=================
+-----------------
 
-.. list-table:: Model vs measured (CARDICE tests 5-10)
-   :widths: 8 10 12 20 22 16
+.. list-table:: Model vs measured (CARDICE tests 5-10, current model)
+   :widths: 8 10 20 24 24
    :header-rows: 1
 
    * - Test
      - Phase
      - :math:`m_0` mdl/meas [kg]
      - Retained dry ice mdl/meas [kg]
-     - Wetted (bottom) wall mdl/meas [\ :math:`^{\circ}`\ C]
-     - Duration mdl/meas [h]
+     - Wetted (bottom) wall min mdl/meas [\ :math:`^{\circ}`\ C]
    * - 5
      - gas
-     - 825 / 823
-     - 269 / 217
+     - 824 / 823
+     - 266 / 217
      - :math:`-78` / :math:`-75`
-     - 9.8 / 10.9
    * - 6
      - liquid
-     - 805 / 802
-     - 4.4 / 4.4
-     - :math:`-25` / :math:`-24`
-     - 2.7 / 2.9
+     - 804 / 802
+     - 0 / 4.2
+     - :math:`-24` / :math:`-24`
    * - 7
      - gas
      - 790 / 791
-     - 312 / 298
-     - :math:`-75` / :math:`-75`
-     - 6.0 / 5.9
+     - 302 / 298
+     - :math:`-76` / :math:`-75`
    * - 8
      - liquid
-     - 760 / 758
-     - 4.6 / 3.7
+     - 761 / 758
+     - 0 / 3.8
      - :math:`-32` / :math:`-32`
-     - 1.33 / 1.33
    * - 9
      - gas
      - 904 / 904
-     - 402 / 412
-     - :math:`-71` / :math:`-75`
-     - 7.6 / 6.7
+     - 392 / 412
+     - :math:`-72` / :math:`-75`
    * - 10
      - liquid
      - 745 / 743
-     - 4.8 / :math:`\sim 0`
+     - 0 / 5.1
      - :math:`-42` / :math:`-40`
-     - 2.9 / 2.9
 
-The central physics is reproduced across the set: **gas releases retain 270-400 kg of
+The central physics is reproduced across the set: **gas releases retain 266-392 kg of
 in-vessel dry ice with multi-hour triple-point plateaus and walls to** :math:`-75\,^{\circ}`\ **C**;
 **liquid releases retain essentially none, with warm walls** - the dry ice a liquid leak
-makes appears downstream instead. Initial mass, discharge rates (single :math:`C_d`),
-retained mass and wall temperatures all agree.
+makes appears downstream instead. Test 7 lands on the measured retained mass; test 5
+over-predicts (its 4.8-t wall stores the most sensible heat) and test 9 slightly
+under-predicts. The liquid tests empty to a residual gas heel rather than the measured
+:math:`\sim` 4-5 kg, a small non-retained end-effect.
 
 Per-test comparisons
-====================
+--------------------
 
 Each figure has four panels: vessel pressure; inventory mass (with the modelled gas /
-liquid / solid breakdown); all 6 internal fluid thermocouples vs the modelled gas and
-liquid/solid temperatures; and all 7 inner-wall thermocouples vs the modelled
-gas-contact and wetted wall nodes.
+liquid / solid breakdown); the internal fluid thermocouples as **two bands** (upper three =
+gas, lower three = liquid/solid) vs the modelled gas and liquid/solid temperatures; and the
+inner-wall thermocouples as two bands (upper = gas wall, lower = wetted wall) vs the
+modelled gas-contact and wetted wall nodes.
 
-.. figure:: figures/cardice_t5_full.png
+.. figure:: figures/cardice_t5_reconciled.png
    :width: 100%
 
-   Test 5 - gas release, 20 bar. Long triple-point plateau, :math:`\sim` 270 kg
-   retained dry ice, wetted wall to :math:`-78\,^{\circ}`\ C.
+   Test 5 - gas release, 20 bar. Long triple-point plateau, :math:`\sim` 266 kg retained
+   dry ice, wetted wall to :math:`-78\,^{\circ}`\ C.
 
-.. figure:: figures/cardice_t6_full.png
+.. figure:: figures/cardice_t6_reconciled.png
    :width: 100%
 
-   Test 6 - liquid release, 20 bar. Liquid drains and boils out before the triple
-   point; no in-vessel dry ice; pressure and inventory track the data to
-   :math:`\sim` 8 bar / 2.5 h.
+   Test 6 - liquid release, 20 bar. Liquid drains and boils out before the triple point; no
+   in-vessel dry ice.
 
-.. figure:: figures/cardice_t7_full.png
+.. figure:: figures/cardice_t7_reconciled.png
    :width: 100%
 
-   Test 7 - gas release, 15 bar.
+   Test 7 - gas release, 15 bar. Retained dry ice on the measured value (302 vs 298 kg).
 
-.. figure:: figures/cardice_t8_full.png
+.. figure:: figures/cardice_t8_reconciled.png
    :width: 100%
 
-   Test 8 - liquid release, 15 bar. Single :math:`C_d`: liquid 0.311 vs 0.317, gas
-   tail 0.030 vs 0.030 kg/s, duration 1.33 vs 1.33 h.
+   Test 8 - liquid release, 15 bar.
 
-.. figure:: figures/cardice_t9_full.png
+.. figure:: figures/cardice_t9_reconciled.png
    :width: 100%
 
-   Test 9 - gas release, 10 bar. The most retained dry ice (:math:`\sim` 400 kg).
+   Test 9 - gas release, 10 bar. The most retained dry ice (:math:`\sim` 392 kg).
 
-.. figure:: figures/cardice_t10_full.png
+.. figure:: figures/cardice_t10_reconciled.png
    :width: 100%
 
-   Test 10 - liquid release, 10 bar. Orifice from the liquid rate (4.09 mm); duration
-   2.89 vs 2.92 h.
+   Test 10 - liquid release, 10 bar. The 385 s acquisition gap at :math:`\sim` 2.2 h is
+   merged in the measured trace.
 
 Benchmark against Vessfire (Test 5)
-===================================
+-----------------------------------
 
-Test 5 is the paper's benchmark. :cite:`Vaillant2021` report the measured pressure,
-mass flow rate, phase temperatures and wall temperatures against Vessfire
+Test 5 is the paper's benchmark. :cite:`Vaillant2021` report the measured pressure, mass
+flow rate, phase temperatures and wall temperatures against Vessfire
 (:numref:`fig-vaillant-t5`). HydDown reproduces the same three-stage behaviour -
 gas/liquid blowdown, triple-point plateau, gas/solid sublimation descent - and, like
-Vessfire, captures the pressure and rate well while under-predicting the (stratified)
-gas temperature.
+Vessfire, captures the pressure and rate well while under-predicting the (stratified) gas
+temperature.
 
 .. _fig-vaillant-t5:
 
 .. figure:: figures/vaillant_test5.png
    :width: 95%
 
-   Test 5 experimental vs Vessfire results (pressure, mass flow rate, phase
-   temperature, wall temperature).
+   Test 5 experimental vs Vessfire results (pressure, mass flow rate, phase temperature,
+   wall temperature).
 
    From :cite:`Vaillant2021`.
 
-Sensitivity: wall-to-solid coefficient
-======================================
+Høydalsvik/Munkejord (SINTEF)
+=============================
 
-The wetted (bottom) wall minimum below the triple point is set by ``solid_h_inner``.
-A sweep on test 7 shows it approaches the :math:`-76\,^{\circ}`\ C solid asymptote; 150
-W/m\ :sup:`2`\ K matches the measured :math:`-75\,^{\circ}`\ C coldest sensor.
+The dense-phase cases are modelled with the same physics (CoolProp + solid table, HEM +
+:math:`N`, Churchill-Chu / Cooper walls) with the vertical-cylinder geometry and, for the
+riser cases, ``discharge_location`` at the 9 mm riser inlet (:ref:`experimental`). Fluid
+and wall temperatures are compared as **upper / lower bands** against the model gas and
+liquid/solid (and gas-wall / wetted-wall) nodes.
 
-.. figure:: figures/cardice_solid_h_inner_sweep.png
-   :width: 95%
+The no-riser (gas) cases retain a small in-vessel dry-ice bank that the model tracks
+closely: :math:`\sim` 8.4 / 7.8 / 8.1 kg modelled for Exp71 / 72 / 75, against a measured
+:math:`\sim` 8.4 kg for Exp71 (a clean match on the flagship case). The riser (liquid) cases
+drain and empty to essentially zero in-vessel solid, as measured. Across all nine the
+model's two zones bracket the measured stratification envelope.
 
-   Test 7 wetted-wall temperature and its minimum vs ``solid_h_inner``.
+.. figure:: figures/munke_Exp71.png
+   :width: 100%
+
+   Exp71 - no-riser (gas) release, 122.6 bar, 8.0 mm. Pressure, inventory (with dry-ice
+   breakdown), fluid-temperature band and wall-temperature band vs the model.
+
+.. figure:: figures/munke_Exp72.png
+   :width: 100%
+
+   Exp72 - no-riser (gas) release, 119 bar, 6.5 mm.
+
+.. figure:: figures/munke_Exp75.png
+   :width: 100%
+
+   Exp75 - no-riser (gas) release, 119 bar, 4.5 mm.
+
+.. figure:: figures/munke_Exp53.png
+   :width: 100%
+
+   Exp53 - riser (liquid) release, 119.5 bar, 8.0 mm. The liquid draws through the riser and
+   the vessel empties before the triple point.
+
+.. figure:: figures/munke_Exp57.png
+   :width: 100%
+
+   Exp57 - riser (liquid) release, 116.8 bar, 6.5 mm.
+
+.. figure:: figures/munke_Exp46.png
+   :width: 100%
+
+   Exp46 - riser (liquid) release, 116.7 bar, 4.5 mm.
+
+(The remaining riser cases Exp45, Exp52 and Exp56 behave analogously and are generated by
+``scripts/validate_munkejord.py``.)
 
 Remaining gaps
 ==============
 
 These are documented model limitations, not defects:
 
-* **Gas-temperature stratification.** The 0-D gas node runs colder than the measured
-  warm top on the gas cases (:math:`\sim -49` vs :math:`-27\,^{\circ}`\ C); a single node
-  cannot hold the vertical gradient (:ref:`heat_transfer`). Vessfire, a 0-D-gas tool,
-  shows the same :cite:`Vaillant2021`.
+* **Gas-temperature stratification.** The 0-D gas node runs colder than the measured warm
+  top on the gas cases; a single node cannot hold the vertical gradient
+  (:ref:`heat_transfer`). Vessfire, a 0-D-gas tool, shows the same :cite:`Vaillant2021`.
+* **Dry-ice wall: CARDICE vs Munkejord.** In the gas/solid tail the dry-ice-region wall is
+  sublimation-pinned, which matches CARDICE's thick ice bed (walls to :math:`-75\,^{\circ}`\ C)
+  but reads too cold for the Munkejord geometry, where the measured bottom wall re-warms
+  (thin ice, relatively thicker wall, so lateral 2-D wall conduction feeds heat back into
+  the ice-contact metal). A phenomenological lateral-conduction lever to span both is a
+  deferred item.
 * **Triple-point handover kink.** A :math:`\sim 3\,^{\circ}`\ C gas-temperature kink at the
-  CoolProp :math:`\rightarrow` thermopack vessel hand-over (liquid cases); small vs the
-  stratification gap; deferred.
-* **Test 6 abrupt final collapse.** The measured vessel empties abruptly at
-  :math:`\sim` 2.9 h - faster than any physical orifice for the residual gas - a
-  non-orifice end-effect (blowdown-valve full-open / final venting) that a steady
-  discharge model does not reproduce.
-* **Gas vs liquid orifice at 10 bar (test 10).** The gas- and liquid-inferred orifices
-  differ by :math:`\sim 8` % because the equilibrium HEM liquid over-predicts at 10 bar;
-  see the phase-specific-:math:`C_d` note in :ref:`discharge`.
+  CoolProp above-triple :math:`\rightarrow` below-triple vessel hand-over (liquid cases);
+  small vs the stratification gap; deferred.
+* **Liquid-release heel.** The liquid cases empty to a residual gas heel rather than the
+  measured :math:`\sim` 4-5 kg (CARDICE) - a small non-orifice end-effect a steady discharge
+  model does not reproduce.
 
 Regression
 ==========
 
 The base HydDown behaviour is unchanged: all new inputs default off
-(``liquid_nonequilibrium: 0``, no ``gas_temperature``, fixed ``solid_h_gas_wall``), and
-``test_all.py`` passes except two pre-existing, unrelated failures (a Tk/plotting
-environment issue and a modified ``rupture.yml`` example). A dedicated
-``src/hyddown/test_co2_release.py`` covers the CO\ :sub:`2` module.
+(``liquid_nonequilibrium: 0``, no ``gas_temperature``), and ``test_all.py`` passes except
+pre-existing, unrelated failures (a Tk/plotting environment issue and a modified
+``rupture.yml`` example). A dedicated ``src/hyddown/test_co2_release.py`` covers the
+CO\ :sub:`2` module.
