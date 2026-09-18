@@ -34,7 +34,13 @@ FLUID = ["TT104", "TT114", "TT124", "TT134", "TT144", "TT154"]   # y=4 centre, 6
 IWALL = ["TT102", "TT112", "TT122", "TT132", "TT142", "TT152"]   # y=2 inside wall, 6 heights
 
 
-def endtime(noz):
+# per-test end-time overrides [s] (zoom into the active blowdown for fast-emptying riser tests)
+END_OVERRIDE = {"Exp53": 100.0, "Exp57": 150.0, "Exp46": 300.0}
+
+
+def endtime(name, noz):
+    if name in END_OVERRIDE:
+        return END_OVERRIDE[name]
     return {8.0: 250.0, 6.5: 400.0, 4.5: 600.0}.get(noz, 300.0)
 
 
@@ -103,7 +109,7 @@ def main():
     z = zipfile.ZipFile(os.path.join(REPO, "background", "19589510.zip"))
     for name, P0, T0, noz, riser in TESTS:
         try:
-            ET = endtime(noz)
+            ET = endtime(name, noz)
             g, Pavg, W, fluid, iwall = measured(z, name, ET)
             hd = run_model(P0, T0, noz, riser, ET)
             t = np.asarray(hd.time_array)
