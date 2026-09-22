@@ -170,17 +170,24 @@ HydDown \citep{Andreasen2021, Andreasen2026} is an open-source, Python-based too
 transient simulation of pressure-vessel filling and depressurisation, including real-fluid
 thermodynamics through CoolProp \citep{Bell2014}, several mass-flow models, and detailed internal
 and wall heat transfer. It provides a suitable open-source foundation for addressing the gap
-identified above, but its reference thermodynamic backend \citep{Span1996} is not defined below the
-triple point and has no solid phase, so it can neither integrate a discharge isentrope through a
-sub-triple throat nor account for dry-ice formation. Extending HydDown to the intermediate- and
-transport-pressure CO$_2$ regime is therefore a logical next step. The purpose of the present
-paper is to present such an extension and its validation. The specific objectives are to:
+identified above, but its thermodynamic backend has two limitations at sub-triple conditions.
+First, CoolProp includes no solid CO$_2$ model, so dry-ice formation cannot be represented.
+Second, its equilibrium flash resolves only vapour and liquid states and therefore cannot follow
+a fluid that expands below the triple point into the vapour and solid region. The underlying
+reference equation of state \citep{Span1996} can nonetheless be evaluated for the single-phase gas
+below the triple point, a feature that the present work exploits. The purpose of the present paper
+is to extend HydDown with the models and thermodynamic treatment needed to simulate the
+depressurisation of a CO$_2$ storage vessel at intermediate storage and transport conditions,
+including the formation of dry ice both inside the vessel and downstream of the release, and to
+validate the extension against experiment. The specific objectives are to:
 \begin{enumerate}
-  \item describe a thermopack-free treatment of sub-triple CO$_2$ thermodynamics, combining
-        imposed-phase evaluation of the fluid equation of state with a precomputed solid-CO$_2$
-        property table;
-  \item describe the associated discharge, dry-ice and heat-transfer models for both
-        vapour-space and liquid-space releases; and
+  \item extend the thermodynamic treatment below the triple point so that the vapour and solid
+        regions become accessible, by combining imposed-phase evaluation of the reference equation
+        of state for the gas with a precomputed solid-CO$_2$ property table;
+  \item formulate the discharge, in-vessel dry-ice and heat-transfer models for both vapour-space
+        and liquid-space releases, accounting both for the dry ice retained inside the vessel and
+        for the solid fraction of the released stream downstream of the orifice, leak or rupture;
+        and
   \item validate the extended model against two independent experimental campaigns spanning the
         low-, medium- and high-pressure range.
 \end{enumerate}
