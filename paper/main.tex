@@ -1,0 +1,130 @@
+% =====================================================================
+% International Journal of Greenhouse Gas Control (IJGGC) submission
+% Elsevier elsarticle template. IJGGC uses the Harvard (author-date)
+% reference system -> elsarticle-harv.bst + \citep / \citet (natbib).
+% Draft format: "preprint" (single column). For final submission Elsevier
+% recommends "review" (double-spaced) or a final layout (1p/3p/5p);
+% the alternative styles (elsarticle-num / -num-names) are also shipped.
+% Content is intentionally left as TODO placeholders (scaffold only).
+% =====================================================================
+\documentclass[preprint,12pt]{elsarticle}
+
+% Font setup
+\usepackage[T1]{fontenc}
+\usepackage{textcomp}
+
+% Additional packages
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{lineno}
+
+\journal{International Journal of Greenhouse Gas Control}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Modelling the depressurisation of CO$_2$ storage vessel at conditions
+relevant for intermediate storage and transport}
+
+% --- Authors (reused from the HydDown/blowdown paper; add co-authors as needed) ---
+\author[ors]{Anders Andreasen\corref{cor1}}
+\cortext[cor1]{Corresponding author}
+\ead{anra@ors-consulting.com}
+\address[ors]{ORS Consulting Aps, Borgergade 66 st th., DK-6700 Esbjerg, Denmark}
+
+% TODO: highlights (3--5, max 85 chars each) - uncomment and fill:
+% \begin{highlights}
+% \item ...
+% \end{highlights}
+
+\begin{abstract}
+% TODO: abstract
+\end{abstract}
+
+% TODO: keywords - uncomment and fill:
+% \begin{keyword}
+% CO$_2$ \sep depressurisation \sep dry ice \sep intermediate storage \sep transport
+% \end{keyword}
+
+\end{frontmatter}
+
+\linenumbers
+
+% =====================================================================
+\section{Introduction}
+\label{sec:introduction}
+% TODO
+
+% =====================================================================
+\section{Experimental basis}
+\label{sec:experimental}
+% TODO: CARDICE (Ineris 2 m^3 sphere, 10--20 bar) and the Hoydalsvik/Munkejord
+% (SINTEF dense-phase, 120 bar) datasets: rigs, instrumentation, test matrix.
+
+% =====================================================================
+\section{Model}
+\label{sec:model}
+% TODO
+
+\subsection{Thermodynamics and the solid-CO$_2$ lever}
+\label{sec:thermo}
+% TODO: all-CoolProp fluid (imposed-phase extrapolation below the triple point)
+% + precomputed solid-CO2 property table; lever-rule flashes.
+
+\subsection{Discharge model}
+\label{sec:discharge}
+% TODO: HEM rate with a solid-aware throat; non-equilibrium (HNE) liquid boost;
+% phase-split discharge coefficients.
+
+\subsection{In-vessel dry-ice formation}
+\label{sec:dryice}
+% TODO: two-zone triple-point plateau and sublimation descent; atmospheric lever.
+
+\subsection{Heat and mass transfer}
+\label{sec:heat}
+% TODO: two-node wall; Churchill-Chu gas wall; Cooper/Rohsenow boiling;
+% sublimation-tracking dry-ice wall.
+
+% =====================================================================
+\section{Results and validation}
+\label{sec:results}
+% TODO
+
+\subsection{Low- and medium-pressure blowdown (CARDICE)}
+\label{sec:results-cardice}
+% TODO
+
+\subsection{Dense-phase blowdown (high pressure)}
+\label{sec:results-dense}
+% TODO
+
+% =====================================================================
+\section{Discussion}
+\label{sec:discussion}
+% TODO: 0-D limitations (stratification), model choices, applicability.
+
+% =====================================================================
+\section{Conclusions}
+\label{sec:conclusions}
+% TODO
+
+% =====================================================================
+\section*{CRediT authorship contribution statement}
+% TODO
+
+\section*{Declaration of competing interest}
+% TODO
+
+\section*{Acknowledgements}
+% TODO
+
+% =====================================================================
+\bibliographystyle{elsarticle-harv}
+\bibliography{references}
+
+\end{document}
