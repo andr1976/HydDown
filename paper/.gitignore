@@ -1,5 +1,6 @@
 # LaTeX build artifacts
 main.pdf
+supporting_information.pdf
 *.aux
 *.bbl
 *.blg
