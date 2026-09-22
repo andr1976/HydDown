@@ -59,7 +59,131 @@ relevant for intermediate storage and transport}
 % =====================================================================
 \section{Introduction}
 \label{sec:introduction}
-% TODO
+
+Carbon capture, utilisation and storage (CCUS) is expected to play a substantial role in the
+decarbonisation of industry and power generation. Where a capture site is not connected directly
+to a pipeline for gaseous or dense-phase export, the captured CO$_2$ is liquefied and held in
+intermediate storage before onward transport by truck, train or ship. This intermediate storage
+is typically operated at low to medium pressure, in the range of approximately 7 to 20\,bara,
+where liquid CO$_2$ can be kept at a moderately low temperature. Intermediate storage is also
+used at the receiving end of the chain, ahead of transfer to injection for geological storage,
+as in the Norwegian Longship / Northern Lights project at {\O}ygarden \citep{Helgesen2021} and
+the recently commissioned Greensand project in Denmark \citep{Starodubtseva2024}. The role of
+liquefied CO$_2$ storage and transport in the value chain, and its cost and environmental
+trade-offs, have been examined for both trucking and industrial-cluster logistics
+\citep{Ashkavand2025, Hennequin2026}.
+
+A growing number of European capture projects rely on such intermediate storage of liquefied
+CO$_2$. Examples include the Brevik CCS facility at the Heidelberg Materials cement plant in
+Norway \citep{Burns2024}, the commercial capture plant at AVR in Duiven and the plant at Twence
+in Hengelo, both in the Netherlands \citep{Ros2022}, the {\O}rsted carbon capture projects at
+the Aved{\o}re and Asn{\ae}s power stations in Denmark \citep{HoeegJohansen2025}, and the capture
+plant at the Yara fertiliser complex in Sluiskil, the Netherlands. In each case liquid CO$_2$ is
+buffered on site before it is loaded for transport.
+
+Reliable operation and design of this part of the value chain requires an understanding of the
+behaviour of CO$_2$ at intermediate storage and transport conditions, and in particular of its
+phase behaviour. Because the atmospheric sublimation pressure of CO$_2$ lies below the triple
+point ($P_\text{tp} = 5.18$\,bar, $T_\text{tp} = -56.6\,^\circ$C), any depressurisation that
+approaches or crosses the triple point moves the fluid towards the vapour and solid region. An
+unintentional depressurisation of a storage vessel therefore raises two distinct concerns.
+Operationally, expansion below the triple point forms solid CO$_2$ (dry ice), which sublimes
+slowly and can obstruct valves, lines and instrumentation. Mechanically, the expansion cools the
+fluid and the vessel wall well below the normal storage temperature, so that the wall may fall
+below its minimum design temperature and risk brittle behaviour.
+
+When such a depressurisation results from an accidental event, for example a leak or the rupture
+of associated piping or a nozzle, the release must be characterised for safety assessment. The
+thermo-mechanical response of the vessel, the pressure-decay trajectory, and above all the
+release rate and the conditions of the released stream are needed as input to consequence
+modelling. These quantities feed dispersion studies and quantitative risk assessment (QRA), and
+they also provide the source-term boundary conditions for more rigorous computational
+fluid-dynamics (CFD) analysis of the near-field jet and dispersion.
+
+Much of the quantitative understanding of accidental CO$_2$ release has been developed in the
+context of pipeline transport rather than vessel storage. The dense-phase transmission pipeline,
+for which a full-bore rupture or a puncture produces a rapid decompression on a timescale of
+seconds, has been the subject of large joint-industry programmes and of a substantial modelling
+literature. Depressurisation experiments in instrumented pipes have been reported for pure CO$_2$
+and for CO$_2$ mixtures, together with two-phase flow models based on a homogeneous description of
+the fluid \citep{Munkejord2015, Munkejord2021}. Discharge through the break has been treated both
+with the homogeneous equilibrium assumption and, where the departure from equilibrium during the
+rapid expansion is significant, with a homogeneous relaxation model \citep{Brown2013, Brown2014}.
+Larger-scale orifice release data and their review have been produced within the CO2PIPETRANS
+programme \citep{Witlox2015}, and integrated frameworks coupling the pipeline source term to
+near-field and far-field dispersion have been assembled for hazard assessment \citep{Woolley2014}.
+This body of work has established the essential physics of CO$_2$ decompression, but it addresses
+a geometry, a pressure level and a timescale that differ from those of an intermediate-storage
+vessel.
+
+A common feature of these studies is the treatment of the flow through the release path itself,
+which is typically choked. The mass flux at the throat depends strongly on whether the expanding
+fluid is assumed to remain in phase equilibrium or to depart from it. The homogeneous equilibrium
+model assumes instantaneous phase change and mechanical and thermal equilibrium between the
+phases, whereas non-equilibrium and relaxation formulations retain a degree of liquid superheat
+or metastability during the rapid expansion, which tends to raise the predicted mass flow
+relative to the equilibrium value \citep{Lopes2018, Brown2013}. Experimental characterisation of
+choked CO$_2$ flow through orifices and nozzles, including the transition through the triple
+point, has been reported and used to assess these models \citep{Pursell2012, Hammer2022}.
+Downstream of the throat the stream expands to atmospheric pressure along an approximately
+isenthalpic path, cooling below the triple point so that a fraction of the flow forms solid
+CO$_2$. The partition between vapour and solid, the temperature of the released stream and the
+resulting jet structure are the source-term quantities required by dispersion modelling, and they
+have been examined experimentally and through jet-release and dispersion models
+\citep{Toesse2013, Wareing2014, Dixon2012}; the sublimation of a deposited dry-ice bank as a
+continuing source has also been treated \citep{Mazzoldi2008}. Some consequence tools carry this
+decomposition explicitly, separating the in-vessel state, the discharge through the restriction
+and the post-expansion state that is passed to the dispersion calculation \citep{Witlox2012}.
+
+By comparison with the pipeline literature, dedicated experiments on the blowdown of CO$_2$
+storage vessels are more recent and fewer. Accidental leakage of liquid CO$_2$ under shipping
+conditions has been studied on a bench-scale vessel with an orifice, with the vapour and solid
+fractions of the discharge quantified \citep{AlBaroudi2021}, and the discharge from a marine
+loading-arm emergency release coupler has been investigated at real scale \citep{AlBaroudi2022}.
+A visualised depressurisation matrix spanning the gas, liquid and supercritical regions has
+recently been reported for a small vessel \citep{Chen2026}. At the high-pressure, dense-phase end,
+the SINTEF and NTNU experiments on a densely instrumented vertical vessel provide pressure,
+temperature and mass-flow data together with dedicated nozzle-flow measurements
+\citep{Hoydalsvik2026, Hammer2022}. For the low- and medium-pressure two-phase conditions that are
+most representative of intermediate storage, the most elaborate dataset is that of the CARDICE
+project \citep{Vaillant2021, Jamois2023}: a 2\,m$^3$ sphere instrumented with distributed fluid
+and wall thermocouples and continuous weighing, configurable for release from either the vapour
+space or the liquid space, and spanning approximately 10 to 20\,bara and $-20$ to
+$-50\,^\circ$C.
+
+The CARDICE experiments have been simulated with three separate tools, and the comparisons are
+instructive. The commercial fire- and blowdown-response tool VessFire \citep{Vessfire} reproduced
+the vapour-space release and the associated solid CO$_2$ formation well \citep{Vaillant2021}. A
+process-simulator blowdown utility was applied to the low- and medium-pressure tests
+\citep{Drescher2022}; although its underlying property package is reported to include a
+description of solid CO$_2$, this capability was not exercised in the reported simulations, and
+the authors note the absence of a validated method for the liquid-orifice flow when the fluid
+departs from equilibrium. The multiphase flow simulator LedaFlow \citep{Teberikler2022}
+reproduced the liquid-space release adequately, but was less successful for the vapour-space
+release where dry ice forms. Each of these tools captures part of the behaviour, but all are
+proprietary and none is distributed as open source, so the underlying models cannot be inspected,
+modified or reused. There is, therefore, no open and freely available tool that has been validated
+for CO$_2$ vessel blowdown across both vapour- and liquid-space releases and across the low,
+medium and high-pressure range.
+
+HydDown \citep{Andreasen2021, Andreasen2026} is an open-source, Python-based tool for the
+transient simulation of pressure-vessel filling and depressurisation, including real-fluid
+thermodynamics through CoolProp \citep{Bell2014}, several mass-flow models, and detailed internal
+and wall heat transfer. It provides a suitable open-source foundation for addressing the gap
+identified above, but its reference thermodynamic backend \citep{Span1996} is not defined below the
+triple point and has no solid phase, so it can neither integrate a discharge isentrope through a
+sub-triple throat nor account for dry-ice formation. Extending HydDown to the intermediate- and
+transport-pressure CO$_2$ regime is therefore a logical next step. The purpose of the present
+paper is to present such an extension and its validation. The specific objectives are to:
+\begin{enumerate}
+  \item describe a thermopack-free treatment of sub-triple CO$_2$ thermodynamics, combining
+        imposed-phase evaluation of the fluid equation of state with a precomputed solid-CO$_2$
+        property table;
+  \item describe the associated discharge, dry-ice and heat-transfer models for both
+        vapour-space and liquid-space releases; and
+  \item validate the extended model against two independent experimental campaigns spanning the
+        low-, medium- and high-pressure range.
+\end{enumerate}
 
 % =====================================================================
 \section{Experimental basis}
