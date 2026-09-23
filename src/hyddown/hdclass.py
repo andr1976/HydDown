@@ -370,6 +370,16 @@ class HydDown:
                 self.thickness = self.input["vessel"]["thickness"]
                 self.h_out = self.input["heat_transfer"]["h_outer"]
                 self.h_in = self.input["heat_transfer"]["h_inner"]
+                # Opt-in 2-D axisymmetric conjugate wall (bottom plate + shell + flange + lid).
+                v = self.input["vessel"]
+                self.wall_2d = v.get("wall_model", None) == "2d"
+                if self.wall_2d:
+                    self._wall2d_geom = {
+                        "bottom_thickness": v.get("bottom_thickness", 0.0),
+                        "flange_thickness": v.get("flange_thickness", 0.0),
+                        "lid_thickness": v.get("lid_thickness", v["thickness"]),
+                        "lid_diameter": v.get("lid_diameter", v["diameter"] + 2 * v["thickness"]),
+                    }
                 if self.input["valve"]["flow"] == "filling":
                     if "D_throat" in self.input["heat_transfer"]:
                         self.D_throat = self.input["heat_transfer"]["D_throat"]
@@ -431,6 +441,11 @@ class HydDown:
         # first detailed timestep by _step_detailed_wall(). None => not yet constructed.
         self._wall = None
         self._wall_wetted = None
+        # Optional 2-D axisymmetric conjugate wall (opt-in via vessel wall_model: "2d");
+        # lazily built on the first timestep by _step_2d_wall(). Defaults off.
+        if not hasattr(self, "wall_2d"):
+            self.wall_2d = False
+        self._wall2d = None
         self.vol_solid = self.vol_tot - self.vol
         self.surf_area_outer = self.outer_vol.A
         self.surf_area_inner = self.inner_vol.A
@@ -1312,6 +1327,61 @@ class HydDown:
             self.T_bonded_wall_wetted[i] = Tbw
         if sets_vessel:
             self.T_vessel_wetted[i] = prof_w.mean()
+
+    def _step_2d_wall(self, i, wetted_area):
+        """Advance the opt-in 2-D axisymmetric conjugate wall by one macro timestep.
+
+        Operator-split with the fluid step: the gas- and liquid-side HTCs (``h_inside[i]``,
+        ``h_inside_wetted[i]``) and the zone fluid temperatures from step ``i-1`` drive a Robin
+        boundary condition split at the current liquid level (pool boiling below, free convection
+        above); the outer surface is adiabatic (insulated vessel). Writes the area-averaged
+        inner/outer wall temperatures for the dry (gas) and wetted regions into the report arrays
+        and mirrors them into ``T_vessel``/``T_vessel_wetted``. The full steel domain (bottom
+        plate + shell + flange + lid) lets axial conduction re-warm the wetted wall at the heel.
+        """
+        from hyddown.wall2d import WallConduction2D, build_geometry, k_ss316
+        if self._wall2d is None:
+            gg = self._wall2d_geom
+            geom = build_geometry(
+                r_in=self.input["vessel"]["diameter"] / 2.0,
+                thickness=self.thickness,
+                H=self.input["vessel"]["length"],
+                t_bot=gg["bottom_thickness"],
+                t_flange=gg["flange_thickness"],
+                t_lid=gg["lid_thickness"],
+                r_lid=gg["lid_diameter"] / 2.0,
+            )
+            k = self.input["vessel"].get("thermal_conductivity", k_ss316)
+            self._wall2d = WallConduction2D(
+                geom, self.vessel_density, self.vessel_cp, self.T0, k_func=k
+            )
+        hi = self.h_inside[i]
+        hiw = self.h_inside_wetted[i]
+        if self.non_equilibrium and hasattr(self, "T_gas"):
+            T_gas = self.T_gas[i - 1]
+        else:
+            T_gas = self.T_fluid[i - 1]
+        if self.non_equilibrium and hasattr(self, "T_liquid"):
+            T_liq = self.T_liquid[i - 1]
+        else:
+            T_liq = self.T_fluid[i - 1]
+        liquid_level = self.liquid_level[i - 1]
+        if hasattr(self, "m_liquid"):
+            liquid_present = self.m_liquid[i - 1] > 1e-6
+        else:
+            liquid_present = wetted_area > 0
+        s = self._wall2d.step(self.tstep, liquid_level, liquid_present, hi, T_gas, hiw, T_liq)
+        prev_dry, prev_wet = self.T_inner_wall[i - 1], self.T_inner_wall_wetted[i - 1]
+        Ti_dry = s["T_inner_dry"] if np.isfinite(s["T_inner_dry"]) else prev_dry
+        Ti_wet = s["T_inner_wet"] if np.isfinite(s["T_inner_wet"]) else prev_wet
+        To_dry = s["T_outer_dry"] if np.isfinite(s["T_outer_dry"]) else prev_dry
+        To_wet = s["T_outer_wet"] if np.isfinite(s["T_outer_wet"]) else prev_wet
+        self.T_inner_wall[i] = Ti_dry
+        self.T_inner_wall_wetted[i] = Ti_wet
+        self.T_outer_wall[i] = To_dry
+        self.T_outer_wall_wetted[i] = To_wet
+        self.T_vessel[i] = Ti_dry
+        self.T_vessel_wetted[i] = Ti_wet
 
     def _solid_regime_step(self, i):
         """One timestep of the opt-in solid-in-vessel model (below the triple point).
@@ -2534,7 +2604,9 @@ class HydDown:
                     #
                     # Time integration: Crank-Nicolson (theta=0.5) for stability
                     # Spatial discretization: Linear finite elements with 11 nodes
-                    if "thermal_conductivity" in self.input["vessel"].keys():
+                    if getattr(self, "wall_2d", False):
+                        self._step_2d_wall(i, wetted_area)
+                    elif "thermal_conductivity" in self.input["vessel"].keys():
                         self._step_detailed_wall(i, wetted_area, "nem")
                     else:
                         # Lumped capacitance model (no 1D heat transfer)

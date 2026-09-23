@@ -134,6 +134,11 @@ def validate_mandatory_ruleset(input):
                     "type": "number",
                     "min": 0,
                 },
+                "wall_model": {"required": False, "type": "string", "allowed": ["2d"]},
+                "bottom_thickness": {"required": False, "type": "number", "min": 0.0},
+                "flange_thickness": {"required": False, "type": "number", "min": 0.0},
+                "lid_thickness": {"required": False, "type": "number", "min": 0.0},
+                "lid_diameter": {"required": False, "type": "number", "min": 0.0},
             },
         },
         "rupture": {
@@ -519,6 +524,15 @@ def heat_transfer_validation(input):
                             "type": "number",
                             "min": 0,
                         },
+                        "wall_model": {
+                            "required": False,
+                            "type": "string",
+                            "allowed": ["2d"],
+                        },
+                        "bottom_thickness": {"required": False, "type": "number", "min": 0.0},
+                        "flange_thickness": {"required": False, "type": "number", "min": 0.0},
+                        "lid_thickness": {"required": False, "type": "number", "min": 0.0},
+                        "lid_diameter": {"required": False, "type": "number", "min": 0.0},
                     },
                 },
                 "heat_transfer": {

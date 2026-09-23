@@ -51,31 +51,36 @@ def k_ss316(T):
     return 16.2 + 0.013 * (T_C - 25.0)
 
 
-def default_sintef_geometry():
-    """Rectangles [m] describing the SINTEF vessel steel and its internal cavity.
+def build_geometry(r_in, thickness, H, t_bot, t_flange, t_lid, r_lid):
+    """Assemble the stepped-vessel steel rectangles + internal cavity from basic dimensions [m].
 
-    z=0 is the inner floor (top of the bottom plate); r=0 is the axis. Dimensions from
-    Hoydalsvik et al. (2026): ID 273 mm (r_in 0.1365), wall 25.4 mm (r_out 0.1619), internal
-    height 1000 mm, bottom plate 50 mm, flange 83 mm, lid 80 mm x 580 mm dia (r 0.290).
+    z=0 is the inner floor (top of the bottom plate); r=0 is the axis. The cavity fills the bore
+    up to the lid underside (z = H + t_flange). Set ``t_bot``/``t_flange``/``t_lid`` to 0 and
+    ``r_lid = r_in + thickness`` to recover a plain flat-end cylinder.
     """
-    r_in = 0.1365
-    r_out = r_in + 0.0254        # 0.1619
-    r_lid = 0.580 / 2.0          # 0.290
-    H = 1.000
-    t_bot = 0.050
-    t_flange = 0.083
-    t_lid = 0.080
+    r_out = r_in + thickness
+    r_lid = max(r_lid, r_out)
+    z_lidbot = H + t_flange
     steel = [
         # (r0, r1, z0, z1)
-        (0.0,   r_out,  -t_bot,        0.0),              # bottom plate
-        (r_in,  r_out,   0.0,          H),                # cylindrical shell
-        (r_in,  r_lid,   H,            H + t_flange),     # flange ring
-        (0.0,   r_lid,   H + t_flange, H + t_flange + t_lid),  # lid disc
+        (0.0,   r_out,  -t_bot,   0.0),                 # bottom plate
+        (r_in,  r_out,   0.0,     H),                   # cylindrical shell
     ]
-    cavity = (0.0, r_in, 0.0, H + t_flange)              # internal fluid space (up to lid underside)
+    if t_flange > 0:
+        steel.append((r_in, r_lid, H, z_lidbot))        # flange ring
+    if t_lid > 0:
+        steel.append((0.0, r_lid, z_lidbot, z_lidbot + t_lid))  # lid disc
+    cavity = (0.0, r_in, 0.0, z_lidbot)                 # internal fluid space (up to lid underside)
     return dict(steel=steel, cavity=cavity, r_in=r_in, r_out=r_out, r_lid=r_lid,
                 H=H, t_bot=t_bot, t_flange=t_flange, t_lid=t_lid,
-                z_top_cavity=H + t_flange)
+                z_top_cavity=z_lidbot)
+
+
+def default_sintef_geometry():
+    """SINTEF vessel geometry (Hoydalsvik et al., 2026): ID 273 mm (r_in 0.1365), wall 25.4 mm,
+    internal height 1000 mm, bottom plate 50 mm, flange 83 mm, lid 80 mm x 580 mm dia."""
+    return build_geometry(r_in=0.1365, thickness=0.0254, H=1.000,
+                          t_bot=0.050, t_flange=0.083, t_lid=0.080, r_lid=0.290)
 
 
 def _edges(breakpoints, target):
