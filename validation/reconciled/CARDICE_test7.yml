@@ -38,4 +38,4 @@ heat_transfer:
   type: specified_h
   temp_ambient: 283.15
   h_outer: 0.4
-  h_inner: calc
+  h_inner: churchill

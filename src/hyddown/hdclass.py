@@ -2232,7 +2232,7 @@ class HydDown:
                 # ====================================================================
                 # Calculate convective heat transfer coefficients for specified_h or detailed methods
                 if self.heat_method == "specified_h" or self.heat_method == "detailed" or self.heat_method == "specified_q":
-                    if self.h_in == "calc":
+                    if self.h_in in ("calc", "churchill"):
                         if self.vessel_orientation == "horizontal":
                             L = self.diameter
                         else:
@@ -2336,12 +2336,20 @@ class HydDown:
                                 self.transport_fluid.update(
                                     CP.PQ_INPUTS, self.P[i - 1], 1.0
                                 )
-                            hi = tp.h_inside(
-                                L,
-                                self.T_inner_wall[i - 1],
-                                T_for_gas_side_htc,
-                                self.transport_fluid,
-                            )
+                            if self.h_in == "churchill":
+                                hi = tp.h_inside_churchill(
+                                    L,
+                                    self.T_inner_wall[i - 1],
+                                    T_for_gas_side_htc,
+                                    self.transport_fluid,
+                                )
+                            else:
+                                hi = tp.h_inside(
+                                    L,
+                                    self.T_inner_wall[i - 1],
+                                    T_for_gas_side_htc,
+                                    self.transport_fluid,
+                                )
 
                             # NEM: Check liquid phase for boiling, use liquid properties
                             # Equilibrium: Use existing logic with equilibrium fluid

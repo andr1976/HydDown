@@ -146,6 +146,43 @@ def h_inside(L, Tvessel, Tfluid, fluid):
     return h_inner
 
 
+def h_inside_churchill(L, Tvessel, Tfluid, fluid):
+    """Internal natural-convection HTC from the Churchill and Chu (1975) single-equation
+    vertical-plate correlation, using a pre-updated CoolProp fluid object (film state).
+
+    Signature matches :func:`h_inside` so it can be used interchangeably for the gas side;
+    only the Nusselt correlation differs (Churchill-Chu instead of the piecewise Geankoplis
+    :func:`Nu`). As the wall-fluid temperature difference vanishes the correlation tends to a
+    finite conduction floor (Nu -> 0.825**2), not a singularity.
+
+    Parameters
+    ----------
+    L : float
+        Characteristic length [m].
+    Tvessel : float
+        Vessel wall temperature [K].
+    Tfluid : float
+        Bulk fluid temperature [K].
+    fluid : obj
+        CoolProp fluid object already updated to the film state.
+
+    Returns
+    -------
+    h : float
+        Heat transfer coefficient [W/m2 K].
+    """
+    cond = fluid.conductivity()
+    visc = fluid.viscosity()
+    cp = fluid.cpmass()
+    Pr = cp * visc / cond
+    beta = fluid.isobaric_expansion_coefficient()
+    nu = visc / fluid.rhomass()
+    Gr = 9.81 * beta * abs(Tvessel - Tfluid) * L**3 / nu**2
+    Ra = Pr * Gr
+    NNu = (0.825 + 0.387 * Ra ** (1.0 / 6.0) / (1.0 + (0.492 / Pr) ** (9.0 / 16.0)) ** (8.0 / 27.0)) ** 2
+    return NNu * cond / L
+
+
 def h_inner(L, Tfluid, Tvessel, P, species):
     """
     Calculation of internal natural convective heat transfer coefficient from Nusselt number

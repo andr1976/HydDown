@@ -17,7 +17,7 @@ calculation:
   time_step: 5
   end_time: 12000
   non_equilibrium: true
-  h_gas_liquid: 2.0
+  h_gas_liquid: calc_two_sided
 valve:
   flow: discharge
   type: none
@@ -39,4 +39,4 @@ heat_transfer:
   type: specified_h
   temp_ambient: 283.15
   h_outer: 0.4
-  h_inner: calc
+  h_inner: churchill

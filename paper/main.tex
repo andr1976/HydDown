@@ -33,6 +33,21 @@
   flowline/.style={-{Latex[length=2mm]}, thick},
 }
 
+% Two-column float placement: allow double-column floats at the page bottom
+% and keep floats near their reference (reduces drift to float pages / the end).
+\usepackage{dblfloatfix}
+\usepackage{flafter}
+\setcounter{topnumber}{3}
+\setcounter{dbltopnumber}{3}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{5}
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.75}
+\renewcommand{\dblfloatpagefraction}{0.75}
+
 \journal{International Journal of Greenhouse Gas Control}
 
 \begin{document}
@@ -267,7 +282,7 @@ released stream is separately flashed to atmospheric pressure to give the downst
 solid split (Section~\ref{sec:atmdryice}). The model in force in each regime is summarised in
 Table~\ref{tab:phasemodels}.
 
-\begin{figure*}[htbp]
+\begin{figure*}[!tbh]
 \centering
 \begin{tikzpicture}[node distance=9mm and 8mm]
   \node[phase] (start) {\textbf{Start}\\ dense-phase or saturated\\ two-phase CO$_2$ in vessel};
@@ -300,7 +315,7 @@ VLE denotes vapour and liquid equilibrium.}
 \label{fig:phasemap}
 \end{figure*}
 
-\begin{table*}[htbp]
+\begin{table*}[!tbh]
 \centering
 \caption{Discharge, in-vessel treatment and heat transfer / phase lever employed in each regime of
 Figure~\ref{fig:phasemap}. VLE: vapour and liquid equilibrium; HEM: homogeneous-equilibrium
@@ -346,14 +361,14 @@ temperature, so that a solid property and a CoolProp vapour property may be comb
 consistent basis. The table is generated offline and stored with the code; at runtime the model
 uses only CoolProp and the tabulated solid values.
 
-\begin{table*}[htbp]
+\begin{table}[!tbh]
 \centering
 \caption{Quantities tabulated in the precomputed solid-CO$_2$ property table along the sublimation
 line $P_\text{sub}(T)$. The enthalpy and entropy are referenced into the CoolProp basis through the
 latent heat of sublimation so that solid and fluid properties combine consistently.}
 \label{tab:solidtable}
 \footnotesize
-\begin{tabularx}{\textwidth}{@{}l X@{}}
+\begin{tabularx}{\columnwidth}{@{}l X@{}}
 \toprule
 Quantity & Role \\
 \midrule
@@ -364,7 +379,7 @@ $u_s(T,P) = h_s - P v_s$ & solid internal energy \\
 $c_{p,s}(T) = \mathrm{d}h_s/\mathrm{d}T$ & solid heat capacity (descent self-cooling term) \\
 \bottomrule
 \end{tabularx}
-\end{table*}
+\end{table}
 
 Below the triple point pure CO$_2$ is a one-component, two-phase (vapour and solid) system, so by
 the Gibbs phase rule it has a single degree of freedom: fixing the pressure fixes the temperature
@@ -598,9 +613,26 @@ T_w^{w} = T_\text{sub}(P) \qquad \text{(while dry ice is present)},
 \end{equation}
 so that no wall-to-solid heat is applied and the retained dry-ice mass is unaffected by the wall.
 When a phase is depleted its wall node clamps to the surviving phase's node to avoid a stranded
-temperature. The vapour-to-liquid and vapour-to-solid interphase coefficients are kept small, so
-that the warm vapour stays decoupled from the cold condensate, reproducing the measured
-warm-vapour and cold-condensate split.
+temperature.
+
+The gas-liquid interphase heat rate $\dot Q_{gl}$ of Eq.~\eqref{eq:zoneenergy} acts across the
+horizontal interface, whose area $A_i$ is the vessel cross-section at the current liquid level,
+evaluated for the vessel geometry and orientation. The interphase coefficient $h_{gl}$ is taken
+either as a fixed value or from a horizontal-interface free-convection correlation. In the
+correlation option the coefficient is evaluated on both sides of the interface and combined as two
+boundary-layer resistances in series,
+\begin{equation}
+\label{eq:hgl}
+\frac{1}{h_{gl}} = \frac{1}{h_{gl}^{\,g}} + \frac{1}{h_{gl}^{\,l}},
+\end{equation}
+where each side is obtained from a horizontal-surface natural-convection law evaluated with the
+properties of the respective phase, in a form selected by whether the stratification is stable
+(warm vapour above cold liquid) or unstable. This two-sided coefficient is used for all cases, both
+the gas and the liquid releases. Below the triple point the vapour-to-liquid coefficient on the
+plateau is instead kept near zero, so that the warm vapour stays decoupled from the freezing
+condensate, and
+the vapour-to-solid coefficient in the descent acts over the bed-top interface area of
+Eq.~\eqref{eq:descent} rather than over the interface at the liquid level.
 
 For a vapour-space release the single, well-mixed vapour node runs colder than the measured warm
 top of the vessel, because the real vapour is thermally stratified, warm at the top and cold near
@@ -678,7 +710,7 @@ releases produce a large retained dry-ice bank inside the sphere, whereas the li
 leave essentially no solid inside the vessel; the dry ice a liquid release produces forms
 downstream of the orifice instead.
 
-\begin{table*}[htbp]
+\begin{table}[!tbh]
 \centering
 \caption{CARDICE pure-CO$_2$ test matrix. $P_0$ and $T_0$ are the initial pressure and
 temperature. The orifice diameter for test~8 is an effective value (Section~\ref{sec:discharge}).}
@@ -695,7 +727,7 @@ Test & Release & $P_0$ (bar) & $T_0$ ($^\circ$C) & Orifice (mm) \\
 10 & Liquid & 10 & $-40$ & 4 \\
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
 
 \subsection{Dense-phase experiments (SINTEF)}
 \label{sec:exp-sintef}
@@ -726,7 +758,7 @@ Table~\ref{tab:sintef-matrix}. As for CARDICE, the no-riser (gas) releases retai
 in-vessel dry-ice bank, whereas the riser (liquid) releases drain and empty before the triple
 point is reached.
 
-\begin{table*}[htbp]
+\begin{table}[!tbh]
 \centering
 \caption{SINTEF dense-phase pure-CO$_2$ test matrix. $P_0$ and $T_0$ are the initial pressure
 and temperature; the configuration denotes a top opening (no riser, gas) or a bottom riser tube
@@ -747,7 +779,7 @@ Exp45 & 119.9 & 14.5 & 4.5 & Riser (liquid) \\
 Exp46 & 116.7 & 24.4 & 4.5 & Riser (liquid) \\
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
 
 % =====================================================================
 \section{Results and validation}
@@ -761,7 +793,14 @@ Section~\ref{sec:discharge}. The measured traces are time-shifted to the model: 
 releases, which decline in pressure from the onset, are anchored at a mid-blowdown reference
 pressure, whereas the slow liquid drains are anchored on the onset of the inventory decline.
 Below the triple point the gas-contact wall uses the Churchill--Chu free-convection coefficient
-and the wetted wall the Cooper boiling correlation (Section~\ref{sec:heat}).
+and the wetted wall the Cooper boiling correlation (Section~\ref{sec:heat}). In the temperature
+panels of the comparison figures the measured data are shown as bands over the vertical array of
+thermocouples. For the CARDICE sphere two bands are used: for the internal fluid, an upper band
+spanning the three uppermost thermocouples (the vapour space) and a lower band spanning the three
+lowest (the liquid and solid region); for the inside wall, an upper band from the three uppermost
+sensors and a lower band from the four lowest (the wetted and dry-ice region). For the SINTEF
+cylinder the six fluid and six inside-wall thermocouples are each shown as a single
+minimum-to-maximum band with its median.
 
 \subsection{Low- and medium-pressure blowdown (CARDICE)}
 \label{sec:results-cardice}
@@ -771,10 +810,13 @@ essentially none for the liquid releases, is reproduced across the whole set.
 Table~\ref{tab:cardice-results} compares the modelled and measured initial inventory, retained
 dry ice and minimum wetted-wall temperature.
 
-\begin{table*}[htbp]
+\begin{table*}[!tbh]
 \centering
 \caption{CARDICE model predictions compared with measurements: initial inventory $m_0$,
-retained in-vessel dry ice, and minimum wetted (bottom) wall temperature.}
+retained in-vessel dry ice, and minimum wetted (bottom) wall temperature. The liquid releases
+form no in-vessel dry ice, in both the experiment and the model; their measured end-of-test
+inventory (4.2, 3.8 and 5.1\,kg for tests 6, 8 and 10) is residual cold vapour filling the vessel
+at atmospheric pressure, which the model reproduces (5.0, 3.2 and 4.6\,kg).}
 \label{tab:cardice-results}
 \begin{tabular}{llccc}
 \toprule
@@ -782,11 +824,11 @@ retained in-vessel dry ice, and minimum wetted (bottom) wall temperature.}
 Test & Phase & model/meas. & model/meas. & model/meas. \\
 \midrule
 5  & Gas    & 824 / 823 & 266 / 217 & $-78$ / $-75$ \\
-6  & Liquid & 804 / 802 & 0 / 4.2   & $-24$ / $-24$ \\
+6  & Liquid & 804 / 802 & 0 / 0     & $-24$ / $-24$ \\
 7  & Gas    & 790 / 791 & 302 / 298 & $-76$ / $-75$ \\
-8  & Liquid & 761 / 758 & 0 / 3.8   & $-32$ / $-32$ \\
+8  & Liquid & 761 / 758 & 0 / 0     & $-32$ / $-32$ \\
 9  & Gas    & 904 / 904 & 392 / 412 & $-72$ / $-75$ \\
-10 & Liquid & 745 / 743 & 0 / 5.1   & $-42$ / $-40$ \\
+10 & Liquid & 745 / 743 & 0 / 0     & $-42$ / $-40$ \\
 \bottomrule
 \end{tabular}
 \end{table*}
@@ -802,7 +844,7 @@ and a final gas/solid sublimation descent), and the wetted (bottom) wall cools t
 approximately $-75\,^\circ$C, in agreement with the coldest measured sensors. The comparison for
 test~7 is shown in Figure~\ref{fig:cardice-t7}.
 
-\begin{figure*}[htbp]
+\begin{figure*}[!tbh]
 \centering
 \includegraphics[width=\textwidth]{figures/cardice_t7}
 \caption{CARDICE test~7 (gas release, 15\,bar): model (dashed) versus measured 1\,Hz data.
@@ -813,13 +855,17 @@ gas-contact and wetted-wall nodes).}
 \label{fig:cardice-t7}
 \end{figure*}
 
-The liquid releases (tests 6, 8 and 10) drain and boil out before the vessel reaches the triple
-point and retain essentially no solid inside the vessel. The model reproduces this, emptying to
-a small residual gas heel rather than the measured 4--5\,kg. The pressure and inventory
-histories are captured well; Figure~\ref{fig:cardice-t8} shows test~8, for which the modelled
-liquid drain and the time to empty match the data.
+The liquid releases (tests 6, 8 and 10) drain out through the bottom connection before the vessel
+reaches the triple point and form no in-vessel dry ice, consistent with the release experiments
+and their simulations, which report that a liquid-space blowdown empties the vessel of liquid
+without solid formation \citep{Vaillant2021, Drescher2022, Teberikler2022}. The model reproduces
+this: it forms no solid and empties to a residual of cold CO$_2$ vapour that fills the vessel at
+atmospheric pressure (5.0, 3.2 and 4.6\,kg for tests 6, 8 and 10), matching the measured
+end-of-test inventory (4.2, 3.8 and 5.1\,kg). The pressure and inventory histories are captured
+well; Figure~\ref{fig:cardice-t8} shows test~8, for which the modelled liquid drain and the time
+to empty match the data.
 
-\begin{figure*}[htbp]
+\begin{figure*}[!tbh]
 \centering
 \includegraphics[width=\textwidth]{figures/cardice_t8}
 \caption{CARDICE test~8 (liquid release, 15\,bar): model (dashed) versus measured 1\,Hz data,
@@ -849,7 +895,7 @@ point and freezes. The model retains approximately 8.4, 7.8 and 8.1\,kg of dry i
 Exp72 and Exp75, in close agreement with the measured value of approximately 8.4\,kg for Exp71.
 The comparison for Exp72 is shown in Figure~\ref{fig:munke-exp72}.
 
-\begin{figure*}[htbp]
+\begin{figure*}[!tbh]
 \centering
 \includegraphics[width=\textwidth]{figures/munke_exp72}
 \caption{SINTEF Exp72 (no-riser gas release, 119\,bar, 6.5\,mm nozzle): model (dashed) versus
@@ -865,7 +911,7 @@ saturation line at approximately 52\,bar, and follows the measured decline close
 modelled gas and liquid/solid temperatures bracket the measured stratification band. The
 comparison for Exp53 is shown in Figure~\ref{fig:munke-exp53}.
 
-\begin{figure*}[htbp]
+\begin{figure*}[!tbh]
 \centering
 \includegraphics[width=\textwidth]{figures/munke_exp53}
 \caption{SINTEF Exp53 (riser liquid release, 119.5\,bar, 8.0\,mm nozzle): model (dashed) versus

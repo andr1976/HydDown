@@ -93,7 +93,7 @@ def run_model(P0_bar, T0_C, nozzle_mm, riser, ET):
                     "solid_in_vessel": True, "solid_h_inner": "cooper", "solid_h_gas_wall": "churchill",
                     "solid_h_gas_liquid": 0.0, "solid_h_gas_solid": 3.0,
                     "discharge_location": 0.009 if riser else 0.0},   # riser inlet 9 mm above floor
-        "heat_transfer": {"type": "specified_h", "temp_ambient": T0, "h_outer": 0.0, "h_inner": "calc"},
+        "heat_transfer": {"type": "specified_h", "temp_ambient": T0, "h_outer": 0.0, "h_inner": "churchill"},
     }
     for dt in (0.1, 0.02):                 # dt=0.1 fast; fall back to 0.02 on a near-triple flash fail
         d["calculation"]["time_step"] = dt
