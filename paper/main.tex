@@ -782,28 +782,7 @@ Exp46 & 116.7 & 24.4 & 4.5 & Riser (liquid) \\
 \end{table}
 
 % =====================================================================
-\begin{table*}[!tbh]
-\centering
-\caption{CARDICE model predictions compared with measurements: initial inventory $m_0$,
-retained in-vessel dry ice, and minimum wetted (bottom) wall temperature. The liquid releases
-form no in-vessel dry ice, in both the experiment and the model; their measured end-of-test
-inventory (4.2, 3.8 and 5.1\,kg for tests 6, 8 and 10) is residual cold vapour filling the vessel
-at atmospheric pressure, which the model reproduces (5.0, 3.2 and 4.6\,kg).}
-\label{tab:cardice-results}
-\begin{tabular}{llccc}
-\toprule
- & & $m_0$ (kg) & Retained dry ice (kg) & Wetted-wall min ($^\circ$C) \\
-Test & Phase & model/meas. & model/meas. & model/meas. \\
-\midrule
-5  & Gas    & 824 / 823 & 266 / 217 & $-78$ / $-75$ \\
-6  & Liquid & 804 / 802 & 0 / 0     & $-24$ / $-24$ \\
-7  & Gas    & 790 / 791 & 302 / 298 & $-76$ / $-75$ \\
-8  & Liquid & 761 / 758 & 0 / 0     & $-32$ / $-32$ \\
-9  & Gas    & 904 / 904 & 392 / 412 & $-72$ / $-75$ \\
-10 & Liquid & 745 / 743 & 0 / 0     & $-42$ / $-40$ \\
-\bottomrule
-\end{tabular}
-\end{table*}
+
 \section{Results and validation}
 \label{sec:results}
 
@@ -828,26 +807,6 @@ minimum-to-maximum band with its median.
 \subsection{Low- and medium-pressure blowdown (CARDICE)}
 \label{sec:results-cardice}
 
-
-
-The central experimental contrast, a large retained dry-ice bank for the gas releases and
-essentially none for the liquid releases, is reproduced across the whole set.
-Table~\ref{tab:cardice-results} compares the modelled and measured initial inventory, retained
-dry ice and minimum wetted-wall temperature.
-
-
-
-For the gas releases (tests 5, 7 and 9) the model retains 266, 302 and 392\,kg of in-vessel dry
-ice against measured values of 217, 298 and 412\,kg. The agreement is best for test 7, where
-the retained mass is reproduced to within 2\%; test 5 is over-predicted and test 9 slightly
-under-predicted. The over-prediction for test 5 is consistent with its wall sensible-heat store,
-which sets the sublimation load and which the lumped wall description cannot resolve spatially.
-In each case the blowdown follows the observed three-stage behaviour (an initial gas/liquid
-depressurisation, a multi-hour pressure plateau at the triple point while the liquid freezes,
-and a final gas/solid sublimation descent), and the wetted (bottom) wall cools to
-approximately $-75\,^\circ$C, in agreement with the coldest measured sensors. The comparison for
-test~7 is shown in Figure~\ref{fig:cardice-t7}.
-
 \begin{figure*}[!tbh]
 \centering
 \includegraphics[width=\textwidth]{figures/cardice_t7}
@@ -859,15 +818,71 @@ gas-contact and wetted-wall nodes).}
 \label{fig:cardice-t7}
 \end{figure*}
 
-The liquid releases (tests 6, 8 and 10) drain out through the bottom connection before the vessel
-reaches the triple point and form no in-vessel dry ice, consistent with the release experiments
-and their simulations, which report that a liquid-space blowdown empties the vessel of liquid
-without solid formation \citep{Vaillant2021, Drescher2022, Teberikler2022}. The model reproduces
-this: it forms no solid and empties to a residual of cold CO$_2$ vapour that fills the vessel at
-atmospheric pressure (5.0, 3.2 and 4.6\,kg for tests 6, 8 and 10), matching the measured
-end-of-test inventory (4.2, 3.8 and 5.1\,kg). The pressure and inventory histories are captured
-well; Figure~\ref{fig:cardice-t8} shows test~8, for which the modelled liquid drain and the time
-to empty match the data.
+The comparison for test~7, a gas release at 15\,bar, is shown in Figure~\ref{fig:cardice-t7} and is
+representative of the gas-release behaviour; across the four panels the model reconciles the
+measured 1\,Hz data well. The blowdown follows the characteristic three-stage behaviour, evident in
+both the pressure and the fluid temperature: an initial gas and liquid depressurisation, a
+multi-hour pressure plateau at the triple point (about 5.2\,bar) while the liquid freezes, and a
+final gas and solid sublimation descent to atmospheric pressure. The three stages are seen most
+clearly in the liquid and solid temperature, which falls to the triple-point value, is held there
+through the plateau, and then follows the sublimation line down.
+
+The mass inventory is reproduced well throughout. During the triple-point plateau the modelled
+liquid is progressively converted to dry ice, and by the end of the blowdown essentially all of the
+liquid has been converted to solid or boiled off, leaving only a small residual mass of gas, so
+that the majority of the final inventory is retained dry ice. The modelled total inventory, with
+its gas, liquid and solid breakdown, tracks the measured load-cell mass over the whole blowdown.
+
+The modelled fluid temperatures lie mostly within the measured bands, with a tendency towards the
+lower end of the bands. The inside-wall temperature is predicted well for the part of the wall in
+contact with the gas. The cooling of the wetted (liquid-contact) wall is slightly over-predicted
+after the initial gas-blowdown phase, but stays close to the lower measured band, reaching about
+$-75\,^\circ$C in agreement with the coldest sensors.
+
+The comparison highlights the value of the two-zone, partial-phase-equilibrium treatment: the
+model captures the marked temperature separation between the warm vapour and the cold liquid and
+solid, in both the fluid and the wall, with the vapour held tens of degrees above the freezing and
+subliming condensate throughout the plateau and descent. A model that assumes full thermodynamic
+equilibrium between the phases, carrying a single bulk fluid temperature, such as the SINTEF and
+NTNU reference model \citep{Hoydalsvik2026}, cannot represent this partial phase equilibrium.
+
+\begin{table*}[!tbh]
+\centering
+\caption{CARDICE model predictions compared with measurements: initial inventory $m_0$,
+retained in-vessel dry ice, and minimum wetted (bottom) wall temperature. The liquid releases
+form no in-vessel dry ice, in both the experiment and the model; their measured end-of-test
+inventory (4.2, 3.8 and 5.1\,kg for tests 6, 8 and 10) is residual cold vapour filling the vessel
+at atmospheric pressure, which the model reproduces (5.0, 3.2 and 4.6\,kg).}
+\label{tab:cardice-results}
+\begin{tabular}{llccc}
+\toprule
+ & & $m_0$ (kg) & Retained dry ice (kg) & Wetted-wall min ($^\circ$C) \\
+Test & Phase & model/meas. & model/meas. & model/meas. \\
+\midrule
+5  & Gas    & 824 / 823 & 266 / 217 & $-78$ / $-75$ \\
+6  & Liquid & 804 / 802 & 0 / 0     & $-24$ / $-24$ \\
+7  & Gas    & 790 / 791 & 302 / 298 & $-76$ / $-75$ \\
+8  & Liquid & 761 / 758 & 0 / 0     & $-32$ / $-32$ \\
+9  & Gas    & 904 / 904 & 392 / 412 & $-72$ / $-75$ \\
+10 & Liquid & 745 / 743 & 0 / 0     & $-42$ / $-40$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+The aggregate results for the six pure-CO$_2$ tests are summarised in
+Table~\ref{tab:cardice-results}. For the gas releases (tests 5, 7 and 9) the model retains 266, 302
+and 392\,kg of in-vessel dry ice against measured values of 217, 298 and 412\,kg; the agreement is
+best for test~7 (within 2\%), with test~5 over-predicted and test~9 slightly under-predicted. The
+over-prediction for test~5 is consistent with its wall sensible-heat store, which sets the
+sublimation load and which the lumped wall description cannot resolve spatially.
+
+The principal discrepancy is the bulk gas temperature for the gas releases, which the
+zero-dimensional model under-predicts relative to the warm upper region of the vessel. The real
+vapour is strongly stratified, warm near the top and cold near the interface, which a
+single well-mixed gas node cannot represent, as it returns an average and mixes in cold
+boil-off vapour. This is a fundamental limitation of the lumped description rather than a
+heat-transfer deficiency, and the same behaviour is reported for the zero-dimensional tool
+Vessfire \citep{Vaillant2021}.
 
 \begin{figure*}[!tbh]
 \centering
@@ -878,13 +893,30 @@ point, leaving essentially no in-vessel dry ice.}
 \label{fig:cardice-t8}
 \end{figure*}
 
-The principal discrepancy is the bulk gas temperature for the gas releases, which the
-zero-dimensional model under-predicts relative to the warm upper region of the vessel. The real
-vapour is strongly stratified, warm near the top and cold near the interface, which a
-single well-mixed gas node cannot represent, as it returns an average and mixes in cold
-boil-off vapour. This is a fundamental limitation of the lumped description rather than a
-heat-transfer deficiency, and the same behaviour is reported for the zero-dimensional tool
-Vessfire \citep{Vaillant2021}.
+The comparison for test~8, a liquid release at 15\,bar, is shown in Figure~\ref{fig:cardice-t8} and
+is representative of the liquid-release behaviour; the pressure and inventory are reproduced well,
+with the modelled liquid drain and the time to empty matching the data.
+
+The liquid is drawn from the bottom connection and empties before the vessel reaches the triple
+point, so no dry ice forms inside the vessel, consistent with the release experiments and their
+simulations, which report that a liquid-space blowdown empties the vessel of liquid without solid
+formation \citep{Vaillant2021, Drescher2022, Teberikler2022}. The model reproduces this: it forms no
+in-vessel solid and empties to a residual of cold CO$_2$ vapour that fills the vessel at atmospheric
+pressure (5.0, 3.2 and 4.6\,kg for tests 6, 8 and 10), matching the measured end-of-test inventory
+(4.2, 3.8 and 5.1\,kg).
+
+The fluid temperatures are captured well. The liquid and solid temperature follows the measured data
+closely as the liquid vanishes. In the late stage the modelled gas temperature falls below the
+measured gas band; once the liquid has drained, however, the lower thermocouples are themselves in
+contact with gas, so the appropriate reference is the combined gas and liquid band, within which the
+modelled gas temperature remains.
+
+The inside-wall temperature is also reproduced well. The gas-contact wall lies within the measured
+band, close to its median, and the cooling of the wetted (liquid-contact) wall is slightly
+over-predicted but follows the observed cooling trend, as for the gas releases. When the liquid
+phase vanishes the modelled wetted-wall node steps up to the gas-wall temperature; this is a
+consequence of the two-node wall description, in which the wall node of a depleted phase is
+reassigned (clipped) to the surviving phase.
 
 \subsection{Dense-phase blowdown (SINTEF)}
 \label{sec:results-dense}
