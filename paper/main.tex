@@ -782,34 +782,6 @@ Exp46 & 116.7 & 24.4 & 4.5 & Riser (liquid) \\
 \end{table}
 
 % =====================================================================
-\section{Results and validation}
-\label{sec:results}
-
-The model is applied to all fifteen experiments described in Section~\ref{sec:experimental}
-using the sub-models of Section~\ref{sec:model}. For each case the initial liquid level is
-calibrated to the measured load-cell inventory, and the orifice discharge coefficient and, for
-liquid releases, the non-equilibrium factor are set as described in
-Section~\ref{sec:discharge}. The measured traces are time-shifted to the model: the gas
-releases, which decline in pressure from the onset, are anchored at a mid-blowdown reference
-pressure, whereas the slow liquid drains are anchored on the onset of the inventory decline.
-Below the triple point the gas-contact wall uses the Churchill--Chu free-convection coefficient
-and the wetted wall the Cooper boiling correlation (Section~\ref{sec:heat}). In the temperature
-panels of the comparison figures the measured data are shown as bands over the vertical array of
-thermocouples. For the CARDICE sphere two bands are used: for the internal fluid, an upper band
-spanning the three uppermost thermocouples (the vapour space) and a lower band spanning the three
-lowest (the liquid and solid region); for the inside wall, an upper band from the three uppermost
-sensors and a lower band from the four lowest (the wetted and dry-ice region). For the SINTEF
-cylinder the six fluid and six inside-wall thermocouples are each shown as a single
-minimum-to-maximum band with its median.
-
-\subsection{Low- and medium-pressure blowdown (CARDICE)}
-\label{sec:results-cardice}
-
-The central experimental contrast, a large retained dry-ice bank for the gas releases and
-essentially none for the liquid releases, is reproduced across the whole set.
-Table~\ref{tab:cardice-results} compares the modelled and measured initial inventory, retained
-dry ice and minimum wetted-wall temperature.
-
 \begin{table*}[!tbh]
 \centering
 \caption{CARDICE model predictions compared with measurements: initial inventory $m_0$,
@@ -832,6 +804,38 @@ Test & Phase & model/meas. & model/meas. & model/meas. \\
 \bottomrule
 \end{tabular}
 \end{table*}
+\section{Results and validation}
+\label{sec:results}
+
+
+The model is applied to all fifteen experiments described in Section~\ref{sec:experimental}
+using the sub-models of Section~\ref{sec:model}. For each case the initial liquid level is
+calibrated to the measured load-cell inventory, and the orifice discharge coefficient and, for
+liquid releases, the non-equilibrium factor are set as described in
+Section~\ref{sec:discharge}. The measured traces are time-shifted to the model: the gas
+releases, which decline in pressure from the onset, are anchored at a mid-blowdown reference
+pressure, whereas the slow liquid drains are anchored on the onset of the inventory decline.
+Below the triple point the gas-contact wall uses the Churchill--Chu free-convection coefficient
+and the wetted wall the Cooper boiling correlation (Section~\ref{sec:heat}). In the temperature
+panels of the comparison figures the measured data are shown as bands over the vertical array of
+thermocouples. For the CARDICE sphere two bands are used: for the internal fluid, an upper band
+spanning the three uppermost thermocouples (the vapour space) and a lower band spanning the three
+lowest (the liquid and solid region); for the inside wall, an upper band from the three uppermost
+sensors and a lower band from the four lowest (the wetted and dry-ice region). For the SINTEF
+cylinder the six fluid and six inside-wall thermocouples are each shown as a single
+minimum-to-maximum band with its median.
+
+\subsection{Low- and medium-pressure blowdown (CARDICE)}
+\label{sec:results-cardice}
+
+
+
+The central experimental contrast, a large retained dry-ice bank for the gas releases and
+essentially none for the liquid releases, is reproduced across the whole set.
+Table~\ref{tab:cardice-results} compares the modelled and measured initial inventory, retained
+dry ice and minimum wetted-wall temperature.
+
+
 
 For the gas releases (tests 5, 7 and 9) the model retains 266, 302 and 392\,kg of in-vessel dry
 ice against measured values of 217, 298 and 412\,kg. The agreement is best for test 7, where
@@ -927,6 +931,150 @@ dry-ice-contact wall tracks the sublimation temperature and reads colder than th
 the relatively thick wall and the thin ice layer in these experiments allow lateral conduction
 in the wall to re-warm the ice-contact metal, an effect a one-dimensional wall treatment does
 not capture.
+
+% =====================================================================
+\section{Sensitivity studies}
+\label{sec:sensitivity}
+
+To assess the numerical robustness of the model and the influence of its principal modelling
+choices, four sensitivity studies are presented: the time-step of the explicit integration
+(Section~\ref{sec:sens-dt}), the plateau gas-liquid interphase coefficient
+(Section~\ref{sec:sens-htc}), the residual-heel dependence of the solid formed during a liquid
+release (Section~\ref{sec:sens-heel}), and the vessel-wall thermal mass
+(Section~\ref{sec:sens-wall}). A representative case is used for each: for the two CARDICE-based
+studies the gas release test~7 (which develops the full plateau and descent) and the liquid
+release test~8; for the two SINTEF-based studies the gas release Exp72.
+
+\subsection{Time-step convergence}
+\label{sec:sens-dt}
+
+The mass and energy balances are integrated with an explicit (forward Euler) scheme, so the time
+step must be small enough for the result to be converged. Table~\ref{tab:sens-dt} lists the
+retained dry ice and the temperature minima for CARDICE test~7 as the step is reduced from 40 to
+2\,s about the base value of 20\,s. The retained dry ice changes by about 0.4\% between the base
+step and the finest, and the wall and gas temperature minima move by less than 0.1\,$^\circ$C. The
+dense-phase SINTEF cases are integrated at a base step of 0.1\,s; for Exp72 the retained dry ice
+is 7.82, 7.84, 7.86 and 7.87\,kg at 0.2, 0.1, 0.05 and 0.02\,s, a spread of 0.7\% across a tenfold
+reduction. The base steps are therefore adequate and are used throughout.
+
+\begin{table*}[!tbh]
+\centering
+\caption{Time-step convergence for CARDICE test~7 (gas release; base step 20\,s): retained
+in-vessel dry ice and the wall and gas temperature minima.}
+\label{tab:sens-dt}
+\begin{tabular}{cccc}
+\toprule
+$\Delta t$ (s) & Retained dry ice (kg) & Min wetted-wall ($^\circ$C) & Min gas T ($^\circ$C) \\
+\midrule
+40 & 300.4 & $-75.55$ & $-42.54$ \\
+20 & 302.3 & $-75.94$ & $-42.48$ \\
+10 & 303.0 & $-75.93$ & $-42.45$ \\
+5  & 303.4 & $-75.96$ & $-42.43$ \\
+2  & 303.6 & $-76.00$ & $-42.42$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Plateau gas-liquid interphase coefficient}
+\label{sec:sens-htc}
+
+During the triple-point plateau of a gas release the warm vapour is only weakly coupled to the
+cold liquid and solid, and the plateau interphase coefficient $h_{gl}$ (the below-triple
+gas-liquid coupling, distinct from the two-sided coefficient used above the triple point,
+Section~\ref{sec:heat}) is kept near zero. The physical basis is that the dry ice forms a porous, foam-like solid
+that floats on and covers the liquid surface \citep{Jamois2023}, insulating the vapour from the
+condensate. Figure~\ref{fig:sens-htc} shows the effect of raising $h_{gl}$ from zero on the
+plateau vapour temperature. Increasing the coefficient steadily erodes the measured vapour
+superheat: for CARDICE test~7 the superheat above the triple point falls from about 21\,$^\circ$C
+at $h_{gl}=0$ to about 12\,$^\circ$C at 10\,W\,m$^{-2}$\,K$^{-1}$, moving the vapour out of the
+measured band, while the retained dry ice changes only modestly (302 to 293\,kg). For reference,
+a two-sided natural-convection estimate for the same interface predicts a coefficient of order
+10 to 20\,W\,m$^{-2}$\,K$^{-1}$ (the shaded range in Figure~\ref{fig:sens-htc}), which would cool the
+vapour well below the observations. The measured superheat is reproduced only when the effective
+plateau coefficient is far smaller than the natural-convection value, consistent with the
+insulating dry-ice layer. The same comparison for the dense-phase SINTEF gas release Exp72
+(Figure~\ref{fig:sens-htc-munke}) is less discriminating: the modelled vapour remains within the
+measured band for all coefficients tested, because the triple-point plateau is brief, so the
+near-zero value used for the CARDICE cases is compatible with the SINTEF data although not strongly
+constrained by them.
+
+\begin{figure}[!tbh]
+\centering
+\includegraphics[width=\columnwidth]{figures/sens_htc}
+\caption{Plateau gas-liquid interphase coefficient sensitivity for the CARDICE test~7 gas release.
+The modelled vapour temperature at the mid-plateau (3.5\,h) is shown against the imposed plateau
+coefficient $h_{gl}$; the horizontal band and line are the measured vapour band and average, and
+the shaded vertical band is the range the two-sided natural-convection model would give for the
+same interface. The measured superheat is matched only for a plateau coefficient far below the
+natural-convection value, consistent with an insulating floating dry-ice layer.}
+\label{fig:sens-htc}
+\end{figure}
+
+\begin{figure}[!tbh]
+\centering
+\includegraphics[width=\columnwidth]{figures/sens_htc_munke}
+\caption{As Figure~\ref{fig:sens-htc}, for the SINTEF Exp72 gas release (vapour temperature at
+200\,s during the plateau). The modelled vapour remains within the measured band for all
+coefficients tested, so the plateau coefficient is weakly constrained here (the dense-phase plateau
+is brief); the near-zero value is compatible with the data.}
+\label{fig:sens-htc-munke}
+\end{figure}
+
+\subsection{Solid formed during a liquid release and the residual heel}
+\label{sec:sens-heel}
+
+A liquid-space release draws liquid from the bottom connection and empties the vessel of liquid
+before the triple point is reached, so no dry ice is retained inside the vessel, in agreement with
+the reported experiments and their simulations \citep{Vaillant2021, Drescher2022, Teberikler2022}.
+In-vessel solid could nonetheless form if a residual liquid heel were left when the pressure
+crossed the triple point, for example if the draw point stood above the vessel floor.
+Figure~\ref{fig:sens-heel} demonstrates this for CARDICE test~8 by artificially raising the draw
+level: the retained in-vessel dry ice grows from zero for the bottom-pole drain to about 1.7, 5.0
+and 14.2\,kg for heels of 60, 80 and 120\,mm. For the actual bottom-pole connection the heel is
+negligible and no solid forms, as observed.
+
+\begin{figure}[!tbh]
+\centering
+\includegraphics[width=\columnwidth]{figures/sens_heel}
+\caption{CARDICE test~8 (liquid release): retained in-vessel dry ice as a function of an imposed
+residual liquid heel (draw level above the floor). The bottom-pole drain of the experiment leaves
+no heel and forms no in-vessel solid; a raised draw would freeze the residual liquid.}
+\label{fig:sens-heel}
+\end{figure}
+
+\subsection{Vessel-wall thermal mass}
+\label{sec:sens-wall}
+
+The SINTEF cylinder has a non-uniform wall, a 25.4\,mm cylindrical shell closed by a 50\,mm bottom
+plate and an 80\,mm lid, which is represented in the model by a uniform wall of the shell
+thickness. Figure~\ref{fig:sens-wall} shows the modelled vapour temperature for Exp72 as the
+uniform wall thickness is increased from the 25.4\,mm shell, together with the measured vapour band
+and average. The tail is strongly sensitive to the wall thermal mass: increasing the thickness from
+25.4 to 50\,mm (raising the wall mass from about 220 to 490\,kg) warms the tail vapour by several
+tens of degrees while reducing the retained dry ice from 7.8 to 5.1\,kg. The measured vapour
+re-warms markedly in the tail as the upper wall returns heat to the residual gas, and the two
+targets pull in opposite directions. The shell-thickness model reproduces the retained dry ice
+(7.8\,kg, close to the measured value) but re-warms the tail vapour too weakly, running below the
+measured band; increasing the thickness warms the tail vapour into the measured range but
+progressively under-predicts the retained solid. No single uniform thickness reproduces both the
+retained solid and the tail re-warming: the retained solid is set by the near-surface material that
+stays cold against the ice, whereas the re-warming requires heat from the warmer upper wall. This
+tension is a direct consequence of representing the wall by a single uniform thickness, and it
+motivates a two-dimensional (axisymmetric) conjugate wall description, in which axial conduction
+lets the ice-contact region stay cold while the upper wall re-warms the vapour; this is left for
+future work.
+
+\begin{figure}[!tbh]
+\centering
+\includegraphics[width=\columnwidth]{figures/sens_wall_thickness}
+\caption{SINTEF Exp72 (gas release): modelled vapour temperature for uniform wall thicknesses of
+25.4, 50, 80 and 120\,mm (wall masses of about 220, 490, 890 and 1570\,kg), with the measured
+vapour band and average from the upper thermocouples. The 25.4\,mm shell reproduces the retained
+dry ice but re-warms the tail vapour too weakly, running below the measured band; heavier walls
+re-warm the vapour but under-predict the retained solid, so no single uniform thickness reproduces
+both.}
+\label{fig:sens-wall}
+\end{figure}
 
 % =====================================================================
 \section{Discussion}
