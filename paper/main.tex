@@ -922,30 +922,63 @@ reassigned (clipped) to the surviving phase.
 \label{sec:results-dense}
 
 The dense-phase experiments start as a sub-cooled liquid at approximately 120\,bar and flash
-into the two-phase region during the initial, rapid depressurisation. As for CARDICE, the
+onto the two-phase saturation line during the initial, rapid depressurisation. As for CARDICE, the
 no-riser (gas) and riser (liquid) configurations behave very differently, and both are
 reproduced.
-
-For the no-riser (gas) releases the dense liquid remains in the vessel, cools to the triple
-point and freezes. The model retains approximately 8.4, 7.8 and 8.1\,kg of dry ice for Exp71,
-Exp72 and Exp75, in close agreement with the measured value of approximately 8.4\,kg for Exp71.
-The comparison for Exp72 is shown in Figure~\ref{fig:munke-exp72}.
 
 \begin{figure*}[!tbh]
 \centering
 \includegraphics[width=\textwidth]{figures/munke_exp72}
 \caption{SINTEF Exp72 (no-riser gas release, 119\,bar, 6.5\,mm nozzle): model (dashed) versus
-measured data. Panels as in Figure~\ref{fig:cardice-t7}. The dense liquid remains in the vessel,
-cools to the triple point and forms a retained dry-ice bank.}
+measured data. Panels as in Figure~\ref{fig:cardice-t7}. The dense liquid flashes onto the
+saturation line and the release then proceeds as a saturated gas draw, forming a retained
+dry-ice bank.}
 \label{fig:munke-exp72}
 \end{figure*}
 
-For the riser (liquid) releases the vessel drains through the riser and empties before the
-triple point, leaving no in-vessel solid, as observed. The rapid dense-phase depressurisation
-is captured well: the pressure falls from approximately 120\,bar, flashes onto the two-phase
-saturation line at approximately 52\,bar, and follows the measured decline closely, while the
-modelled gas and liquid/solid temperatures bracket the measured stratification band. The
-comparison for Exp53 is shown in Figure~\ref{fig:munke-exp53}.
+The comparison for Exp72, a no-riser (gas) release, is shown in Figure~\ref{fig:munke-exp72}. The
+vessel starts as a sub-cooled dense liquid at about 119\,bar and is depressurised very rapidly,
+flashing onto the two-phase saturation line at around 50\,bar rather than reaching the triple point
+directly. From this saturated state the release proceeds as a gas draw: gas is withdrawn while the
+liquid remains in the vessel and cools, the pressure falls to the triple point, and a dry-ice bank
+forms. Once the saturated two-phase state is reached the behaviour closely mirrors the CARDICE gas
+releases, following the same three-stage trajectory: an initial, here very rapid, blowdown, a
+triple-point plateau over which the liquid is converted to solid, and a final gas and solid
+sublimation tail.
+
+The modelled gas and liquid/solid fluid temperatures fit the measurements very well across all
+three stages. During the rapid two-phase blowdown above the triple point the gas and liquid remain
+at essentially the same temperature, with no stratification, which the model reproduces. The two
+zones then separate on the triple-point plateau, developing the measured gas/liquid temperature
+difference, and in the gas and solid tail the modelled gas follows the measured median temperature
+closely.
+
+The modelled gas-contact and wetted-wall temperatures bracket the measured inside-wall band. The
+main difference appears in the tail, where the modelled wetted (dry-ice-contact) wall cools further
+than the measurements. This is consistent with the uniform-wall representation used here: the model
+adopts the cylindrical (vertical) shell thickness and omits the thicker bottom plate, whose
+additional thermal mass would re-warm the wall, and it also neglects axial heat conduction from the
+warmer gas-contact wall; both effects are examined in Section~\ref{sec:sens-wall}.
+
+The inventory decrease is captured well, particularly up to the plateau; from the plateau onward the
+modelled inventory is slightly under-predicted, which may indicate a slightly under-predicted onset
+or duration of the plateau and, correspondingly, a slightly low retained solid. The model retains
+about 8.4, 7.8 and 8.1\,kg of dry ice for Exp71, Exp72 and Exp75, against measured settled values of
+about 8.2, 11.4 and 8.2\,kg. The predictions agree closely with Exp71 and Exp75 (within about
+3\%) but under-predict the 11.4\,kg reported for Exp72.
+
+This apparent under-prediction for Exp72 is, however, largely within the uncertainty of the weight
+measurement. The recorded initial inventory for Exp72 is 51.4\,kg, whereas the mass of a completely
+liquid-filled vessel at the recorded initial state (119\,bar, 25.0$\,^\circ$C, corresponding to a
+CO$_2$ density of about 845\,kg\,m$^{-3}$ over the $\sim$0.058\,m$^3$ volume) is only about 49\,kg,
+which is also the initial mass adopted in the model. The recorded fill therefore exceeds the maximum
+the vessel can physically hold at its stated conditions, which presumably reflects an offset in the
+weight signal for this test. Consistent with a measurement scatter of this order, the recorded
+initial fills for the three no-riser tests span 47.6--51.4\,kg about the physical value of about
+49\,kg (Exp71 47.6\,kg, Exp75 49.2\,kg). If the corresponding $\sim$2\,kg offset is carried through
+to the settled reading, the Exp72 retained solid falls from 11.4 to about 9.4\,kg, in much closer
+agreement with the model, so the discrepancy for this test should be read with that measurement
+uncertainty in mind.
 
 \begin{figure*}[!tbh]
 \centering
@@ -956,13 +989,34 @@ empties before the triple point; the first 100\,s, covering the active blowdown,
 \label{fig:munke-exp53}
 \end{figure*}
 
-Two limitations are noted for the dense-phase cases. As for CARDICE, the bulk gas temperature
-reflects the well-mixed assumption and does not resolve the vertical stratification observed in
-the fluid thermocouples. In addition, in the gas/solid tail of the no-riser cases the modelled
-dry-ice-contact wall tracks the sublimation temperature and reads colder than the measurements;
-the relatively thick wall and the thin ice layer in these experiments allow lateral conduction
-in the wall to re-warm the ice-contact metal, an effect a one-dimensional wall treatment does
-not capture.
+The comparison for Exp53, a riser (liquid) release, is shown in Figure~\ref{fig:munke-exp53}. The
+vessel drains through the riser and empties before the triple point, so no in-vessel solid forms, as
+observed. The pressure is reproduced closely throughout: the initial dense-phase, sub-cooled liquid
+decays onto the two-phase saturation line at about 52\,bar, the decline is followed during the
+continued liquid drainage, and once the liquid inventory has fully drained the subsequent gas
+blowdown is also matched well.
+
+The inventory is predicted well. A distinct gas phase develops after the initial dense-phase
+depressurisation and then disappears once the liquid level falls below the riser entrance; the
+residual liquid heel below the entrance evaporates slowly thereafter.
+
+The fluid temperatures give a more nuanced picture. The liquid temperature follows the measured band
+closely until the liquid is completely drained. The modelled gas temperature and the gas/liquid
+stratification, however, appear to be over-estimated during the two-phase liquid drain. At the short
+time scales of these dense-phase tests, and in contrast to the slow CARDICE blowdowns, this suggests
+that the full-equilibrium assumption adopted in the SINTEF model is the more appropriate description
+for the riser cases. Apart from an under-shoot of the minimum gas temperature at around 60\,s, which
+the SINTEF model also exhibits, the modelled gas temperature is generally within the measured band.
+
+For the wall, the modelled gas-contact temperature is generally warmer than the measurements, which
+may reflect the neglect of the through-wall (radial) conduction and the associated temperature
+gradient. The wetted-wall temperature lies within the measured band from about 15 to 35\,s, after
+which the model significantly over-estimates the wetted-wall cooling during the evaporation of the
+liquid heel below the riser entrance. This over-cooling, and the pronounced dip it produces, are
+consequences of the uniform-wall simplifications: the larger thermal mass of the thick bottom plate
+relative to the vertical shell is not represented, and the two-dimensional conduction that would
+feed heat to the vessel bottom from the relatively warmer vertical walls is neglected
+(Section~\ref{sec:sens-wall}).
 
 % =====================================================================
 \section{Sensitivity studies}
