@@ -463,6 +463,12 @@ class HydDown:
         # ``wall2d_snapshots`` as {t, T (unknown vector), level, P}. Map with self._wall2d.
         self.wall2d_snap_times = []
         self.wall2d_snapshots = []
+        # Optional per-height inner/outer cylinder-wall traces (for thermocouple-position plots):
+        # set ``wall2d_report_heights`` (list [m]) before run(); traces land in
+        # ``T_wall_h_in`` / ``T_wall_h_out`` (shape n_steps x n_heights).
+        self.wall2d_report_heights = []
+        self.T_wall_h_in = None
+        self.T_wall_h_out = None
         self.vol_solid = self.vol_tot - self.vol
         self.surf_area_outer = self.outer_vol.A
         self.surf_area_inner = self.inner_vol.A
@@ -1395,6 +1401,15 @@ class HydDown:
                     Pi = self.P[i] if self.P[i] > 0 else self.P[i - 1]
                     self.wall2d_snapshots.append(dict(
                         t=t, T=self._wall2d.T.copy(), level=lvl, P=Pi))
+        if self.wall2d_report_heights:
+            hh = self.wall2d_report_heights
+            if self.T_wall_h_in is None:
+                nstep = len(self.time_array)
+                self.T_wall_h_in = np.full((nstep, len(hh)), np.nan)
+                self.T_wall_h_out = np.full((nstep, len(hh)), np.nan)
+            Ti, To = self._wall2d.sample_heights(hh)
+            self.T_wall_h_in[i, :] = Ti
+            self.T_wall_h_out[i, :] = To
         self.T_cyl_in_min[i] = s.get("T_cyl_in_min", np.nan)
         self.T_cyl_in_max[i] = s.get("T_cyl_in_max", np.nan)
         self.T_cyl_in_med[i] = s.get("T_cyl_in_med", np.nan)

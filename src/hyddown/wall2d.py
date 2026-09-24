@@ -360,6 +360,24 @@ class WallConduction2D:
             T_cyl_out_dry=so["dry"], T_cyl_out_wet=so["wet"],
         )
 
+    def sample_heights(self, heights):
+        """Inner- and outer-cylinder-wall temperatures [K] at the given axial heights [m].
+
+        Returns ``(T_inner, T_outer)`` arrays, each the nearest shell inner/outer cell temperature
+        to each requested height, for comparison with wall thermocouples at fixed positions.
+        """
+        heights = np.atleast_1d(np.asarray(heights, float))
+        Ti = np.full(len(heights), np.nan)
+        To = np.full(len(heights), np.nan)
+        for k, z in enumerate(heights):
+            if len(self.shell_inner_n):
+                j = int(np.argmin(np.abs(self.shell_inner_z - z)))
+                Ti[k] = self.T[self.shell_inner_n[j]]
+            if len(self.shell_outer_n):
+                j = int(np.argmin(np.abs(self.shell_outer_z - z)))
+                To[k] = self.T[self.shell_outer_n[j]]
+        return Ti, To
+
     def energy(self):
         """Total stored thermal energy [J] relative to 0 K (rho*cp*V*T summed over steel)."""
         return float(np.sum(self.rho * self.cp * self.vol_u * self.T))
