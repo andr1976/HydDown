@@ -334,6 +334,12 @@ class HydDown:
             # re-warms the ice-contact wall (instead of pinning it to the sublimation line). The
             # heat is NOT fed to the tracked solid zone, so the retained dry-ice mass is unchanged.
             self.solid_h_wall_solid = rel.get("solid_h_wall_solid", 20.0)
+            # Heel dry-out height [m] for the 2-D conjugate wall: once the liquid pool thins
+            # below this depth (e.g. the residual heel below a riser inlet) nucleate boiling
+            # breaks down into an intermittent thin-film / dry-out regime, so the boiling wall
+            # HTC is tapered linearly toward the gas-side value as the level falls to zero. This
+            # stops the thin heel from over-cooling the bottom wall. 0 disables the taper.
+            self.liquid_dryout_height = rel.get("liquid_dryout_height", 0.03)
             # Gas/condensate split of the inner wall below the triple point. Default None ->
             # computed each step from the actual phase volumes and the vessel geometry
             # (_gas_contact_area); a number here overrides with a fixed fraction of the inner area.
@@ -1399,6 +1405,7 @@ class HydDown:
             liquid_present = self.m_liquid[i - 1] > 1e-6
         else:
             liquid_present = wetted_area > 0
+        # hiw already carries the heel dry-out taper (applied where h_inside_wetted[i] is set).
         s = self._wall2d.step(self.tstep, liquid_level, liquid_present, hi, T_gas, hiw, T_liq)
         prev_dry, prev_wet = self.T_inner_wall[i - 1], self.T_inner_wall_wetted[i - 1]
         Ti_dry = s["T_inner_dry"] if np.isfinite(s["T_inner_dry"]) else prev_dry
@@ -2540,6 +2547,19 @@ class HydDown:
 
                     self.h_inside[i] = hi
                     self.h_inside_wetted[i] = hiw
+
+                    # Heel dry-out (2-D conjugate wall only): once the liquid pool thins below
+                    # the dry-out height, nucleate boiling breaks down into an intermittent
+                    # thin-film regime, so taper the boiling coefficient toward the gas value.
+                    # Tapering it here (before Q_inner_wetted and the wall step) reduces both the
+                    # wall->liquid heat and the 2-D wall boiling extraction consistently, so a
+                    # residual heel neither over-cools the bottom wall nor over-heats itself.
+                    if getattr(self, "wall_2d", False):
+                        Ldry = getattr(self, "liquid_dryout_height", 0.0)
+                        if Ldry > 0 and self.m_liquid[i - 1] > 1e-6 and self.liquid_level[i - 1] < Ldry:
+                            f = max(0.0, min(1.0, self.liquid_level[i - 1] / Ldry))
+                            hiw = f * hiw + (1.0 - f) * hi
+                            self.h_inside_wetted[i] = hiw
 
                     # ================================================================
                     # TWO-PHASE HEAT TRANSFER (Wetted vs Unwetted Areas)
