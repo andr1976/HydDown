@@ -62,6 +62,22 @@ def test_split_level_gradient_signs():
     assert 233.0 < s["T_inner_wet"] < 273.0             # bracketed by the two fluid temps
 
 
+def test_cylinder_report_keys():
+    """The cylinder-only report (thermocouple-comparable) is ordered and colder on the wetted
+    side, and lies within the full-domain dry/wetted averages' range."""
+    W = w2.WallConduction2D(w2.default_sintef_geometry(), RHO, CP, T0)
+    for _ in range(120):
+        s = W.step(1.0, liquid_level=0.30, liquid_present=True,
+                   h_gas=15.0, T_gas=273.0, h_liq=800.0, T_liq=233.0)
+    assert s["T_cyl_in_min"] <= s["T_cyl_in_med"] <= s["T_cyl_in_max"]
+    assert s["T_cyl_out_min"] <= s["T_cyl_out_med"] <= s["T_cyl_out_max"]
+    # wetted-region cylinder wall colder than the dry-region cylinder wall
+    assert s["T_cyl_in_wet"] < s["T_cyl_in_dry"]
+    # cylinder inner report excludes the warm lid/flange, so it is colder than the full-domain
+    # dry average (which the lid/flange bias upward)
+    assert s["T_cyl_in_dry"] <= s["T_inner_dry"] + 1e-6
+
+
 def test_flat_end_geometry_reduces_to_cylinder():
     """With zero bottom/flange/lid the domain is a plain cylindrical shell."""
     g = w2.build_geometry(r_in=0.1365, thickness=0.0254, H=1.0,

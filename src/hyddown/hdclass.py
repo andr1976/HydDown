@@ -593,6 +593,19 @@ class HydDown:
         self.T_outer_wall = np.zeros(data_len)
         self.T_outer_wall_wetted = np.zeros(data_len)
         self.T_bonded_wall = np.zeros(data_len)
+        # Cylinder-only (thermocouple-comparable) wall temperatures reported by the 2-D wall:
+        # band statistics (min/max/median over the six-height-equivalent shell faces) and the
+        # gas/wetted split, for the inner (TT1x2) and outer (TT1x1) cylinder surfaces.
+        self.T_cyl_in_min = np.full(data_len, np.nan)
+        self.T_cyl_in_max = np.full(data_len, np.nan)
+        self.T_cyl_in_med = np.full(data_len, np.nan)
+        self.T_cyl_in_dry = np.full(data_len, np.nan)
+        self.T_cyl_in_wet = np.full(data_len, np.nan)
+        self.T_cyl_out_min = np.full(data_len, np.nan)
+        self.T_cyl_out_max = np.full(data_len, np.nan)
+        self.T_cyl_out_med = np.full(data_len, np.nan)
+        self.T_cyl_out_dry = np.full(data_len, np.nan)
+        self.T_cyl_out_wet = np.full(data_len, np.nan)
         self.T_bonded_wall_wetted = np.zeros(data_len)
         self.Q_outer = np.zeros(data_len)
         self.Q_inner = np.zeros(data_len)
@@ -1363,6 +1376,19 @@ class HydDown:
         if sets_vessel:
             self.T_vessel_wetted[i] = prof_w.mean()
 
+    def _store_cyl_report(self, i, s):
+        """Store the 2-D wall's cylinder-only (thermocouple-comparable) report for step ``i``."""
+        self.T_cyl_in_min[i] = s.get("T_cyl_in_min", np.nan)
+        self.T_cyl_in_max[i] = s.get("T_cyl_in_max", np.nan)
+        self.T_cyl_in_med[i] = s.get("T_cyl_in_med", np.nan)
+        self.T_cyl_in_dry[i] = s.get("T_cyl_in_dry", np.nan)
+        self.T_cyl_in_wet[i] = s.get("T_cyl_in_wet", np.nan)
+        self.T_cyl_out_min[i] = s.get("T_cyl_out_min", np.nan)
+        self.T_cyl_out_max[i] = s.get("T_cyl_out_max", np.nan)
+        self.T_cyl_out_med[i] = s.get("T_cyl_out_med", np.nan)
+        self.T_cyl_out_dry[i] = s.get("T_cyl_out_dry", np.nan)
+        self.T_cyl_out_wet[i] = s.get("T_cyl_out_wet", np.nan)
+
     def _step_2d_wall(self, i, wetted_area):
         """Advance the opt-in 2-D axisymmetric conjugate wall by one macro timestep.
 
@@ -1407,6 +1433,7 @@ class HydDown:
             liquid_present = wetted_area > 0
         # hiw already carries the heel dry-out taper (applied where h_inside_wetted[i] is set).
         s = self._wall2d.step(self.tstep, liquid_level, liquid_present, hi, T_gas, hiw, T_liq)
+        self._store_cyl_report(i, s)
         prev_dry, prev_wet = self.T_inner_wall[i - 1], self.T_inner_wall_wetted[i - 1]
         Ti_dry = s["T_inner_dry"] if np.isfinite(s["T_inner_dry"]) else prev_dry
         Ti_wet = s["T_inner_wet"] if np.isfinite(s["T_inner_wet"]) else prev_wet
@@ -1445,6 +1472,7 @@ class HydDown:
         if not (isinstance(cond_level, (int, float)) and math.isfinite(cond_level)) or cond_level < 0:
             cond_level = 0.0
         s = self._wall2d.step(self.tstep, cond_level, cond_present, h_gas, T_gas, h_cold, T_cold)
+        self._store_cyl_report(i, s)
         prev_dry, prev_wet = self.T_vessel[i - 1], self.T_vessel_wetted[i - 1]
         Ti_dry = s["T_inner_dry"] if np.isfinite(s["T_inner_dry"]) else prev_dry
         Ti_wet = s["T_inner_wet"] if np.isfinite(s["T_inner_wet"]) else prev_wet

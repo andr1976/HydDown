@@ -228,6 +228,32 @@ class WallConduction2D:
         # flat volume per unknown
         self.vol_u = np.array([self.vol[ir, iz] for ir, iz in self.steel_cells])
 
+        # Cylinder (shell) inner/outer face indices + their heights, for reporting a
+        # cylinder-only wall temperature that matches the experimental thermocouples
+        # (TT1x2 on the inner cylinder wall, TT1x1 on the outer, at six heights). The lid,
+        # flange and bottom stay in the conduction solve but are excluded from the report.
+        # Restrict the reported band to the instrumented span (the wall thermocouples sit at
+        # 5-95% of the vessel height, not at the welded ends), so the model band matches the
+        # sensor coverage rather than including the end cells.
+        z_lo, z_hi = 0.05 * self.geom["H"], 0.95 * self.geom["H"]
+
+        def _is_shell(ir, iz):
+            r, z = self.rc[ir], self.zc[iz]
+            return (self.geom["r_in"] - 1e-9) <= r <= (self.geom["r_out"] + 1e-9) \
+                and z_lo <= z <= z_hi
+        sin_n, sin_z, sout_n, sout_z = [], [], [], []
+        for (nn, area, kind, ir, iz) in inner:
+            if kind == "side" and _is_shell(ir, iz):
+                sin_n.append(nn); sin_z.append(self.zc[iz])
+        for (nn, area, orient) in outer:
+            ir, iz = self.steel_cells[nn]
+            if orient == "r" and _is_shell(ir, iz):
+                sout_n.append(nn); sout_z.append(self.zc[iz])
+        self.shell_inner_n = np.array(sin_n, dtype=int)
+        self.shell_inner_z = np.array(sin_z, dtype=float)
+        self.shell_outer_n = np.array(sout_n, dtype=int)
+        self.shell_outer_z = np.array(sout_z, dtype=float)
+
     def _neighbour_type(self, ir, iz, axis):
         if ir < 0 or ir >= self.nr or iz < 0 or iz >= self.nz:
             return EXTERIOR
@@ -303,6 +329,23 @@ class WallConduction2D:
             return num / ar if ar > 0 else fallback
         Ti_dry = avg(Tiw_dry_num, Tiw_dry_area, np.nan)
         Ti_wet = avg(Tiw_wet_num, Tiw_wet_area, Ti_dry)
+
+        # Cylinder-only report (matches the wall thermocouples): band statistics over the shell
+        # faces (all heights, mixing gas and wetted like the six sensors) plus a gas/wetted split.
+        def shell_stats(idx, zarr):
+            out = dict(min=np.nan, max=np.nan, med=np.nan, dry=np.nan, wet=np.nan)
+            if len(idx) == 0:
+                return out
+            T = self.T[idx]
+            out["min"], out["max"], out["med"] = float(T.min()), float(T.max()), float(np.median(T))
+            wet = zarr < liquid_level
+            if np.any(wet):
+                out["wet"] = float(T[wet].mean())
+            if np.any(~wet):
+                out["dry"] = float(T[~wet].mean())
+            return out
+        si = shell_stats(self.shell_inner_n, self.shell_inner_z)
+        so = shell_stats(self.shell_outer_n, self.shell_outer_z)
         return dict(
             T_inner_dry=Ti_dry,
             T_inner_wet=Ti_wet,
@@ -310,6 +353,11 @@ class WallConduction2D:
             T_outer_wet=avg(Tow_wet_num, Tow_wet_area, avg(Tow_dry_num, Tow_dry_area, np.nan)),
             Q_gas=Qg, Q_liq=Ql,
             T_mean=float(self.T.mean()),
+            # cylinder-only (thermocouple-comparable) inner/outer wall temperatures
+            T_cyl_in_min=si["min"], T_cyl_in_max=si["max"], T_cyl_in_med=si["med"],
+            T_cyl_in_dry=si["dry"], T_cyl_in_wet=si["wet"],
+            T_cyl_out_min=so["min"], T_cyl_out_max=so["max"], T_cyl_out_med=so["med"],
+            T_cyl_out_dry=so["dry"], T_cyl_out_wet=so["wet"],
         )
 
     def energy(self):

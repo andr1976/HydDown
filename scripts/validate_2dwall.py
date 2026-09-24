@@ -107,19 +107,21 @@ def figure(name, P0, T0C, noz, riser, ET):
     a.plot(t, np.where(alive & (cond > 0.1), np.asarray(hd2.T_liquid) - 273.15, np.nan), color=NAVY, lw=1.5, ls="-.", label="model liq/sol")
     a.set_ylabel("fluid T [C]"); a.set_xlabel("time [s]"); a.set_title("Fluid temperature"); a.legend(fontsize=7.5); a.grid(alpha=.3)
 
+    # Wall panel: cylinder-only model report (thermocouple-comparable) vs the measured bands.
+    # Measured inside = TT1x2 (6 cylinder heights), outer = TT1x1; model = min-max band over the
+    # shell inner/outer faces (lid/flange/bottom kept in the conduction solve but out of the report).
     a = ax[1, 1]
-    a.fill_between(g, iwall.min(0), iwall.max(0), color=GREEN, alpha=0.20, label="meas. inside")
+    a.fill_between(g, iwall.min(0), iwall.max(0), color=GREEN, alpha=0.22, label="meas. inside")
+    a.plot(g, np.median(iwall, 0), color=GREEN, lw=1.2)
     a.fill_between(g, owall.min(0), owall.max(0), color=AMBER, alpha=0.16, label="meas. outer")
-    a.plot(t, hd2.T_inner_wall - 273.15, color=RED, lw=1.7, ls="-", label="2D gas in")
-    a.plot(t, hd2.T_outer_wall - 273.15, color=RED, lw=1.2, ls=":", label="2D gas out")
-    a.plot(t, hd2.T_inner_wall_wetted - 273.15, color=NAVY, lw=1.7, ls="-", label="2D wet in")
-    a.plot(t, hd2.T_outer_wall_wetted - 273.15, color=NAVY, lw=1.2, ls=":", label="2D wet out")
-    a.plot(tl, hd0.T_inner_wall_wetted - 273.15, color=DGREY, lw=1.2, ls="--", label="lumped wet")
-    a.plot(tl, hd0.T_inner_wall - 273.15, color=DGREY, lw=1.0, ls="-.", label="lumped gas")
-    a.set_ylabel("wall T [C]"); a.set_xlabel("time [s]"); a.set_title("Wall temperature (2D inner/outer vs lumped)")
+    a.plot(g, np.median(owall, 0), color=AMBER, lw=1.2)
+    a.fill_between(t, hd2.T_cyl_in_min - 273.15, hd2.T_cyl_in_max - 273.15,
+                   color=RED, alpha=0.15, label="model inside (cyl.)")
+    a.plot(t, hd2.T_cyl_in_med - 273.15, color=RED, lw=1.6, ls="--", label="model inside med.")
+    a.plot(t, hd2.T_cyl_out_med - 273.15, color=NAVY, lw=1.6, ls="-.", label="model outer med.")
+    a.set_ylabel("wall T [C]"); a.set_xlabel("time [s]")
+    a.set_title("Wall temperature (cylinder inner/outer vs thermocouples)")
     a.legend(fontsize=6.5, ncol=2); a.grid(alpha=.3)
-    # clip to the physical range; the below-triple descent stepper (not the 2D wall) drives the
-    # drained wetted node to a spurious deep-cold value once the vessel empties below the triple point.
     lo = min(np.nanmin(iwall), np.nanmin(owall)) - 12
     a.set_ylim(lo, max(np.nanmax(iwall), np.nanmax(owall)) + 6)
 
