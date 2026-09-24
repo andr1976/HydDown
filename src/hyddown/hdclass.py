@@ -334,12 +334,15 @@ class HydDown:
             # re-warms the ice-contact wall (instead of pinning it to the sublimation line). The
             # heat is NOT fed to the tracked solid zone, so the retained dry-ice mass is unchanged.
             self.solid_h_wall_solid = rel.get("solid_h_wall_solid", 20.0)
-            # Heel dry-out height [m] for the 2-D conjugate wall: once the liquid pool thins
-            # below this depth (e.g. the residual heel below a riser inlet) nucleate boiling
-            # breaks down into an intermittent thin-film / dry-out regime, so the boiling wall
-            # HTC is tapered linearly toward the gas-side value as the level falls to zero. This
-            # stops the thin heel from over-cooling the bottom wall. 0 disables the taper.
-            self.liquid_dryout_height = rel.get("liquid_dryout_height", 0.03)
+            # Heel dry-out height [m] for the 2-D conjugate wall, OFF by default (0). When set,
+            # once the liquid pool thins below this depth (e.g. the residual heel below a riser
+            # inlet) the boiling wall HTC is tapered linearly toward the gas-side value as the
+            # level falls to zero, modelling nucleate boiling breaking down into a thin-film /
+            # dry-out regime. It is redundant for the instrumented (cylinder-wall) comparison:
+            # the thick bottom plate re-warms the sensor-height wall by lateral conduction on its
+            # own, so the taper only alters the floor-inclusive wetted-region average. Opt in by
+            # setting a positive value (e.g. 0.03) if that diagnostic or a thin-heel case needs it.
+            self.liquid_dryout_height = rel.get("liquid_dryout_height", 0.0)
             # Gas/condensate split of the inner wall below the triple point. Default None ->
             # computed each step from the actual phase volumes and the vessel geometry
             # (_gas_contact_area); a number here overrides with a fixed fraction of the inner area.
