@@ -458,6 +458,11 @@ class HydDown:
         if not hasattr(self, "wall_2d"):
             self.wall_2d = False
         self._wall2d = None
+        # Optional 2-D wall field snapshots for cross-section contour plots: set
+        # ``wall2d_snap_times`` (list of times [s]) before run(); captured fields land in
+        # ``wall2d_snapshots`` as {t, T (unknown vector), level, P}. Map with self._wall2d.
+        self.wall2d_snap_times = []
+        self.wall2d_snapshots = []
         self.vol_solid = self.vol_tot - self.vol
         self.surf_area_outer = self.outer_vol.A
         self.surf_area_inner = self.inner_vol.A
@@ -1378,6 +1383,18 @@ class HydDown:
 
     def _store_cyl_report(self, i, s):
         """Store the 2-D wall's cylinder-only (thermocouple-comparable) report for step ``i``."""
+        if self.wall2d_snap_times:
+            t = self.time_array[i]
+            for ts in self.wall2d_snap_times:
+                if abs(t - ts) < self.tstep / 2.0 and not any(
+                    abs(r["t"] - t) < 1e-9 for r in self.wall2d_snapshots
+                ):
+                    lvl = self.liquid_level[i - 1] if i > 0 else self.liquid_level[i]
+                    # P[i] is not set yet in the above-triple path when the wall step runs; fall
+                    # back to the previous (already-solved) pressure.
+                    Pi = self.P[i] if self.P[i] > 0 else self.P[i - 1]
+                    self.wall2d_snapshots.append(dict(
+                        t=t, T=self._wall2d.T.copy(), level=lvl, P=Pi))
         self.T_cyl_in_min[i] = s.get("T_cyl_in_min", np.nan)
         self.T_cyl_in_max[i] = s.get("T_cyl_in_max", np.nan)
         self.T_cyl_in_med[i] = s.get("T_cyl_in_med", np.nan)
