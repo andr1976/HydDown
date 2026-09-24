@@ -1150,6 +1150,7 @@ def release_validation(input):
         },
         "solid_h_gas_liquid": {"required": False, "type": "number", "min": 0},
         "solid_h_gas_solid": {"required": False, "type": "number", "min": 0},
+        "solid_h_wall_solid": {"required": False, "type": "number", "min": 0},
         "solid_gas_wall_frac": {"required": False, "type": "number", "min": 0, "max": 1},
         # Non-equilibrium factor for a liquid discharge (0 = HEM, 1 = frozen all-liquid).
         "liquid_nonequilibrium": {"required": False, "type": "number", "min": 0, "max": 1},

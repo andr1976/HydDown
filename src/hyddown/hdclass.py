@@ -328,6 +328,12 @@ class HydDown:
             self.solid_h_gas_wall = rel.get("solid_h_gas_wall", "churchill")
             self.solid_h_gas_liquid = rel.get("solid_h_gas_liquid", 0.0)  # plateau (gas<->liquid)
             self.solid_h_gas_solid = rel.get("solid_h_gas_solid", 0.0)  # descent (gas<->dry ice)
+            # Wall<->dry-ice contact HTC [W/m2/K] used ONLY by the 2-D conjugate wall on the
+            # descent: dry ice sublimes at the contact and forms an insulating gas film, so this
+            # is small; conduction from the warm gas-contact wall and the bottom plate then
+            # re-warms the ice-contact wall (instead of pinning it to the sublimation line). The
+            # heat is NOT fed to the tracked solid zone, so the retained dry-ice mass is unchanged.
+            self.solid_h_wall_solid = rel.get("solid_h_wall_solid", 20.0)
             # Gas/condensate split of the inner wall below the triple point. Default None ->
             # computed each step from the actual phase volumes and the vessel geometry
             # (_gas_contact_area); a number here overrides with a fixed fraction of the inner area.
@@ -1141,6 +1147,17 @@ class HydDown:
         self.x_vap_atm[i] = atm["vapour_frac"]
         self.x_solid_atm[i] = atm["solid_frac"]
 
+        # 2-D conjugate wall (opt-in): overwrite the lumped nodes above with the axisymmetric
+        # field. The condensate (liquid+solid) sits at the bottom; the wall in contact with it
+        # is boiling-cooled toward the triple-point liquid, the rest is gas-warmed.
+        if getattr(self, "wall_2d", False):
+            V_cond_new = self.m_liquid[i] * rm.v_l + self.m_solid[i] * rm.v_s
+            self._step_2d_wall_subtriple(
+                i, T_g_prev, rm.T_TRIPLE_EOS,
+                self._h_gas_wall(T_g_prev, self.T_vessel[i - 1], self.P[i - 1], V_cond_new),
+                self._wetted_wall_htc(self.T_vessel_wetted[i - 1], rm.T_TRIPLE_EOS),
+                V_cond_new, (self.m_liquid[i] + self.m_solid[i]) > 1e-6)
+
         # transition to the two-zone sublimation descent once the liquid is exhausted
         if m_l <= 1e-3:
             self.tz_plateau = False
@@ -1236,6 +1253,18 @@ class HydDown:
         self.T_atm[i] = atm["T"]
         self.x_vap_atm[i] = atm["vapour_frac"]
         self.x_solid_atm[i] = atm["solid_frac"]
+
+        # 2-D conjugate wall (opt-in): overwrite the ice-pinned lumped wetted node with the
+        # axisymmetric field. The shallow dry-ice bed contacts only the lower wall through a low
+        # sublimation-film HTC (solid_h_wall_solid); the rest is gas-warmed, and axial conduction
+        # from the warm upper wall and the thick bottom plate re-warms the ice-contact wall
+        # instead of pinning it to T_sub(P). Retained dry ice is unaffected (solid stays adiabatic).
+        if getattr(self, "wall_2d", False):
+            V_cond_new = self.tz_m_solid * rm.v_s
+            self._step_2d_wall_subtriple(
+                i, r["T_g"], rm._T_sub_of_P(r["P"]),
+                self._h_gas_wall(r["T_g"], self.T_vessel[i - 1], r["P"], V_cond_new),
+                self.solid_h_wall_solid, V_cond_new, r["m_solid"] > 1e-2)
 
     def _step_detailed_wall(self, i, wetted_area, mode):
         """Advance the detailed 1-D wall (unwetted + wetted faces) by one macro timestep.
@@ -1382,6 +1411,45 @@ class HydDown:
         self.T_outer_wall_wetted[i] = To_wet
         self.T_vessel[i] = Ti_dry
         self.T_vessel_wetted[i] = Ti_wet
+
+    def _step_2d_wall_subtriple(self, i, T_gas, T_cold, h_gas, h_cold, V_cond, cond_present):
+        """Advance the 2-D conjugate wall for a below-triple (plateau/descent) step.
+
+        The inner Robin BC is split at the condensate-bed top (from the condensate volume and
+        the vessel geometry): the gas-contact region above exchanges with the warm vapour, the
+        condensate-contact region below with the cold phase (triple-point liquid on the plateau,
+        subliming dry ice on the descent). Axial conduction from the warm gas-contact wall and
+        the thick bottom plate then re-warms the condensate-contact wall, rather than pinning it
+        to the sublimation line as the lumped model does. Overwrites the wall report arrays and
+        keeps ``tz_T_wall_wet`` in sync for the next step's boiling heat. The condensate-side
+        heat is NOT fed back to the fluid zones here, so the retained mass is unchanged.
+        """
+        from hyddown.wall2d import WallConduction2D, build_geometry, k_ss316
+        if self._wall2d is None:
+            gg = self._wall2d_geom
+            geom = build_geometry(
+                r_in=self.input["vessel"]["diameter"] / 2.0, thickness=self.thickness,
+                H=self.input["vessel"]["length"], t_bot=gg["bottom_thickness"],
+                t_flange=gg["flange_thickness"], t_lid=gg["lid_thickness"],
+                r_lid=gg["lid_diameter"] / 2.0)
+            k = self.input["vessel"].get("thermal_conductivity", k_ss316)
+            self._wall2d = WallConduction2D(geom, self.vessel_density, self.vessel_cp, self.T0, k_func=k)
+        cond_level = self.inner_vol.h_from_V(V_cond) if (cond_present and V_cond > 0) else 0.0
+        if not (isinstance(cond_level, (int, float)) and math.isfinite(cond_level)) or cond_level < 0:
+            cond_level = 0.0
+        s = self._wall2d.step(self.tstep, cond_level, cond_present, h_gas, T_gas, h_cold, T_cold)
+        prev_dry, prev_wet = self.T_vessel[i - 1], self.T_vessel_wetted[i - 1]
+        Ti_dry = s["T_inner_dry"] if np.isfinite(s["T_inner_dry"]) else prev_dry
+        Ti_wet = s["T_inner_wet"] if np.isfinite(s["T_inner_wet"]) else prev_wet
+        To_dry = s["T_outer_dry"] if np.isfinite(s["T_outer_dry"]) else prev_dry
+        To_wet = s["T_outer_wet"] if np.isfinite(s["T_outer_wet"]) else prev_wet
+        self.T_vessel[i] = Ti_dry
+        self.T_vessel_wetted[i] = Ti_wet
+        self.tz_T_wall_wet = Ti_wet
+        self.T_inner_wall[i] = Ti_dry
+        self.T_outer_wall[i] = To_dry
+        self.T_inner_wall_wetted[i] = Ti_wet
+        self.T_outer_wall_wetted[i] = To_wet
 
     def _solid_regime_step(self, i):
         """One timestep of the opt-in solid-in-vessel model (below the triple point).
