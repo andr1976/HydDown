@@ -146,14 +146,14 @@ def figure(name, P0, T0C, noz, riser, ET, letters):
            Line2D([], [], color=NAVY, lw=1.4)]
     sty = [Line2D([], [], color="k", lw=1.4, ls="-"), Line2D([], [], color="k", lw=1.4, ls="--"),
            Line2D([], [], color="k", lw=1.4, ls=":")]
-    axes[0].legend(col, ["Fluid centre", "Inner wall", "Outer wall"],
-                   loc="upper right", handlelength=1.6, frameon=True)
-    # style key in the lower window (upper right), clear of the curves
-    axes[1].legend(sty, ["Measured", "2-D wall", "Lumped 2-node"],
-                   loc="upper right", handlelength=1.9, frameon=True)
-
-    fig.tight_layout()
+    # Single two-row legend below the panels (colours on top, line styles below), clear of the
+    # curves. Handles interleaved so the column-major fill gives a colour row and a style row.
+    handles = [col[0], sty[0], col[1], sty[1], col[2], sty[2]]
+    labels = ["Fluid centre", "Measured", "Inner wall", "2-D wall", "Outer wall", "Lumped 2-node"]
+    fig.tight_layout(rect=[0, 0.085, 1, 1])
     fig.subplots_adjust(hspace=0.08)
+    fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0.0), ncol=3,
+               frameon=True, handlelength=1.8, columnspacing=1.3, fontsize=8)
     for e in ("pdf", "png"):
         try:
             fig.savefig(os.path.join(FIGDIR, "wall2d_sensors_%s.%s" % (name.lower(), e)),

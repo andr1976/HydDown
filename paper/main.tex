@@ -1043,14 +1043,16 @@ dense-phase SINTEF cases are integrated at a base step of 0.1\,s; for Exp72 the 
 is 7.82, 7.84, 7.86 and 7.87\,kg at 0.2, 0.1, 0.05 and 0.02\,s, a spread of 0.7\% across a tenfold
 reduction. The base steps are therefore adequate and are used throughout.
 
-\begin{table*}[!tbh]
+\begin{table}[t!]
 \centering
+\small
+\setlength{\tabcolsep}{4pt}
 \caption{Time-step convergence for CARDICE test~7 (gas release; base step 20\,s): retained
 in-vessel dry ice and the wall and gas temperature minima.}
 \label{tab:sens-dt}
 \begin{tabular}{cccc}
 \toprule
-$\Delta t$ (s) & Retained dry ice (kg) & Min wetted-wall ($^\circ$C) & Min gas T ($^\circ$C) \\
+$\Delta t$ (s) & Dry ice (kg) & Wall min ($^\circ$C) & Gas min ($^\circ$C) \\
 \midrule
 40 & 300.4 & $-75.55$ & $-42.54$ \\
 20 & 302.3 & $-75.94$ & $-42.48$ \\
@@ -1059,7 +1061,7 @@ $\Delta t$ (s) & Retained dry ice (kg) & Min wetted-wall ($^\circ$C) & Min gas T
 2  & 303.6 & $-76.00$ & $-42.42$ \\
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
 
 \subsection{Plateau gas-liquid interphase coefficient}
 \label{sec:sens-htc}
@@ -1166,6 +1168,17 @@ both.}
 \section{Two-dimensional wall-conduction sensitivity}
 \label{sec:wall2d}
 
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=\textwidth]{figures/wall2d_field_grid}
+\caption{Wall temperature field from the two-dimensional conjugate model at selected times for
+Exp53 (top, riser/liquid) and Exp72 (bottom, no-riser/gas). Each finite-volume cell is drawn at
+uniform size so that the thin shell and bottom plate are legible; the axis tick labels therefore
+give the physical positions of the cell edges and their spacing is non-uniform. The dashed line
+marks the liquid/condensate level; the per-row colour bar covers each test's own range.}
+\label{fig:wall2d-field}
+\end{figure*}
+
 The comparisons in Section~\ref{sec:results} use the lumped two-node wall of
 Section~\ref{sec:model}, in which the gas-contact and wetted regions are each a single,
 radially-uniform node with no heat exchange between them. This is adequate for the slow CARDICE
@@ -1188,17 +1201,6 @@ its relation to the SINTEF reference model of \citet{Hoydalsvik2026} are given i
 Appendix~\ref{app:wall2d}. Every other sub-model, in particular the two-zone fluid and the
 heat-transfer correlations, is unchanged, so the comparison isolates the effect of the wall
 representation.
-
-\begin{figure*}[!tbh]
-\centering
-\includegraphics[width=\textwidth]{figures/wall2d_field_grid}
-\caption{Wall temperature field from the two-dimensional conjugate model at selected times for
-Exp53 (top, riser/liquid) and Exp72 (bottom, no-riser/gas). Each finite-volume cell is drawn at
-uniform size so that the thin shell and bottom plate are legible; the axis tick labels therefore
-give the physical positions of the cell edges and their spacing is non-uniform. The dashed line
-marks the liquid/condensate level; the per-row colour bar covers each test's own range.}
-\label{fig:wall2d-field}
-\end{figure*}
 
 Figure~\ref{fig:wall2d-field} shows the computed wall temperature field at several times for both
 SINTEF tests. A pronounced through-thickness (radial) temperature gradient develops only in the
