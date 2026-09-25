@@ -1183,6 +1183,96 @@ both.}
 % TODO
 
 % =====================================================================
+\appendix
+
+\section{Two-dimensional conjugate wall-conduction model}
+\label{app:wall2d}
+
+The wall-conduction models used in the main text treat the vessel wall either as a lumped
+capacitance or as two independent one-dimensional radial columns (one gas-contact, one wetted)
+that exchange no heat with each other. Neither represents axial (lateral) conduction along the
+wall, nor the additional thermal mass of a thick bottom plate or a heavy lid. For the SINTEF
+dense-phase geometry, where the bottom plate and the flanged lid are several times thicker than
+the cylindrical shell, these effects are first-order for the wall temperature. This appendix
+documents an optional two-dimensional axisymmetric conjugate wall model, activated per case, that
+resolves them. Its formulation follows the reference model of \citet{Hoydalsvik2026}; the
+differences are noted where they arise.
+
+\paragraph{Governing equation and domain.} The wall temperature $T_\mathrm{w}(r,z,t)$ satisfies
+the transient axisymmetric heat-conduction equation with a temperature-dependent conductivity,
+\begin{equation}
+\rho_\mathrm{w} c_{p,\mathrm{w}}\,\frac{\partial T_\mathrm{w}}{\partial t}
+= \frac{1}{r}\frac{\partial}{\partial r}\!\left(r\,k(T_\mathrm{w})\,\frac{\partial T_\mathrm{w}}{\partial r}\right)
++ \frac{\partial}{\partial z}\!\left(k(T_\mathrm{w})\,\frac{\partial T_\mathrm{w}}{\partial z}\right),
+\label{eq:wall2d}
+\end{equation}
+solved over the complete steel body: the bottom plate, the cylindrical shell, the seat flange and
+the lid (Figure~\ref{fig:wall2d-geom}a). This is the same governing equation and solid domain as
+in \citet{Hoydalsvik2026}. The conductivity of the austenitic stainless steel is described by a
+linear fit anchored at its room-temperature value; a constant value may be specified instead.
+
+\paragraph{Discretisation.} Equation~\eqref{eq:wall2d} is discretised with a cell-centred
+finite-volume method on a structured, masked $r$--$z$ grid whose lines are aligned to the
+component boundaries (Figure~\ref{fig:wall2d-geom}). Each control volume is an annular ring, with
+volume $2\pi r_c\,\Delta r\,\Delta z$, radial face area $2\pi r_f\,\Delta z$ and axial (annular)
+face area $\pi(r_e^2-r_w^2)$, so that the $1/r$ term is represented exactly and the scheme
+conserves energy discretely. Time integration is fully implicit (backward Euler) and the resulting
+sparse linear system is solved directly. The weak temperature dependence of $k$ is handled by
+evaluating the conductivity at the previous time level (a lagged, non-iterated treatment), which is
+adequate because $k$ varies little over the temperature range of interest and the time step is
+small. This differs from \citet{Hoydalsvik2026}, who use a finite-element discretisation (linear
+elements on an unstructured mesh) with Newton iteration for the $k(T_\mathrm{w})$ non-linearity;
+for the present rectangular (annulus and flat-plate) geometry the finite-volume and finite-element
+formulations are equivalent, and the lagged-conductivity treatment removes the need for inner
+iterations.
+
+\paragraph{Boundary conditions.} The outer surface is adiabatic, reflecting the external
+insulation. The inner, fluid-facing surfaces carry a Robin condition that is split at the moving
+liquid (or condensate) level: below the level the nucleate pool-boiling correlation of
+\citet{Cooper1984} is used, and above it the free-convection correlation of \citet{ChurchillChu1975}
+with the characteristic length taken as the vapour-column height above the level. The correlations
+and the level-split follow \citet{Hoydalsvik2026}.
+
+\paragraph{Fluid--wall coupling.} The wall and the fluid are advanced in an operator-split
+sequence within each fluid time step: the area-averaged inner-face temperatures over the
+gas-contact and the wetted regions drive the corresponding zone energy balances, and the updated
+fluid temperatures and heat-transfer coefficients set the Robin data for the next wall solve. The
+principal difference from \citet{Hoydalsvik2026} lies in the fluid model rather than the wall.
+Their model assumes full thermodynamic equilibrium between the phases, so the wall exchanges with a
+single bulk fluid temperature; the present model retains the two-zone, partial-phase-equilibrium
+description of Section~\ref{sec:model}, so the conjugate wall exchanges with two distinct fluid
+temperatures, a superheated vapour above the level and a colder liquid or solid below it.
+
+\paragraph{Below the triple point.} Once the vessel crosses the triple point the condensate is
+solid CO$_2$. The same conduction wall is retained, with the inner boundary now split at the surface
+of the (typically shallow) dry-ice bed: the gas-contact region above uses the free-convection
+coefficient, while the bed-contact region uses a low sublimation-film contact coefficient. Axial
+conduction from the warmer upper wall and the thick bottom plate then re-warms the bed-contact wall
+rather than pinning it to the sublimation temperature. To preserve the calibrated retained-solid
+mass, the wall-to-solid heat is not returned to the tracked solid inventory. This below-triple
+treatment has no direct counterpart in \citet{Hoydalsvik2026}, whose equilibrium flash couples the
+wall heat to the solid phase directly.
+
+\paragraph{Implementation.} The model is an opt-in option that requires no additional software
+dependencies beyond those already used by HydDown. For comparison against the wall thermocouples,
+the reported inner- and outer-wall temperatures are sampled on the cylindrical shell over the
+instrumented height span; the lid, flange and bottom plate participate in the conduction solution
+but are excluded from the reported wall temperature.
+
+\begin{figure*}[!tbh]
+\centering
+\includegraphics[width=0.86\textwidth]{figures/wall2d_geometry}
+\caption{Two-dimensional conjugate wall model. (a)~The axisymmetric steel domain (bottom plate,
+cylindrical shell, seat flange and lid) and the structured finite-volume $r$--$z$ grid, with the
+adiabatic outer boundary and the inner Robin boundary split at the liquid/condensate level
+(pool boiling below, free convection above). (b)~Detail of the cylindrical shell, showing the
+through-thickness control volumes and cell-centre nodes between the inner (fluid-side, Robin) and
+outer (adiabatic) faces. A representative coarse grid is drawn for legibility; production runs use
+a finer discretisation.}
+\label{fig:wall2d-geom}
+\end{figure*}
+
+% =====================================================================
 \bibliographystyle{elsarticle-harv}
 \bibliography{references}
 
