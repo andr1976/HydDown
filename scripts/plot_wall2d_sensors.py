@@ -1,31 +1,40 @@
-"""Reproduce the Munkejord (2026) per-height temperature panels with the 2-D wall model.
+"""Temperature-transmitter reconciliation for the SINTEF tests with the 2-D conjugate wall AND
+the lumped two-node base model, in manuscript (SciencePlots) style.
 
-Fig. 6(c),(e) are Test 53 at z = 0.77 m and 0.05 m; Fig. A.9(d),(f) are Test 72 at the same two
-heights. Each panel shows the fluid-centre temperature (TT1x4, red), the inner cylinder wall
-(TT1x2, orange) and the outer cylinder wall (TT1x1, blue); measured = solid, model = dashed. The
-fluid-near-wall sensor (TT1x3, green) is dropped, as the model has no radial fluid gradient
-(matching the paper, which also omits it).
+Reproduces the Munkejord (2026) per-height panels (Fig. 6(c),(e) for Exp53; Fig. A.9(d),(f) for
+Exp72) at z = 0.77 m and 0.05 m, the two windows stacked vertically. Each panel shows the
+fluid-centre temperature (TT1x4), the inner cylinder wall (TT1x2) and the outer cylinder wall
+(TT1x1); measured (solid), 2-D conjugate-wall model (dashed) and lumped two-node model (dotted).
+The lumped model has no through-thickness gradient, so its inner and outer walls coincide (one
+line). The fluid-near-wall sensor (TT1x3) is dropped (no radial fluid gradient in the model).
 
-Model equivalents at height z: inner/outer wall are sampled from the 2-D shell at z; the fluid is
-the gas zone when z is above the condensate bed and the liquid/solid zone when below it.
+Model equivalents at height z: inner/outer wall sampled from the 2-D shell (2-D) or the gas/wetted
+node (lumped); the fluid is the vapour zone above the condensate bed and the liquid/solid zone
+below it. No figure title (manuscript style). Output to paper/figures/wall2d_sensors_exp{53,72}.pdf.
 
-Run from the repo root:  python scripts/plot_wall2d_sensors.py
+Requires scienceplots + a LaTeX toolchain. Run from the repo root.
 """
 import os, sys, zipfile, io
 import numpy as np, pandas as pd
-import matplotlib; matplotlib.use("Agg")
+import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import scienceplots  # noqa: F401
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "src"))
 from hyddown.hdclass import HydDown
-OUT = os.path.join(REPO, "validation", "munkejord"); os.makedirs(OUT, exist_ok=True)
+FIGDIR = os.path.join(REPO, "paper", "figures"); os.makedirs(FIGDIR, exist_ok=True)
 NAVY = "#002D40"; RED = "#D61F39"; AMBER = "#E6A740"; SLATE = "#82979F"
 
-HEIGHTS = [0.77, 0.05]                      # panel heights [m]  (Fig c/d = 0.77, e/f = 0.05)
-# measured channels at each height: (fluid centre TT1x4, inner wall TT1x2, outer wall TT1x1)
+plt.style.use(["science", "nature"])
+matplotlib.rcParams.update({
+    "text.usetex": True, "font.size": 10, "axes.titlesize": 11, "axes.labelsize": 11,
+    "legend.fontsize": 8, "xtick.labelsize": 9, "ytick.labelsize": 9, "figure.dpi": 150,
+})
+
+HEIGHTS = [0.77, 0.05]
 CH = {0.77: ("TT114", "TT112", "TT111"), 0.05: ("TT154", "TT152", "TT151")}
-# name, P0_bar, T0_C, nozzle_mm, riser, end_time, panel-letters
 CASES = [("Exp53", 119.5, 24.4, 8.0, True, 100.0, ("c", "e")),
          ("Exp72", 119.0, 24.9, 6.5, False, 400.0, ("d", "f"))]
 
@@ -50,12 +59,13 @@ def measured(z, name, ET):
     return g, out
 
 
-def run(P0, T0C, noz, riser, ET, dt=0.1):
+def run(P0, T0C, noz, riser, ET, wall2d, dt=0.1):
     T0 = T0C + 273.15
     vessel = {"length": 1.0, "diameter": 0.273, "thickness": 0.0254, "heat_capacity": 500,
-              "density": 7950, "orientation": "vertical", "type": "Flat-end", "wall_model": "2d",
-              "bottom_thickness": 0.050, "flange_thickness": 0.083, "lid_thickness": 0.080,
-              "lid_diameter": 0.580}
+              "density": 7950, "orientation": "vertical", "type": "Flat-end"}
+    if wall2d:
+        vessel.update({"wall_model": "2d", "bottom_thickness": 0.050, "flange_thickness": 0.083,
+                       "lid_thickness": 0.080, "lid_diameter": 0.580})
     d = {"vessel": vessel, "initial": {"temperature": T0, "pressure": P0 * 1e5, "fluid": "CO2"},
          "calculation": {"type": "energybalance", "time_step": dt, "end_time": ET,
                          "non_equilibrium": True, "h_gas_liquid": "calc_two_sided"},
@@ -69,53 +79,89 @@ def run(P0, T0C, noz, riser, ET, dt=0.1):
     for step in (dt, 0.02):
         d["calculation"]["time_step"] = step
         try:
-            hd = HydDown(d); hd.wall2d_report_heights = list(HEIGHTS); hd.run(disable_pbar=True); return hd
+            hd = HydDown(d)
+            if wall2d:
+                hd.wall2d_report_heights = list(HEIGHTS)
+            hd.run(disable_pbar=True); return hd
         except Exception:
             if step == 0.02:
                 raise
     return hd
 
 
-def model_fluid_at(hd, z):
-    Tg = np.asarray(hd.T_gas) - 273.15
-    Tl = np.asarray(hd.T_liquid) - 273.15
+def _bed_height(hd):
     vl, vs = hd.release_model.v_l, hd.release_model.v_s
     bedV = np.asarray(hd.m_liquid) * vl + np.asarray(hd.m_solid) * vs
-    bedh = np.array([hd.inner_vol.h_from_V(v) if v > 1e-9 else 0.0 for v in bedV])
-    bedh = np.nan_to_num(bedh, nan=0.0)
-    fld = np.where(z <= bedh, Tl, Tg)
-    alive = np.asarray(hd.mass_fluid) > 0.02
-    return np.where(alive, fld, np.nan)
+    bh = np.array([hd.inner_vol.h_from_V(v) if v > 1e-9 else 0.0 for v in bedV])
+    return np.nan_to_num(bh, nan=0.0)
+
+
+def fluid_at(hd, z):
+    Tg = np.asarray(hd.T_gas) - 273.15
+    Tl = np.asarray(hd.T_liquid) - 273.15
+    fld = np.where(z <= _bed_height(hd), Tl, Tg)
+    return np.where(np.asarray(hd.mass_fluid) > 0.02, fld, np.nan)
+
+
+def lumped_wall_at(hd, z):
+    Tg = np.asarray(hd.T_vessel) - 273.15
+    Tw = np.asarray(hd.T_vessel_wetted) - 273.15
+    return np.where(z <= _bed_height(hd), Tw, Tg)
 
 
 def figure(name, P0, T0C, noz, riser, ET, letters):
     zf = zipfile.ZipFile(os.path.join(REPO, "background", "19589510.zip"))
     g, meas = measured(zf, name, ET)
-    hd = run(P0, T0C, noz, riser, ET)
-    t = np.asarray(hd.time_array)
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4.6), sharey=True)
+    hd2 = run(P0, T0C, noz, riser, ET, wall2d=True)
+    hd0 = run(P0, T0C, noz, riser, ET, wall2d=False)
+    t2 = np.asarray(hd2.time_array); t0 = np.asarray(hd0.time_array)
+
+    fig, axes = plt.subplots(2, 1, figsize=(3.5, 5.4), sharex=True)
     for k, (h, ax, letter) in enumerate(zip(HEIGHTS, axes, letters)):
         fch, iwch, owch = CH[h]
         # measured (solid)
-        ax.plot(g, meas[fch], color=RED, lw=1.8, label="fluid centre (meas.)")
-        ax.plot(g, meas[iwch], color=AMBER, lw=1.8, label="inner wall (meas.)")
-        ax.plot(g, meas[owch], color=NAVY, lw=1.8, label="outer wall (meas.)")
-        # model (dashed)
-        ax.plot(t, model_fluid_at(hd, h), color=RED, lw=1.6, ls="--", label="fluid (model)")
-        ax.plot(t, hd.T_wall_h_in[:, k] - 273.15, color=AMBER, lw=1.6, ls="--", label="inner wall (model)")
-        ax.plot(t, hd.T_wall_h_out[:, k] - 273.15, color=NAVY, lw=1.6, ls="--", label="outer wall (model)")
-        ax.set_title("(%s)  z = %.2f m" % (letter, h), fontsize=10, color=NAVY)
-        ax.set_xlabel("time [s]"); ax.set_xlim(0, ET); ax.grid(alpha=.3)
-    axes[0].set_ylabel("temperature [C]")
-    axes[0].legend(fontsize=7.5, ncol=2, loc="lower right")
-    kind = "riser / liquid" if riser else "no-riser / gas"
-    fig.suptitle("%s (%.0f bar, %.1f C, %.1f mm, %s) - fluid & wall temperatures at sensor heights"
-                 % (name, P0, T0C, noz, kind), color=NAVY, fontsize=12)
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+        ax.plot(g, meas[fch], color=RED, lw=1.3)
+        ax.plot(g, meas[iwch], color=AMBER, lw=1.3)
+        ax.plot(g, meas[owch], color=NAVY, lw=1.3)
+        # 2-D model (dashed)
+        ax.plot(t2, fluid_at(hd2, h), color=RED, lw=1.2, ls="--")
+        ax.plot(t2, hd2.T_wall_h_in[:, k] - 273.15, color=AMBER, lw=1.2, ls="--")
+        ax.plot(t2, hd2.T_wall_h_out[:, k] - 273.15, color=NAVY, lw=1.2, ls="--")
+        # lumped two-node model (dotted); inner=outer -> single wall line
+        ax.plot(t0, fluid_at(hd0, h), color=RED, lw=1.1, ls=":")
+        ax.plot(t0, lumped_wall_at(hd0, h), color=AMBER, lw=1.1, ls=":")
+        # y-limits from measured + 2-D only (exclude lumped extremes)
+        lo = np.nanmin([np.nanmin(meas[fch]), np.nanmin(fluid_at(hd2, h)),
+                        np.nanmin(hd2.T_wall_h_in[:, k] - 273.15)]) - 6
+        hi = np.nanmax([np.nanmax(meas[owch]), np.nanmax(fluid_at(hd2, h))]) + 4
+        ax.set_ylim(lo, hi)
+        ax.set_ylabel(r"Temperature [$^\circ$C]")
+        ax.text(0.03, 0.05, r"(%s) $z = %.2f$~m" % (letter, h), transform=ax.transAxes,
+                fontsize=9, va="bottom", ha="left")
+        ax.set_xlim(0, ET)
+    axes[-1].set_xlabel(r"Time [s]")
+
+    # two-key legend on the top panel
+    col = [Line2D([], [], color=RED, lw=1.4), Line2D([], [], color=AMBER, lw=1.4),
+           Line2D([], [], color=NAVY, lw=1.4)]
+    sty = [Line2D([], [], color="k", lw=1.4, ls="-"), Line2D([], [], color="k", lw=1.4, ls="--"),
+           Line2D([], [], color="k", lw=1.4, ls=":")]
+    axes[0].legend(col, ["Fluid centre", "Inner wall", "Outer wall"],
+                   loc="upper right", handlelength=1.6, frameon=True)
+    # style key in the lower window (upper right), clear of the curves
+    axes[1].legend(sty, ["Measured", "2-D wall", "Lumped 2-node"],
+                   loc="upper right", handlelength=1.9, frameon=True)
+
+    fig.tight_layout()
+    fig.subplots_adjust(hspace=0.08)
     for e in ("pdf", "png"):
-        fig.savefig(os.path.join(OUT, "wall2d_sensors_%s.%s" % (name, e)), dpi=150)
+        try:
+            fig.savefig(os.path.join(FIGDIR, "wall2d_sensors_%s.%s" % (name.lower(), e)),
+                        dpi=200, bbox_inches="tight")
+        except OSError as ex:
+            print("  skip %s (%s)" % (e, str(ex)[:60]))
     plt.close(fig)
-    print("wrote wall2d_sensors_%s.pdf/png" % name)
+    print("wrote paper/figures/wall2d_sensors_%s.pdf/png" % name.lower())
 
 
 def main():
