@@ -259,8 +259,10 @@ validate the extension against experiment. The specific objectives are to:
 
 The model developed here extends HydDown \citep{Andreasen2021, Andreasen2026}. HydDown
 integrates the vessel mass and energy balances with an explicit time-marching scheme, evaluates
-real-fluid properties through CoolProp \citep{Bell2014}, and provides several discharge models
-together with internal and external heat-transfer options. For a two-phase inventory it follows a
+real-fluid properties through CoolProp \citep{Bell2014}, derives the vessel volume and the
+liquid-level and cross-sectional-area relations for the head geometry from the \texttt{fluids}
+library \citep{CalebBell_fluids}, and provides several discharge models together with internal and
+external heat-transfer options. For a two-phase inventory it follows a
 partial-phase-equilibrium description in which the vapour and the liquid are carried as two
 separate zones, each with its own temperature and coupled by a finite interphase heat transfer,
 rather than as a single well-mixed fluid at one temperature; this two-zone, non-equilibrium
@@ -347,18 +349,22 @@ Figure~\ref{fig:phasemap}. VLE: vapour and liquid equilibrium; HEM: homogeneous-
 discharge; NEM: two-zone non-equilibrium vessel model; $N$: liquid non-equilibrium factor;
 $C_{d,\text{gas}}$, $C_{d,\text{liq}}$: phase-split discharge coefficients. In every regime the
 released stream is additionally flashed isenthalpically to atmospheric pressure to give the
-downstream vapour and dry-ice split (Eq.~\eqref{eq:atmlever}).}
+downstream vapour and dry-ice split (Eq.~\eqref{eq:atmlever}). Correlations shown as \emph{A}/\emph{B}
+are user-selectable (a fixed coefficient is also admissible); the reported runs used Churchill--Chu
+wall convection throughout and, below the triple point, the Cooper boiling correlation (a fixed
+coefficient for the CARDICE liquid releases), while above the triple point the wetted wall uses
+Rohsenow.}
 \label{tab:phasemodels}
 \footnotesize
 \begin{tabularx}{\textwidth}{@{}l X X X@{}}
 \toprule
 Regime & Discharge & In-vessel treatment & Heat transfer / phase lever \\
 \midrule
-P1 & HEM, saturated-vapour stagnation, $C_{d,\text{gas}}$ & two-zone NEM (vapour $+$ liquid), native EOS & Geankoplis vapour-wall convection, Rohsenow boiling on the wetted wall; VLE \\
+P1 & HEM, saturated-vapour stagnation, $C_{d,\text{gas}}$ & two-zone NEM (vapour $+$ liquid), native EOS & Geankoplis/Churchill--Chu vapour-wall convection, Rohsenow boiling on the wetted wall; VLE \\
 P2 & HEM vapour on the sub-triple throat, $C_{d,\text{gas}}$ & two-zone plateau: warm vapour $+$ liquid/solid at $P_\text{tp}$ & Churchill--Chu vapour wall, Cooper/Rohsenow boiling; three-phase lever $(m_g,m_l,m_s)$ \\
 P3 & HEM vapour on the sublimation line, $C_{d,\text{gas}}$ & two-zone descent: vapour depressurises, dry ice sublimes & Churchill--Chu vapour wall, dry-ice wall on $T_\text{sub}(P)$; sublimation lever \\
-L1 & HEM liquid $+$ boost $N$, $C_{d,\text{liq}}$ & two-zone NEM (vapour $+$ liquid), native EOS & Geankoplis convection, Rohsenow boiling; VLE \\
-L2 & HEM liquid $+\,N(P)$, $C_{d,\text{liq}}$ & two-zone NEM to the heel; changeover at the draw level & Geankoplis convection, Rohsenow boiling; VLE \\
+L1 & HEM liquid $+$ boost $N$, $C_{d,\text{liq}}$ & two-zone NEM (vapour $+$ liquid), native EOS & Geankoplis/Churchill--Chu convection, Rohsenow boiling; VLE \\
+L2 & HEM liquid $+\,N(P)$, $C_{d,\text{liq}}$ & two-zone NEM to the heel; changeover at the draw level & Geankoplis/Churchill--Chu convection, Rohsenow boiling; VLE \\
 L3 & HEM vapour, $C_{d,\text{gas}}$ & residual-vapour blowdown (liquid exhausted) & vapour-wall convection; single-phase vapour \\
 \bottomrule
 \end{tabularx}
@@ -370,7 +376,7 @@ L3 & HEM vapour, $C_{d,\text{gas}}$ & residual-vapour blowdown (liquid exhausted
 Above the triple point the fluid properties are those of the CoolProp reference equation of state
 for CO$_2$ \citep{Span1996, Bell2014}, and the two zones are the equilibrium liquid and vapour.
 Below the triple point two additions are required, because the CoolProp backend has no solid phase
-and its equilibrium flash resolves only vapour and liquid (Section~\ref{sec:introduction}).
+and its equilibrium flash resolves only vapour and liquid.
 
 First, the vapour properties below the triple point are obtained by imposing the gas phase on the
 CoolProp state, which makes the reference equation of state extrapolate smoothly into the
@@ -586,8 +592,8 @@ the vessel geometry at the current liquid level. Each node exchanges with the am
 external coefficient $h_\text{out}$, taken as the measured value of approximately
 0.4\,W\,m$^{-2}$\,K$^{-1}$ for the insulated CARDICE sphere (Section~\ref{sec:experimental}).
 
-Above the triple point the inner vapour- and liquid-side coefficients follow the Geankoplis
-natural-convection correlation \citep{Geankoplis1993} in terms of the Rayleigh number
+The vapour-side (gas-contact) wall coefficient is a natural-convection correlation, selectable
+between the Geankoplis multi-regime form \citep{Geankoplis1993} in terms of the Rayleigh number
 $\mathrm{Ra} = \mathrm{Gr}\,\mathrm{Pr}$,
 \begin{equation}
 \label{eq:geankoplis}
@@ -600,37 +606,41 @@ $\mathrm{Ra} = \mathrm{Gr}\,\mathrm{Pr}$,
 \qquad h = \frac{\mathrm{Nu}\,k}{L},
 \end{equation}
 with $\mathrm{Nu}$ the Nusselt number, $\mathrm{Gr}$ and $\mathrm{Pr}$ the Grashof and Prandtl
-numbers, $k$ the fluid thermal conductivity, $L$ the characteristic length (the vessel height for a
-vertical vessel, the diameter for a horizontal one), and the fluid properties from CoolProp. Below the triple point the vapour-contact wall uses the Churchill--Chu free-convection
-correlation for a vertical surface \citep{ChurchillChu1975}, the same law adopted in the SINTEF
-reference model \citep{Hoydalsvik2026},
+numbers, $k$ the fluid thermal conductivity, $L$ the characteristic length and the fluid properties
+from CoolProp; and the Churchill--Chu single-equation form for a vertical surface
+\citep{ChurchillChu1975}, the same law adopted in the SINTEF reference model \citep{Hoydalsvik2026},
 \begin{equation}
 \label{eq:churchill}
 \begin{aligned}
 \mathrm{Nu} &= \left(0.825 +
-\frac{0.387\,\mathrm{Ra}_{L_v}^{1/6}}{[\,1 + (0.492/\mathrm{Pr})^{9/16}\,]^{8/27}}\right)^2, \\
-h_{gw} &= \frac{\mathrm{Nu}\,k}{L_v},
+\frac{0.387\,\mathrm{Ra}_{L}^{1/6}}{[\,1 + (0.492/\mathrm{Pr})^{9/16}\,]^{8/27}}\right)^2, \\
+h_{gw} &= \frac{\mathrm{Nu}\,k}{L},
 \end{aligned}
 \end{equation}
-evaluated with the CO$_2$ vapour properties at the film temperature from the imposed-gas state and
-with the characteristic length equal to the vapour-column height $L_v$ above the settled
-condensate, which shrinks as solid and liquid accumulate. The single-equation form is smooth across
-the laminar-turbulent transition and tends to a finite conduction floor as the vapour-to-wall
-temperature difference vanishes.
+evaluated with the CO$_2$ vapour properties at the film temperature (from the imposed-gas state below
+the triple point). The reported runs use the Churchill--Chu form throughout. The characteristic length $L$ is the vessel
+height above the triple point (the diameter for a horizontal vessel) and, below it, the vapour-column
+height $L_v$ above the settled condensate, which shrinks as solid and liquid accumulate. The
+single-equation form is smooth across the laminar-turbulent transition and tends to a finite
+conduction floor as the vapour-to-wall temperature difference vanishes.
 
 While liquid is present the wetted wall is cooled by nucleate pool boiling of the liquid, and this
-heat flows into the liquid and solid zone as an additional vaporisation term. The boiling
-coefficient uses, by default, the Cooper reduced-pressure correlation \citep{Cooper1984},
+heat flows into the liquid and solid zone as an additional vaporisation term. Above the triple point
+the boiling coefficient is taken from the Rohsenow correlation \citep{Rohsenow1952}. Below the triple
+point, where the surface tension, saturated densities and latent heat that Rohsenow requires become
+ill-defined for CO$_2$, the coefficient uses by default the Cooper reduced-pressure correlation
+\citep{Cooper1984},
 \begin{equation}
 \label{eq:cooper}
 h_\text{boil} = 55\,P_r^{\,0.12 - 0.2\log_{10} R_p}\,(-\log_{10} P_r)^{-0.55}\,\mathcal{M}^{-0.5}\,q^{0.67},
 \end{equation}
 in terms of the reduced pressure $P_r = P/P_c$, the surface roughness $R_p$, the molar mass
-$\mathcal{M}$ and the wall heat flux $q$. Cooper is preferred because it requires no surface tension, saturated
-densities or latent heat, quantities that are ill-defined for CO$_2$ at and below the triple point;
-the Rohsenow correlation \citep{Rohsenow1952}, which needs all of them, is available as an
-alternative. Both are capped at 3000\,W\,m$^{-2}$\,K$^{-1}$, above which the wall is
-conduction-limited and its temperature is insensitive to the exact coefficient. Once the liquid is
+$\mathcal{M}$ and the wall heat flux $q$; Cooper needs none of those quantities, whereas Rohsenow
+remains available below the triple point as an alternative, and a fixed coefficient may also be
+imposed. The Cooper and Rohsenow correlations are evaluated through the open-source \texttt{ht}
+library \citep{CalebBell_ht}, and every boiling coefficient is capped at 3000\,W\,m$^{-2}$\,K$^{-1}$,
+above which the wall is conduction-limited and its temperature is insensitive to the exact
+coefficient. Once the liquid is
 exhausted the wetted wall is buried against the cold dry-ice bed and is held on the sublimation
 line,
 \begin{equation}
