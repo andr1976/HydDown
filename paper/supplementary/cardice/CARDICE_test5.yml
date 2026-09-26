@@ -1,0 +1,41 @@
+vessel:
+  length: 0.0
+  diameter: 1.58
+  thickness: 0.072
+  heat_capacity: 450
+  density: 7800.0
+  orientation: horizontal
+  liquid_level: 0.635
+  type: Hemispherical
+initial:
+  temperature: 253.15
+  pressure: 2000000
+  fluid: CO2
+  gas_temperature: 255.94
+calculation:
+  type: energybalance
+  time_step: 20
+  end_time: 60000
+  non_equilibrium: true
+  h_gas_liquid: calc_two_sided
+valve:
+  flow: discharge
+  type: none
+  back_pressure: 101325.0
+release:
+  type: gas
+  diameter: 0.003
+  discharge_coef: 0.84
+  back_pressure: 101325.0
+  atm_pressure: 101325.0
+  eos: CoolProp
+  solid_in_vessel: true
+  solid_h_inner: cooper
+  solid_h_gas_wall: churchill
+  solid_h_gas_liquid: 0.0
+  solid_h_gas_solid: 3.0
+heat_transfer:
+  type: specified_h
+  temp_ambient: 283.15
+  h_outer: 0.4
+  h_inner: churchill

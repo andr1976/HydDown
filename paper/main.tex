@@ -923,8 +923,7 @@ Vessfire \citep{Vaillant2021}.
 \centering
 \includegraphics[width=\textwidth]{figures/cardice_t8}
 \caption{CARDICE test~8 (liquid release, 15\,bar): model (dashed) versus measured 1\,Hz data,
-panels as in Figure~\ref{fig:cardice-t7}. The liquid drains and boils out before the triple
-point, leaving essentially no in-vessel dry ice.}
+panels as in Figure~\ref{fig:cardice-t7}.}
 \label{fig:cardice-t8}
 \end{figure*}
 
@@ -965,9 +964,7 @@ reproduced.
 \centering
 \includegraphics[width=\textwidth]{figures/munke_exp72}
 \caption{ECCSEL/SINTEF Exp72 (no-riser gas release, 119\,bar, 6.5\,mm nozzle): model (dashed) versus
-measured data. Panels as in Figure~\ref{fig:cardice-t7}. The dense liquid flashes onto the
-saturation line and the release then proceeds as a saturated gas draw, forming a retained
-dry-ice bank.}
+measured data. Panels as in Figure~\ref{fig:cardice-t7}.}
 \label{fig:munke-exp72}
 \end{figure*}
 
@@ -1007,8 +1004,8 @@ about 8.2, 11.4 and 8.2\,kg. The predictions agree closely with Exp71 and Exp75 
 \centering
 \includegraphics[width=\textwidth]{figures/munke_exp53}
 \caption{ECCSEL/SINTEF Exp53 (riser liquid release, 119.5\,bar, 8.0\,mm nozzle): model (dashed) versus
-measured data. Panels as in Figure~\ref{fig:cardice-t7}. The vessel drains through the riser and
-empties before the triple point; the first 100\,s, covering the active blowdown, are shown.}
+measured data. Panels as in Figure~\ref{fig:cardice-t7}. The first 100\,s, covering the active
+blowdown, are shown.}
 \label{fig:munke-exp53}
 \end{figure*}
 
@@ -1033,8 +1030,9 @@ continued liquid drainage, and once the liquid inventory has fully drained the s
 blowdown is also matched well.
 
 The inventory is predicted well. A distinct gas phase develops after the initial dense-phase
-depressurisation and then disappears once the liquid level falls below the riser entrance; the
-residual liquid heel below the entrance evaporates slowly thereafter.
+depressurisation and coexists with the draining liquid; once the liquid level falls below the riser
+entrance the release changes over to the vapour space, and the accumulated gas is then gradually
+blown down while the residual liquid heel below the entrance evaporates slowly.
 
 The fluid temperatures give a more nuanced picture. The liquid temperature follows the measured band
 closely until the liquid is completely drained. The modelled gas temperature and the gas/liquid
@@ -1129,8 +1127,7 @@ constrained by them.
 The modelled vapour temperature at the mid-plateau (3.5\,h) is shown against the imposed plateau
 coefficient $h_{gl}$; the horizontal band and line are the measured vapour band and average, and
 the shaded vertical band is the range the two-sided natural-convection model would give for the
-same interface. The measured superheat is matched only for a plateau coefficient far below the
-natural-convection value, consistent with an insulating floating dry-ice layer.}
+same interface.}
 \label{fig:sens-htc}
 \end{figure}
 
@@ -1138,9 +1135,7 @@ natural-convection value, consistent with an insulating floating dry-ice layer.}
 \centering
 \includegraphics[width=\columnwidth]{figures/sens_htc_munke}
 \caption{As Figure~\ref{fig:sens-htc}, for the ECCSEL/SINTEF Exp72 gas release (vapour temperature at
-200\,s during the plateau). The modelled vapour remains within the measured band for all
-coefficients tested, so the plateau coefficient is weakly constrained here (the dense-phase plateau
-is brief); the near-zero value is compatible with the data.}
+200\,s during the plateau).}
 \label{fig:sens-htc-munke}
 \end{figure}
 
@@ -1161,8 +1156,7 @@ negligible and no solid forms, as observed.
 \centering
 \includegraphics[width=\columnwidth]{figures/sens_heel}
 \caption{CARDICE test~8 (liquid release): retained in-vessel dry ice as a function of an imposed
-residual liquid heel (draw level above the floor). The bottom-pole drain of the experiment leaves
-no heel and forms no in-vessel solid; a raised draw would freeze the residual liquid.}
+residual liquid heel (draw level above the floor).}
 \label{fig:sens-heel}
 \end{figure}
 
@@ -1185,23 +1179,20 @@ retained solid and the tail re-warming: the retained solid is set by the near-su
 stays cold against the ice, whereas the re-warming requires heat from the warmer upper wall. This
 tension is a direct consequence of representing the wall by a single uniform thickness, and it
 motivates a two-dimensional (axisymmetric) conjugate wall description, in which axial conduction
-lets the ice-contact region stay cold while the upper wall re-warms the vapour; this is left for
-future work.
+lets the ice-contact region stay cold while the upper wall re-warms the vapour; this is examined in
+Section~\ref{sec:wall2d}.
 
 \begin{figure}[!tbh]
 \centering
 \includegraphics[width=\columnwidth]{figures/sens_wall_thickness}
 \caption{ECCSEL/SINTEF Exp72 (gas release): modelled vapour temperature for uniform wall thicknesses of
 25.4, 50, 80 and 120\,mm (wall masses of about 220, 490, 890 and 1570\,kg), with the measured
-vapour band and average from the upper thermocouples. The 25.4\,mm shell reproduces the retained
-dry ice but re-warms the tail vapour too weakly, running below the measured band; heavier walls
-re-warm the vapour but under-predict the retained solid, so no single uniform thickness reproduces
-both.}
+vapour band and average from the upper thermocouples.}
 \label{fig:sens-wall}
 \end{figure}
 
 % =====================================================================
-\section{Two-dimensional wall-conduction sensitivity}
+\subsection{Two-dimensional wall-conduction sensitivity}
 \label{sec:wall2d}
 
 \begin{figure*}[t!]
@@ -1342,10 +1333,11 @@ that could have appeared to influence the work reported in this paper.
 
 \section*{Data availability}
 HydDown, including the extensions described in this work, is open-source software available at
-\url{https://github.com/andr1976/HydDown}. The input files and post-processing scripts that
-reproduce the results and figures presented here are provided as supporting material. The
-experimental datasets used for validation are available from their original publications
-\citep{CardiceData2024, Hoydalsvik2026}.
+\url{https://github.com/andr1976/HydDown} (development branch \texttt{co2-release-hem}). The input
+files for all CARDICE and ECCSEL/SINTEF tests, the two-dimensional conjugate wall-conduction solver,
+and the post-processing scripts that reproduce the results and figures presented here are provided as
+supporting material. The experimental datasets used for validation are available from their original
+publications \citep{CardiceData2024, Hoydalsvik2026}.
 
 \section*{Acknowledgements}
 The author gratefully acknowledges Ian Bell, the principal creator and maintainer of the CoolProp

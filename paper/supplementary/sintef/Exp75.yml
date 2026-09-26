@@ -1,0 +1,46 @@
+# ECCSEL/SINTEF dense-phase CO2 blowdown -- Exp75 (no-riser / gas release)
+# Working HydDown input reproducing the manuscript results.
+# P0 = 119.0 bar, T0 = 25.0 C, nozzle = 4.5 mm.
+# If a near-triple flash step fails at time_step 0.1 s, reduce it to 0.02 s.
+
+vessel:
+  length: 1.0
+  diameter: 0.273
+  thickness: 0.0254
+  heat_capacity: 500
+  density: 7950
+  orientation: vertical
+  type: Flat-end
+initial:
+  temperature: 298.15
+  pressure: 11900000.0
+  fluid: CO2
+calculation:
+  type: energybalance
+  time_step: 0.1
+  end_time: 600.0
+  non_equilibrium: true
+  h_gas_liquid: calc_two_sided
+valve:
+  flow: discharge
+  type: none
+  back_pressure: 101325.0
+release:
+  type: gas
+  diameter: 0.0045
+  discharge_coef: 1.0
+  liquid_nonequilibrium: 0.0
+  back_pressure: 101325.0
+  atm_pressure: 101325.0
+  eos: CoolProp
+  solid_in_vessel: true
+  solid_h_inner: cooper
+  solid_h_gas_wall: churchill
+  solid_h_gas_liquid: 0.0
+  solid_h_gas_solid: 3.0
+  discharge_location: 0.0
+heat_transfer:
+  type: specified_h
+  temp_ambient: 298.15
+  h_outer: 0.0
+  h_inner: churchill
