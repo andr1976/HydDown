@@ -61,12 +61,13 @@ def phase_diagram(ax, hd):
     Ts = np.array([rm._T_sub_of_P(p * 1e5) for p in Ps])
     ax.plot(Ts - 273.15, Ps, color=NAVY, lw=1.6)
     # melting line (solid-liquid), steep positive slope (stylised)
-    ax.plot([TTRIP - 273.15, TTRIP - 273.15 + 1.6], [PTRIP, 130], color=NAVY, lw=1.6)
+    ax.plot([TTRIP - 273.15, TTRIP - 273.15 + 2.2], [PTRIP, 210], color=NAVY, lw=1.6)
     # points
     ax.plot(TTRIP - 273.15, PTRIP, "o", color=NAVY, ms=4)
     ax.plot(TCRIT - 273.15, PCRIT, "o", color=NAVY, ms=4)
     ax.annotate("triple point", (TTRIP - 273.15, PTRIP), (-95, 8.5), fontsize=6.8, color=NAVY)
-    ax.annotate("critical point", (TCRIT - 273.15, PCRIT), (5, 60), fontsize=6.8, color=NAVY)
+    ax.annotate("critical\npoint", (TCRIT - 273.15, PCRIT), (34, 72), fontsize=6.8,
+                color=NAVY, ha="left", va="center")
     # region labels
     ax.text(-85, 40, "solid", color=SLATE, fontsize=8, style="italic")
     ax.text(-5, 90, "liquid", color=SLATE, fontsize=8, style="italic")
@@ -83,7 +84,7 @@ def phase_diagram(ax, hd):
     ax.annotate("", xy=(path_T[-1], path_P[-1]), xytext=(path_T[-6], path_P[-6]),
                 arrowprops=dict(arrowstyle="-|>", color=RED, lw=2.4))
     ax.text(2, 118, "blowdown", color=RED, fontsize=7.5, fontweight="bold")
-    ax.set_yscale("log"); ax.set_ylim(0.9, 135); ax.set_xlim(-100, 55)
+    ax.set_yscale("log"); ax.set_ylim(0.9, 205); ax.set_xlim(-100, 55)
     ax.set_xlabel("Temperature [$^\\circ$C]", fontsize=8); ax.set_ylabel("Pressure [bar]", fontsize=8)
     ax.set_title("CO$_2$ phase diagram", color=NAVY, fontsize=9)
     ax.tick_params(labelsize=7)
@@ -105,9 +106,11 @@ def fingerprint(ax, hd):
     # triple-point line + stage annotations
     ax.axhline(PTRIP, color=NAVY, lw=0.8, ls=":")
     ax.text(370, PTRIP * 1.15, "triple point", color=NAVY, fontsize=6.3, ha="right")
-    ax.annotate("1. depressurisation", (55, 30), fontsize=6.8, color=NAVY, ha="center")
-    ax.annotate("2. triple-point\n    plateau", (215, 7.2), fontsize=6.8, color=NAVY, ha="center")
-    ax.annotate("3. gas + solid\n    tail", (350, 2.0), fontsize=6.8, color=NAVY, ha="center")
+    ax.annotate("1. depressurisation", (85, 48), fontsize=6.8, color=NAVY, ha="center")
+    ax.annotate("2. triple-point\nplateau", (200, 12), fontsize=6.8, color=NAVY, ha="center")
+    ax.annotate("3. gas +\nsolid tail", xy=(338, 1.6), xytext=(356, 24), fontsize=6.8,
+                color=NAVY, ha="center", va="center",
+                arrowprops=dict(arrowstyle="-", color=NAVY, lw=0.6))
     ax.set_title("Gas-release blowdown fingerprint", color=NAVY, fontsize=9)
 
 

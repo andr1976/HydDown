@@ -79,25 +79,25 @@ relevant for intermediate storage and transport}
 \end{highlights}
 
 \begin{abstract}
-Intermediate storage and transport of liquefied CO$_2$ operate close to the triple point, so an
-unintended depressurisation can form solid CO$_2$ (dry ice) and cool the vessel wall below its
-design temperature. Models validated for this scenario are either proprietary or assume full
-equilibrium between the phases. This work extends the open-source tool HydDown to simulate it,
-including dry-ice formation in the vessel and the released stream. The thermodynamics are extended
-below the triple point by combining imposed-phase evaluation of the equation of state for the vapour
-with a precomputed solid-CO$_2$ table, within a two-zone (partial-phase-equilibrium) description
-carrying separate vapour and liquid/solid temperatures. Discharge, dry-ice and heat-transfer models
-are formulated for both vapour- and liquid-space releases, with a lumped two-node wall and an
-optional two-dimensional conjugate-conduction wall. It is validated against two campaigns, the
-CARDICE 2\,m$^3$ sphere and the ECCSEL/SINTEF dense-phase vessel, covering low to high pressure and gas
-and liquid releases. The model reproduces the pressure, inventory and retained dry ice, and the
-fluid and wall temperatures, including the triple-point plateau where the liquid freezes, and
-captures the vapour/condensate thermal stratification a full-equilibrium model cannot. Agreement is
-strongest for the slow, hour-scale tests; for the faster dense-phase tests the wall-temperature
-deviations are moderate or conservative. A vapour-space blowdown forms a retained dry-ice bank,
-whereas draining liquid from a low point avoids in-vessel solid, consistent with industry guidance.
-Openly available and inexpensive, the model provides a transient source term for dispersion and risk
-assessment.
+Intermediate storage and transport of liquefied CO$_2$ is at risk of dry-ice (solid CO$_2$)
+formation if it is unintentionally depressurised or inadequately drained. An excursion below the
+lower design temperature may also occur, increasing the risk of brittle fracture and loss of
+containment. Models validated for this scenario are either proprietary or assume full equilibrium
+between the phases. This work extends the open-source tool HydDown to simulate it, including dry-ice
+formation in the vessel and released stream. The thermodynamics are extended below the triple point
+by combining imposed-phase evaluation of the vapour equation of state with a precomputed
+solid-CO$_2$ table, within a two-zone (partial-phase-equilibrium) description carrying separate
+vapour and liquid/solid temperatures. Discharge, dry-ice and heat-transfer models are formulated for
+both vapour- and liquid-space releases, with a lumped two-node wall and an optional two-dimensional
+conjugate-conduction wall. It is validated against the CARDICE 2\,m$^3$ sphere and the ECCSEL/SINTEF
+dense-phase vessel, covering low to high pressure and gas and liquid releases. The model reproduces
+the pressure, inventory and retained dry ice, and the fluid and wall temperatures, including the
+triple-point freezing plateau, and captures the vapour/condensate thermal stratification a
+full-equilibrium model cannot. Agreement is strongest for the slow, hour-scale tests; for faster
+tests the wall-temperature deviations are moderate or conservative. A vapour-space
+blowdown forms a retained dry-ice bank, whereas draining liquid from a low point avoids in-vessel
+solid, consistent with industry guidance. Openly available and inexpensive, it provides a transient
+source term for dispersion and risk assessment.
 \end{abstract}
 
 \begin{keyword}
@@ -257,8 +257,7 @@ validate the extension against experiment. The specific objectives are to:
 \section{Model}
 \label{sec:model}
 
-The model developed here extends HydDown \citep{Andreasen2021, Andreasen2026}, an open-source
-Python tool for the transient simulation of pressure-vessel filling and depressurisation. HydDown
+The model developed here extends HydDown \citep{Andreasen2021, Andreasen2026}. HydDown
 integrates the vessel mass and energy balances with an explicit time-marching scheme, evaluates
 real-fluid properties through CoolProp \citep{Bell2014}, and provides several discharge models
 together with internal and external heat-transfer options. For a two-phase inventory it follows a
@@ -270,8 +269,7 @@ by \citet{AndreasenStegelmann2026}. It is motivated by the experimental observat
 blowdown the two phases follow distinct temperature paths, and that the wall in contact with the
 boiling liquid cools more strongly than the wall in contact with the vapour
 \citep{SperanzaTerenzi2005}. It contrasts with a full-equilibrium treatment, in which a single
-bulk temperature is carried and thermal stratification between the phases is not represented
-(Section~\ref{sec:introduction}).
+bulk temperature is carried and thermal stratification between the phases is not represented.
 
 The present work retains this two-zone framework and extends it below the triple point so that
 solid CO$_2$ (dry ice) can be represented, both as a bank retained inside the vessel and as the
