@@ -74,7 +74,7 @@ relevant for intermediate storage and transport}
 \item Open-source HydDown extended to model CO$_2$ storage-vessel depressurisation
 \item Below-triple thermodynamics and a dry-ice model capture in-vessel solid CO$_2$
 \item Two-zone non-equilibrium model captures phase thermal stratification
-\item Validated vs CARDICE and SINTEF data, gas and liquid, 10 to 120 bar
+\item Validated vs CARDICE and ECCSEL/SINTEF data, gas and liquid, 10 to 120 bar
 \item Liquid draw from a low point avoids in-vessel dry ice, unlike vapour blowdown
 \end{highlights}
 
@@ -89,7 +89,7 @@ with a precomputed solid-CO$_2$ table, within a two-zone (partial-phase-equilibr
 carrying separate vapour and liquid/solid temperatures. Discharge, dry-ice and heat-transfer models
 are formulated for both vapour- and liquid-space releases, with a lumped two-node wall and an
 optional two-dimensional conjugate-conduction wall. It is validated against two campaigns, the
-CARDICE 2\,m$^3$ sphere and the SINTEF/NTNU dense-phase vessel, covering low to high pressure and gas
+CARDICE 2\,m$^3$ sphere and the ECCSEL/SINTEF dense-phase vessel, covering low to high pressure and gas
 and liquid releases. The model reproduces the pressure, inventory and retained dry ice, and the
 fluid and wall temperatures, including the triple-point plateau where the liquid freezes, and
 captures the vapour/condensate thermal stratification a full-equilibrium model cannot. Agreement is
@@ -194,7 +194,7 @@ fractions of the discharge quantified \citep{AlBaroudi2021}, and the discharge f
 loading-arm emergency release coupler has been investigated at real scale \citep{AlBaroudi2022}.
 A visualised depressurisation matrix spanning the gas, liquid and supercritical regions has
 recently been reported for a small vessel \citep{Chen2026}. At the high-pressure, dense-phase end,
-the SINTEF and NTNU experiments on a densely instrumented vertical vessel provide pressure,
+the ECCSEL/SINTEF and NTNU experiments on a densely instrumented vertical vessel provide pressure,
 temperature and mass-flow data together with dedicated nozzle-flow measurements
 \citep{Hoydalsvik2026, Hammer2022}. For the low- and medium-pressure two-phase conditions that are
 most representative of intermediate storage, the most elaborate dataset is that of the CARDICE
@@ -216,7 +216,7 @@ release where dry ice forms. Each of these tools captures part of the behaviour,
 proprietary and none is distributed as open source, so the underlying models cannot be inspected,
 modified or reused.
 
-The most detailed model of this kind is the one developed alongside the SINTEF and NTNU experiments
+The most detailed model of this kind is the one developed alongside the ECCSEL/SINTEF and NTNU experiments
 \citep{Hoydalsvik2026}. Its modelling basis is disclosed: it couples a multi-phase flash of the
 bulk fluid, a nozzle-flow discharge model and a detailed two-dimensional (conjugate) heat-transfer
 description of the vessel wall, and it reproduces the measured dense-phase depressurisation well.
@@ -291,7 +291,7 @@ and the downstream dry-ice split (Section~\ref{sec:atmdryice}).
 A CO$_2$ blowdown passes through a sequence of thermodynamic regimes, and the discharge model, the
 in-vessel treatment, the heat-transfer law and the phase lever each change as the fluid crosses a
 regime boundary. The overall logic is shown in Figure~\ref{fig:phasemap}. Both admissible initial
-states, a dense-phase or subcooled liquid (as in the SINTEF tests) and a saturated liquid and
+states, a dense-phase or subcooled liquid (as in the ECCSEL/SINTEF tests) and a saturated liquid and
 vapour mixture (as in the CARDICE tests), enter the same decision tree. The first branch is the
 release location: a vapour-space release follows the left spine (regimes P1 to P3) and a
 liquid-space release the right spine (regimes L1 to L3).
@@ -757,7 +757,7 @@ Test & Release & $P_0$ (bar) & $T_0$ ($^\circ$C) & Orifice (mm) \\
 \end{tabular}
 \end{table}
 
-\subsection{Dense-phase experiments (SINTEF)}
+\subsection{Dense-phase experiments (ECCSEL/SINTEF)}
 \label{sec:exp-sintef}
 
 The second campaign consists of the dense-phase depressurisation experiments performed by
@@ -788,7 +788,7 @@ point is reached.
 
 \begin{table}[!tbh]
 \centering
-\caption{SINTEF dense-phase pure-CO$_2$ test matrix. $P_0$ and $T_0$ are the initial pressure
+\caption{ECCSEL/SINTEF dense-phase pure-CO$_2$ test matrix. $P_0$ and $T_0$ are the initial pressure
 and temperature; the configuration denotes a top opening (no riser, gas) or a bottom riser tube
 (liquid).}
 \label{tab:sintef-matrix}
@@ -828,7 +828,7 @@ panels of the comparison figures the measured data are shown as bands over the v
 thermocouples. For the CARDICE sphere two bands are used: for the internal fluid, an upper band
 spanning the three uppermost thermocouples (the vapour space) and a lower band spanning the three
 lowest (the liquid and solid region); for the inside wall, an upper band from the three uppermost
-sensors and a lower band from the four lowest (the wetted and dry-ice region). For the SINTEF
+sensors and a lower band from the four lowest (the wetted and dry-ice region). For the ECCSEL/SINTEF
 cylinder the six fluid and six inside-wall thermocouples are each shown as a single
 minimum-to-maximum band with its median.
 
@@ -946,7 +946,7 @@ phase vanishes the modelled wetted-wall node steps up to the gas-wall temperatur
 consequence of the two-node wall description, in which the wall node of a depleted phase is
 reassigned (clipped) to the surviving phase.
 
-\subsection{Dense-phase blowdown (SINTEF)}
+\subsection{Dense-phase blowdown (ECCSEL/SINTEF)}
 \label{sec:results-dense}
 
 The dense-phase experiments start as a sub-cooled liquid at approximately 120\,bar and flash
@@ -957,7 +957,7 @@ reproduced.
 \begin{figure*}[!tbh]
 \centering
 \includegraphics[width=\textwidth]{figures/munke_exp72}
-\caption{SINTEF Exp72 (no-riser gas release, 119\,bar, 6.5\,mm nozzle): model (dashed) versus
+\caption{ECCSEL/SINTEF Exp72 (no-riser gas release, 119\,bar, 6.5\,mm nozzle): model (dashed) versus
 measured data. Panels as in Figure~\ref{fig:cardice-t7}. The dense liquid flashes onto the
 saturation line and the release then proceeds as a saturated gas draw, forming a retained
 dry-ice bank.}
@@ -999,7 +999,7 @@ about 8.2, 11.4 and 8.2\,kg. The predictions agree closely with Exp71 and Exp75 
 \begin{figure*}[t!]
 \centering
 \includegraphics[width=\textwidth]{figures/munke_exp53}
-\caption{SINTEF Exp53 (riser liquid release, 119.5\,bar, 8.0\,mm nozzle): model (dashed) versus
+\caption{ECCSEL/SINTEF Exp53 (riser liquid release, 119.5\,bar, 8.0\,mm nozzle): model (dashed) versus
 measured data. Panels as in Figure~\ref{fig:cardice-t7}. The vessel drains through the riser and
 empties before the triple point; the first 100\,s, covering the active blowdown, are shown.}
 \label{fig:munke-exp53}
@@ -1058,7 +1058,7 @@ choices, four sensitivity studies are presented: the time-step of the explicit i
 release (Section~\ref{sec:sens-heel}), and the vessel-wall thermal mass
 (Section~\ref{sec:sens-wall}). A representative case is used for each: for the two CARDICE-based
 studies the gas release test~7 (which develops the full plateau and descent) and the liquid
-release test~8; for the two SINTEF-based studies the gas release Exp72.
+release test~8; for the two ECCSEL/SINTEF-based studies the gas release Exp72.
 
 \subsection{Time-step convergence}
 \label{sec:sens-dt}
@@ -1068,7 +1068,7 @@ step must be small enough for the result to be converged. Table~\ref{tab:sens-dt
 retained dry ice and the temperature minima for CARDICE test~7 as the step is reduced from 40 to
 2\,s about the base value of 20\,s. The retained dry ice changes by about 0.4\% between the base
 step and the finest, and the wall and gas temperature minima move by less than 0.1\,$^\circ$C. The
-dense-phase SINTEF cases are integrated at a base step of 0.1\,s; for Exp72 the retained dry ice
+dense-phase ECCSEL/SINTEF cases are integrated at a base step of 0.1\,s; for Exp72 the retained dry ice
 is 7.82, 7.84, 7.86 and 7.87\,kg at 0.2, 0.1, 0.05 and 0.02\,s, a spread of 0.7\% across a tenfold
 reduction. The base steps are therefore adequate and are used throughout.
 
@@ -1109,10 +1109,10 @@ a two-sided natural-convection estimate for the same interface predicts a coeffi
 10 to 20\,W\,m$^{-2}$\,K$^{-1}$ (the shaded range in Figure~\ref{fig:sens-htc}), which would cool the
 vapour well below the observations. The measured superheat is reproduced only when the effective
 plateau coefficient is far smaller than the natural-convection value, consistent with the
-insulating dry-ice layer. The same comparison for the dense-phase SINTEF gas release Exp72
+insulating dry-ice layer. The same comparison for the dense-phase ECCSEL/SINTEF gas release Exp72
 (Figure~\ref{fig:sens-htc-munke}) is less discriminating: the modelled vapour remains within the
 measured band for all coefficients tested, because the triple-point plateau is brief, so the
-near-zero value used for the CARDICE cases is compatible with the SINTEF data although not strongly
+near-zero value used for the CARDICE cases is compatible with the ECCSEL/SINTEF data although not strongly
 constrained by them.
 
 \begin{figure}[!tbh]
@@ -1130,7 +1130,7 @@ natural-convection value, consistent with an insulating floating dry-ice layer.}
 \begin{figure}[!tbh]
 \centering
 \includegraphics[width=\columnwidth]{figures/sens_htc_munke}
-\caption{As Figure~\ref{fig:sens-htc}, for the SINTEF Exp72 gas release (vapour temperature at
+\caption{As Figure~\ref{fig:sens-htc}, for the ECCSEL/SINTEF Exp72 gas release (vapour temperature at
 200\,s during the plateau). The modelled vapour remains within the measured band for all
 coefficients tested, so the plateau coefficient is weakly constrained here (the dense-phase plateau
 is brief); the near-zero value is compatible with the data.}
@@ -1162,7 +1162,7 @@ no heel and forms no in-vessel solid; a raised draw would freeze the residual li
 \subsection{Vessel-wall thermal mass}
 \label{sec:sens-wall}
 
-The SINTEF cylinder has a non-uniform wall, a 25.4\,mm cylindrical shell closed by a 50\,mm bottom
+The ECCSEL/SINTEF cylinder has a non-uniform wall, a 25.4\,mm cylindrical shell closed by a 50\,mm bottom
 plate and an 80\,mm lid, which is represented in the model by a uniform wall of the shell
 thickness. Figure~\ref{fig:sens-wall} shows the modelled vapour temperature for Exp72 as the
 uniform wall thickness is increased from the 25.4\,mm shell, together with the measured vapour band
@@ -1184,7 +1184,7 @@ future work.
 \begin{figure}[!tbh]
 \centering
 \includegraphics[width=\columnwidth]{figures/sens_wall_thickness}
-\caption{SINTEF Exp72 (gas release): modelled vapour temperature for uniform wall thicknesses of
+\caption{ECCSEL/SINTEF Exp72 (gas release): modelled vapour temperature for uniform wall thicknesses of
 25.4, 50, 80 and 120\,mm (wall masses of about 220, 490, 890 and 1570\,kg), with the measured
 vapour band and average from the upper thermocouples. The 25.4\,mm shell reproduces the retained
 dry ice but re-warms the tail vapour too weakly, running below the measured band; heavier walls
@@ -1211,7 +1211,7 @@ marks the liquid/condensate level; the per-row colour bar covers each test's own
 The comparisons in Section~\ref{sec:results} use the lumped two-node wall of
 Section~\ref{sec:model}, in which the gas-contact and wetted regions are each a single,
 radially-uniform node with no heat exchange between them. This is adequate for the slow CARDICE
-blowdowns, but for the fast SINTEF releases it leaves several wall-temperature traits unresolved.
+blowdowns, but for the fast ECCSEL/SINTEF releases it leaves several wall-temperature traits unresolved.
 In the gas and solid tail of the no-riser test Exp72 the modelled wall in contact with the liquid
 and dry ice follows the fluid and sublimation temperature \emph{downwards}, whereas the measured
 wall \emph{re-warms} once the release slows. In the riser test Exp53 the modelled gas-contact wall
@@ -1232,7 +1232,7 @@ heat-transfer correlations, is unchanged, so the comparison isolates the effect 
 representation.
 
 Figure~\ref{fig:wall2d-field} shows the computed wall temperature field at several times for both
-SINTEF tests. A pronounced through-thickness (radial) temperature gradient develops only in the
+ECCSEL/SINTEF tests. A pronounced through-thickness (radial) temperature gradient develops only in the
 wall in contact with the liquid and solid, that is the lower shell and the bottom plate, where
 boiling and cold-condensate contact drive strong local cooling; in Exp72 this region falls to about
 $-50\,^\circ$C at the plateau. The lid and flange, by contrast, remain close to their initial
@@ -1246,7 +1246,7 @@ cold bank: the wall stays warm apart from a shallow, transient cold zone at the 
 \centering
 \includegraphics[width=0.49\textwidth]{figures/wall2d_sensors_exp53}\hfill
 \includegraphics[width=0.49\textwidth]{figures/wall2d_sensors_exp72}
-\caption{Temperature-transmitter reconciliation for the SINTEF tests at heights $z=0.77$\,m and
+\caption{Temperature-transmitter reconciliation for the ECCSEL/SINTEF tests at heights $z=0.77$\,m and
 $z=0.05$\,m: Exp53 (left; panels c and e) and Exp72 (right; panels d and f), reproducing the
 presentation of \citet{Hoydalsvik2026}. Measured (solid), two-dimensional conjugate wall (dashed)
 and lumped two-node wall (dotted); fluid centre, inner cylinder wall and outer cylinder wall are
@@ -1278,7 +1278,7 @@ A model combining the partial-phase-equilibrium (PPE), non-equilibrium (NEM) two
 with the dry-ice (solid-level) extension and a simple two-node lumped wall, which ignores heat
 conduction and thermal gradients within the wall, reproduces most of the experimental observations
 across a wide range of conditions. Over the low- and medium-pressure CARDICE tests and the
-dense-phase SINTEF tests, and for both vapour-space (gas) and liquid-space (riser) releases, the
+dense-phase ECCSEL/SINTEF tests, and for both vapour-space (gas) and liquid-space (riser) releases, the
 model captures the pressure history, the mass inventory and the retained dry ice, the fluid
 temperatures and the wall temperatures. The agreement is best for the slow tests, with time scales
 of hours, and shows some deficiencies for the fast tests, whose time scales are about an order of
@@ -1435,7 +1435,7 @@ VLE & vapour--liquid equilibrium \\
 The wall-conduction models used in the main text treat the vessel wall either as a lumped
 capacitance or as two independent one-dimensional radial columns (one gas-contact, one wetted)
 that exchange no heat with each other. Neither represents axial (lateral) conduction along the
-wall, nor the additional thermal mass of a thick bottom plate or a heavy lid. For the SINTEF
+wall, nor the additional thermal mass of a thick bottom plate or a heavy lid. For the ECCSEL/SINTEF
 dense-phase geometry, where the bottom plate and the flanged lid are several times thicker than
 the cylindrical shell, these effects are first-order for the wall temperature. This appendix
 documents an optional two-dimensional axisymmetric conjugate wall model, activated per case, that
