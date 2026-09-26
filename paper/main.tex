@@ -575,10 +575,7 @@ discharge takes the two-phase, flashing sharp-orifice value $C_{d,\text{liq}} = 
 \citep{Darby2004} together with the non-equilibrium factor $N$, so a liquid release uses
 $C_{d,\text{liq}}$ for the liquid and $C_{d,\text{gas}}$ for its vapour tail. The non-equilibrium
 boost is a short-residence phenomenon and is kept independent of hole diameter, calibrated per case
-and faded only with pressure. For a full-bore or large-diameter rupture the long flow path lets the
-liquid flash to equilibrium, so the appropriate choice is $C_d = 1$ with $N = 0$; the small-orifice
-boost should not be added on top of $C_d = 1$, because the discharge coefficient and the
-non-equilibrium factor represent different physics and anti-correlate with hole size. For the
+and faded only with pressure. For the
 high-pressure dense regime, plain HEM with a fixed discharge coefficient reproduces the measured
 flux about as well as a homogeneous non-equilibrium model \citep{Lopes2018, Hammer2022}, so the
 additional non-equilibrium machinery is not required there.
@@ -635,9 +632,11 @@ ill-defined for CO$_2$, the coefficient uses by default the Cooper reduced-press
 h_\text{boil} = 55\,P_r^{\,0.12 - 0.2\log_{10} R_p}\,(-\log_{10} P_r)^{-0.55}\,\mathcal{M}^{-0.5}\,q^{0.67},
 \end{equation}
 in terms of the reduced pressure $P_r = P/P_c$, the surface roughness $R_p$, the molar mass
-$\mathcal{M}$ and the wall heat flux $q$; Cooper needs none of those quantities, whereas Rohsenow
-remains available below the triple point as an alternative, and a fixed coefficient may also be
-imposed. The Cooper and Rohsenow correlations are evaluated through the open-source \texttt{ht}
+$\mathcal{M}$ and the wall heat flux $q$; Cooper needs none of those quantities. Below the triple
+point both correlations are pinned at the triple-point saturated liquid, only the wall superheat
+varying as the dry-ice bed cools, so that Rohsenow draws its surface tension, saturated densities and
+latent heat from that pinned state and remains usable as an alternative; a fixed coefficient may also
+be imposed. The Cooper and Rohsenow correlations are evaluated through the open-source \texttt{ht}
 library \citep{CalebBell_ht}, and every boiling coefficient is capped at 3000\,W\,m$^{-2}$\,K$^{-1}$,
 above which the wall is conduction-limited and its temperature is insensitive to the exact
 coefficient. Once the liquid is
