@@ -69,7 +69,25 @@ relevant for intermediate storage and transport}
 % \end{highlights}
 
 \begin{abstract}
-% TODO: abstract
+Intermediate storage and transport of liquefied CO$_2$ operate close to the triple point, so an
+unintended depressurisation can form solid CO$_2$ (dry ice) and cool the vessel wall below its
+design temperature. Models validated for this scenario are either proprietary or assume full
+equilibrium between the phases. This work extends the open-source tool HydDown to simulate it,
+including dry-ice formation in the vessel and the released stream. The thermodynamics are extended
+below the triple point by combining imposed-phase evaluation of the equation of state for the vapour
+with a precomputed solid-CO$_2$ table, within a two-zone (partial-phase-equilibrium) description
+carrying separate vapour and liquid/solid temperatures. Discharge, dry-ice and heat-transfer models
+are formulated for both vapour- and liquid-space releases, with a lumped two-node wall and an
+optional two-dimensional conjugate-conduction wall. It is validated against two campaigns, the
+CARDICE 2\,m$^3$ sphere and the SINTEF/NTNU dense-phase vessel, covering low to high pressure and gas
+and liquid releases. The model reproduces the pressure, inventory and retained dry ice, and the
+fluid and wall temperatures, including the triple-point plateau where the liquid freezes, and
+captures the vapour/condensate thermal stratification a full-equilibrium model cannot. Agreement is
+strongest for the slow, hour-scale tests; for the faster dense-phase tests the wall-temperature
+deviations are moderate or conservative. A vapour-space blowdown forms a retained dry-ice bank,
+whereas draining liquid from a low point avoids in-vessel solid, consistent with industry guidance.
+Openly available and inexpensive, the model provides a transient source term for dispersion and risk
+assessment.
 \end{abstract}
 
 % TODO: keywords - uncomment and fill:
@@ -967,6 +985,16 @@ about 8.4, 7.8 and 8.1\,kg of dry ice for Exp71, Exp72 and Exp75, against measur
 about 8.2, 11.4 and 8.2\,kg. The predictions agree closely with Exp71 and Exp75 (within about
 3\%) but under-predict the 11.4\,kg reported for Exp72.
 
+
+\begin{figure*}[t!]
+\centering
+\includegraphics[width=\textwidth]{figures/munke_exp53}
+\caption{SINTEF Exp53 (riser liquid release, 119.5\,bar, 8.0\,mm nozzle): model (dashed) versus
+measured data. Panels as in Figure~\ref{fig:cardice-t7}. The vessel drains through the riser and
+empties before the triple point; the first 100\,s, covering the active blowdown, are shown.}
+\label{fig:munke-exp53}
+\end{figure*}
+
 This apparent under-prediction for Exp72 is, however, largely within the uncertainty of the weight
 measurement. The recorded initial inventory for Exp72 is 51.4\,kg, whereas the mass of a completely
 liquid-filled vessel at the recorded initial state (119\,bar, 25.0$\,^\circ$C, corresponding to a
@@ -979,15 +1007,6 @@ initial fills for the three no-riser tests span 47.6--51.4\,kg about the physica
 to the settled reading, the Exp72 retained solid falls from 11.4 to about 9.4\,kg, in much closer
 agreement with the model, so the discrepancy for this test should be read with that measurement
 uncertainty in mind.
-
-\begin{figure*}[!tbh]
-\centering
-\includegraphics[width=\textwidth]{figures/munke_exp53}
-\caption{SINTEF Exp53 (riser liquid release, 119.5\,bar, 8.0\,mm nozzle): model (dashed) versus
-measured data. Panels as in Figure~\ref{fig:cardice-t7}. The vessel drains through the riser and
-empties before the triple point; the first 100\,s, covering the active blowdown, are shown.}
-\label{fig:munke-exp53}
-\end{figure*}
 
 The comparison for Exp53, a riser (liquid) release, is shown in Figure~\ref{fig:munke-exp53}. The
 vessel drains through the riser and empties before the triple point, so no in-vessel solid forms, as
@@ -1242,24 +1261,79 @@ temperature at $z=0.77$\,m is a feature of the two-zone fluid model rather than 
 common to both wall descriptions.
 
 % =====================================================================
-\section{Discussion}
+\section{Discussion and conclusions}
 \label{sec:discussion}
-% TODO: 0-D limitations (stratification), model choices, applicability.
 
-% =====================================================================
-\section{Conclusions}
-\label{sec:conclusions}
-% TODO
+A model combining the partial-phase-equilibrium (PPE), non-equilibrium (NEM) two-zone description
+with the dry-ice (solid-level) extension and a simple two-node lumped wall, which ignores heat
+conduction and thermal gradients within the wall, reproduces most of the experimental observations
+across a wide range of conditions. Over the low- and medium-pressure CARDICE tests and the
+dense-phase SINTEF tests, and for both vapour-space (gas) and liquid-space (riser) releases, the
+model captures the pressure history, the mass inventory and the retained dry ice, the fluid
+temperatures and the wall temperatures. The agreement is best for the slow tests, with time scales
+of hours, and shows some deficiencies for the fast tests, whose time scales are about an order of
+magnitude shorter. Even there the wall-temperature deficiencies are either moderate (the riser
+tests) or conservative (the no-riser tests, where the wall cooling is over-predicted).
+
+The main feature that the present description does not resolve is the per-phase thermal
+stratification within each zone; capturing it would require a multi-zone model tending towards a
+computational fluid dynamics (CFD) treatment. The two-zone PPE/NEM formulation nonetheless already
+reproduces the vapour and condensate stratification that a full thermodynamic-equilibrium model
+cannot, and the optional two-dimensional conjugate wall (Section~\ref{sec:wall2d}) removes the
+fast-test wall deficiencies at modest additional cost, although the lumped wall is adequate for most
+purposes.
+
+Taken together, these results give confidence in the modelling assumptions and in the usability of
+the model for engineering and design work as well as for safety-related studies. Being inexpensive
+to evaluate, of the order of seconds on a desktop computer and using only open-source thermophysical
+libraries, and reproducible against openly available data, it is well suited to parametric studies
+and design iteration where a full CFD analysis would be impractical. These results are, to a large
+degree, facilitated by the recent high-quality experimental campaigns on the depressurisation of
+CO$_2$ from storage and transport conditions \citep{CardiceData2024, Hoydalsvik2026}; without such
+data the present model development and validation would not have been possible.
+
+Both the experiments and the model reinforce the importance of draining liquid CO$_2$ from a storage
+vessel, rather than a vapour-phase blowdown, in order to avoid the formation of dry ice, in
+agreement with current industry guidance \citep{eiga66_2022, eiga164_2020}. For the liquid drain to be effective,
+however, it must be taken from a low point so that essentially all of the liquid is removed before
+gas break-through; otherwise a residual liquid heel can still freeze into dry ice, as both the
+experiments and the model show.
+
+Because it captures the distinct behaviour of gas and liquid releases, including dry-ice formation,
+the model also provides a firm basis for predicting transient release rates, and the accompanying
+temperature, phase split and solid fraction, for scenarios such as leaks and full-bore pipe rupture.
+These are directly usable as a source term in dispersion modelling and quantitative risk assessment.
+The predicted wall temperatures are further relevant to low-temperature material integrity: the wall
+is cooled below $-70\,^\circ$C in several tests, and the conservative over-prediction of the wall
+cooling for the gas releases places any such assessment on the safe side.
+
+The present study is limited to pure CO$_2$. Real CO$_2$ capture and storage streams contain
+impurities such as N$_2$, O$_2$ and CH$_4$ that shift the phase envelope and the conditions for
+solid formation, so a multicomponent extension is a natural next step, together with a per-zone
+stratification model for the fastest releases and wider use of the two-dimensional wall where wall
+temperatures are of primary interest.
 
 % =====================================================================
 \section*{CRediT authorship contribution statement}
-% TODO
+\textbf{Anders Andreasen:} Conceptualization, Methodology, Software, Validation, Formal analysis,
+Investigation, Data curation, Writing -- original draft, Writing -- review \& editing,
+Visualization.
 
 \section*{Declaration of competing interest}
-% TODO
+The author declares that he has no known competing financial interests or personal relationships
+that could have appeared to influence the work reported in this paper.
 
 \section*{Acknowledgements}
-% TODO
+The author gratefully acknowledges Ian Bell, the principal creator and maintainer of the CoolProp
+thermophysical property library \citep{Bell2014}, and its co-contributors; CoolProp has formed the
+basis of HydDown from its early development to its present state.
+
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
+During the preparation of this work the author used Claude Code (Anthropic) in order to assist with
+manuscript drafting and editing, literature review structuring, development and debugging of
+plotting and analysis scripts, and further development of the HydDown software package. After using
+this tool, the author reviewed and edited the content as needed and takes full responsibility for
+the content of the published article.
 
 % =====================================================================
 \appendix
