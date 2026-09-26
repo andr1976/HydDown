@@ -542,7 +542,7 @@ the discharge coefficient.
 
 A saturated liquid discharged through a short, sharp orifice has too little residence time to flash
 to equilibrium, so the metastable liquid persists past its saturation pressure and the flux lies
-above the equilibrium value, towards the frozen all-liquid limit \citep{Fauske1985, Dyer2007}. The
+above the equilibrium value, towards the frozen all-liquid limit \citep{Fauske1988, HenryFauske1971}. The
 frozen incompressible (Bernoulli) flux
 \begin{equation}
 \label{eq:frozen}
@@ -718,7 +718,7 @@ The CARDICE (CARbon DIoxide iCE) Joint Industry Project comprises pilot-scale CO
 experiments carried out by Ineris in a 2\,m$^3$ steel sphere. The test matrix and a comparison
 with the commercial tool Vessfire are reported by \citet{Vaillant2021}, while the rig,
 instrumentation and calibration are documented in detail by \citet{Jamois2023}. The 1\,Hz
-dataset is openly available \citep{CardiceData2024}.
+dataset is openly available \citep{CardiceData2025}.
 
 The vessel is a sphere formed from two welded hemispheres, with an internal volume of
 2.030\,m$^3$, an inner diameter of 1556\,mm and a mean wall thickness of 54\,mm. It is
@@ -771,7 +771,7 @@ The second campaign consists of the dense-phase depressurisation experiments per
 SINTEF Energy Research and NTNU in the ECCSEL facility \citep{Hoydalsvik2026}. Relative to
 CARDICE these experiments probe a very different part of the operating envelope, namely a
 high-pressure ($\sim$120\,bar), sub-cooled dense-liquid initial state, and the fluid flashes
-strongly through the discharge nozzle. The open dataset accompanies the paper.
+strongly through the discharge nozzle. The open dataset accompanies the paper \citep{HoydalsvikData2026}.
 
 The vessel is a vertical stainless-steel (SS316) cylinder of 273\,mm inner diameter and
 1000\,mm internal height ($\sim$0.058\,m$^3$), with a 25.4\,mm wall, a 50\,mm bottom plate and
@@ -1297,7 +1297,7 @@ to evaluate, of the order of seconds on a desktop computer and using only open-s
 libraries, and reproducible against openly available data, it is well suited to parametric studies
 and design iteration where a full CFD analysis would be impractical. These results are, to a large
 degree, facilitated by the recent high-quality experimental campaigns on the depressurisation of
-CO$_2$ from storage and transport conditions \citep{CardiceData2024, Hoydalsvik2026}; without such
+CO$_2$ from storage and transport conditions \citep{CardiceData2025, HoydalsvikData2026}; without such
 data the present model development and validation would not have been possible.
 
 Both the experiments and the model reinforce the importance of draining liquid CO$_2$ from a storage
@@ -1336,8 +1336,8 @@ HydDown, including the extensions described in this work, is open-source softwar
 \url{https://github.com/andr1976/HydDown} (development branch \texttt{co2-release-hem}). The input
 files for all CARDICE and ECCSEL/SINTEF tests, the two-dimensional conjugate wall-conduction solver,
 and the post-processing scripts that reproduce the results and figures presented here are provided as
-supporting material. The experimental datasets used for validation are available from their original
-publications \citep{CardiceData2024, Hoydalsvik2026}.
+supporting material. The experimental datasets used for validation are openly available
+\citep{CardiceData2025, HoydalsvikData2026}.
 
 \section*{Acknowledgements}
 The author gratefully acknowledges Ian Bell, the principal creator and maintainer of the CoolProp
