@@ -22,6 +22,13 @@
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{hyperref}
+\usepackage{microtype}   % font protrusion/expansion: clears most small overfull \hbox warnings
+% Explicit PDF metadata so hyperref does not warn about the CO2 subscript / corresponding-author
+% marker when deriving the title and author from the frontmatter.
+\hypersetup{
+  pdftitle={Modelling the depressurisation of CO2 storage vessel at conditions relevant for intermediate storage and transport},
+  pdfauthor={Anders Andreasen}
+}
 \usepackage{lineno}
 \usepackage{tikz}
 \usetikzlibrary{positioning,calc,shapes.geometric,arrows.meta}
@@ -356,7 +363,7 @@ L3 & HEM vapour, $C_{d,\text{gas}}$ & residual-vapour blowdown (liquid exhausted
 \end{tabularx}
 \end{table*}
 
-\subsection{Thermodynamics and the solid-CO$_2$ lever}
+\subsection{Thermodynamics and the solid-\texorpdfstring{CO$_2$}{CO2} lever}
 \label{sec:thermo}
 
 Above the triple point the fluid properties are those of the CoolProp reference equation of state
@@ -693,7 +700,7 @@ the triple point and a large dry-ice bank is retained inside the vessel, whereas
 the fluid starts in the dense-liquid region and flashes vigorously through the discharge nozzle.
 Both datasets are openly available.
 
-\subsection{CARDICE (Ineris 2\,m$^3$ sphere)}
+\subsection{CARDICE (Ineris \texorpdfstring{2\,m$^3$}{2 m3} sphere)}
 \label{sec:exp-cardice}
 
 The CARDICE (CARbon DIoxide iCE) Joint Industry Project comprises pilot-scale CO$_2$ blowdown
@@ -1337,7 +1344,7 @@ the content of the published article.
 % =====================================================================
 \appendix
 
-\section{Two-dimensional conjugate wall-conduction model}
+\section{Two-dimensional conjugate wall-conduc\-tion model}
 \label{app:wall2d}
 
 The wall-conduction models used in the main text treat the vessel wall either as a lumped
