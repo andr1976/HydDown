@@ -26,7 +26,7 @@
 % Explicit PDF metadata so hyperref does not warn about the CO2 subscript / corresponding-author
 % marker when deriving the title and author from the frontmatter.
 \hypersetup{
-  pdftitle={Modelling the depressurisation of CO2 storage vessel at conditions relevant for intermediate storage and transport},
+  pdftitle={Modelling the depressurisation of CO2 storage vessels at conditions relevant for intermediate storage and transport},
   pdfauthor={Anders Andreasen}
 }
 \usepackage{lineno}
@@ -61,7 +61,7 @@
 
 \begin{frontmatter}
 
-\title{Modelling the depressurisation of CO$_2$ storage vessel at conditions
+\title{Modelling the depressurisation of CO$_2$ storage vessels at conditions
 relevant for intermediate storage and transport}
 
 % Authors (reused from the HydDown/blowdown paper; add co-authors as needed)
@@ -83,21 +83,21 @@ Intermediate storage and transport of liquefied CO$_2$ is at risk of dry-ice (so
 formation if it is unintentionally depressurised or inadequately drained. An excursion below the
 lower design temperature may also occur, increasing the risk of brittle fracture and loss of
 containment. Models validated for this scenario are either proprietary or assume full equilibrium
-between the phases. This work extends the open-source tool HydDown to simulate it, including dry-ice
+between the phases. This work extends the open-source tool HydDown to simulate this scenario, including dry-ice
 formation in the vessel and released stream. The thermodynamics are extended below the triple point
 by combining imposed-phase evaluation of the vapour equation of state with a precomputed
 solid-CO$_2$ table, within a two-zone (partial-phase-equilibrium) description carrying separate
 vapour and liquid/solid temperatures. Discharge, dry-ice and heat-transfer models are formulated for
 both vapour- and liquid-space releases, with a lumped two-node wall and an optional two-dimensional
 conjugate-conduction wall. It is validated against the CARDICE 2\,m$^3$ sphere and the ECCSEL/SINTEF
-dense-phase vessel, covering low to high pressure and gas and liquid releases. The model reproduces
+dense-phase vessel, covering low to high pressure, gas and liquid releases. The model reproduces
 the pressure, inventory and retained dry ice, and the fluid and wall temperatures, including the
 triple-point freezing plateau, and captures the vapour/condensate thermal stratification a
 full-equilibrium model cannot. Agreement is strongest for the slow, hour-scale tests; for faster
 tests the wall-temperature deviations are moderate or conservative. A vapour-space
 blowdown forms a retained dry-ice bank, whereas draining liquid from a low point avoids in-vessel
-solid, consistent with industry guidance. Openly available and inexpensive, it provides a transient
-source term for dispersion and risk assessment.
+solid, consistent with industry guidance. Openly available and inexpensive, the model provides a
+transient source term for dispersion and risk assessment.
 \end{abstract}
 
 \begin{keyword}
@@ -263,10 +263,10 @@ real-fluid properties through CoolProp \citep{Bell2014}, derives the vessel volu
 liquid-level and cross-sectional-area relations for the head geometry from the \texttt{fluids}
 library \citep{CalebBell_fluids}, and provides several discharge models together with internal and
 external heat-transfer options. For a two-phase inventory it follows a
-partial-phase-equilibrium description in which the vapour and the liquid are carried as two
+partial phase equilibrium (PPE) description in which the vapour and the liquid are carried as two
 separate zones, each with its own temperature and coupled by a finite interphase heat transfer,
-rather than as a single well-mixed fluid at one temperature; this two-zone, non-equilibrium
-description (NEM) is due to \citet{SperanzaTerenzi2005} and is implemented in HydDown as reported
+rather than as a single well-mixed fluid at one temperature; this two-zone description is due to
+\citet{SperanzaTerenzi2005} and is implemented in HydDown as reported
 by \citet{AndreasenStegelmann2026}. It is motivated by the experimental observation that during a
 blowdown the two phases follow distinct temperature paths, and that the wall in contact with the
 boiling liquid cools more strongly than the wall in contact with the vapour
@@ -346,7 +346,7 @@ VLE denotes vapour and liquid equilibrium.}
 \centering
 \caption{Discharge, in-vessel treatment and heat transfer / phase lever employed in each regime of
 Figure~\ref{fig:phasemap}. VLE: vapour and liquid equilibrium; HEM: homogeneous-equilibrium
-discharge; NEM: two-zone non-equilibrium vessel model; $N$: liquid non-equilibrium factor;
+discharge; PPE: two-zone partial-phase-equilibrium vessel model; $N$: liquid non-equilibrium factor;
 $C_{d,\text{gas}}$, $C_{d,\text{liq}}$: phase-split discharge coefficients. In every regime the
 released stream is additionally flashed isenthalpically to atmospheric pressure to give the
 downstream vapour and dry-ice split (Eq.~\eqref{eq:atmlever}). Correlations shown as \emph{A}/\emph{B}
@@ -360,11 +360,11 @@ Rohsenow.}
 \toprule
 Regime & Discharge & In-vessel treatment & Heat transfer / phase lever \\
 \midrule
-P1 & HEM, saturated-vapour stagnation, $C_{d,\text{gas}}$ & two-zone NEM (vapour $+$ liquid), native EOS & Geankoplis/Churchill--Chu vapour-wall convection, Rohsenow boiling on the wetted wall; VLE \\
+P1 & HEM, saturated-vapour stagnation, $C_{d,\text{gas}}$ & two-zone PPE (vapour $+$ liquid), native EOS & Geankoplis/Churchill--Chu vapour-wall convection, Rohsenow boiling on the wetted wall; VLE \\
 P2 & HEM vapour on the sub-triple throat, $C_{d,\text{gas}}$ & two-zone plateau: warm vapour $+$ liquid/solid at $P_\text{tp}$ & Churchill--Chu vapour wall, Cooper/Rohsenow boiling; three-phase lever $(m_g,m_l,m_s)$ \\
 P3 & HEM vapour on the sublimation line, $C_{d,\text{gas}}$ & two-zone descent: vapour depressurises, dry ice sublimes & Churchill--Chu vapour wall, dry-ice wall on $T_\text{sub}(P)$; sublimation lever \\
-L1 & HEM liquid $+$ boost $N$, $C_{d,\text{liq}}$ & two-zone NEM (vapour $+$ liquid), native EOS & Geankoplis/Churchill--Chu convection, Rohsenow boiling; VLE \\
-L2 & HEM liquid $+\,N(P)$, $C_{d,\text{liq}}$ & two-zone NEM to the heel; changeover at the draw level & Geankoplis/Churchill--Chu convection, Rohsenow boiling; VLE \\
+L1 & HEM liquid $+$ boost $N$, $C_{d,\text{liq}}$ & two-zone PPE (vapour $+$ liquid), native EOS & Geankoplis/Churchill--Chu convection, Rohsenow boiling; VLE \\
+L2 & HEM liquid $+\,N(P)$, $C_{d,\text{liq}}$ & two-zone PPE to the heel; changeover at the draw level & Geankoplis/Churchill--Chu convection, Rohsenow boiling; VLE \\
 L3 & HEM vapour, $C_{d,\text{gas}}$ & residual-vapour blowdown (liquid exhausted) & vapour-wall convection; single-phase vapour \\
 \bottomrule
 \end{tabularx}
@@ -380,17 +380,22 @@ and its equilibrium flash resolves only vapour and liquid.
 
 First, the vapour properties below the triple point are obtained by imposing the gas phase on the
 CoolProp state, which makes the reference equation of state extrapolate smoothly into the
-metastable gas region past the triple-point boundary. Every sub-triple vapour property (density,
-internal energy, enthalpy, entropy and the discharge flux integrand) is taken from this
-imposed-gas state. The extrapolation was checked against an independent GERG-2008 reference and
-agrees to within about 0.01\,K in temperature and to four decimals in phase fraction down to about
-1\,bar. Second, the solid branch, which CoolProp cannot supply, is provided by a small property
+metastable gas region past the triple-point boundary. This region lies below the lower temperature
+limit of the validated range of the Span--Wagner equation of state \citep{Span1996}, which extends
+down only to the triple-point temperature, so the sub-triple vapour is a controlled extrapolation
+rather than a validated state. Every sub-triple vapour property (density, internal energy, enthalpy,
+entropy and the discharge flux integrand) is taken from this imposed-gas state. The extrapolation was
+checked against an independent GERG-2008 reference \citep{Kunz2012} and agrees to within about
+0.01\,K in temperature and to four decimals in phase fraction down to about 1\,bar. Second, the solid branch, which CoolProp cannot supply, is provided by a small property
 table computed once and tabulated along the sublimation line $P_\text{sub}(T)$; the tabulated
 quantities are listed in Table~\ref{tab:solidtable}. The solid enthalpy and entropy are
 re-referenced into the CoolProp basis through the physical latent heat of sublimation at each
 temperature, so that a solid property and a CoolProp vapour property may be combined on one
-consistent basis. The table is generated offline and stored with the code; at runtime the model
-uses only CoolProp and the tabulated solid values.
+consistent basis. The table is generated offline with the GERG-2008 equation of state
+\citep{Kunz2012} and the solid-CO$_2$ (vapour--liquid--solid) model of \citet{Hammer2013}, evaluated
+through the thermopack library \citep{Wilhelmsen2017}; a dedicated reference equation of state for
+solid CO$_2$ is also available for comparison \citep{JaegerSpan2012}. At runtime the model uses only
+CoolProp and the tabulated solid values.
 
 \begin{table}[!tbh]
 \centering
@@ -424,7 +429,7 @@ T_\text{tp} = 216.59~\text{K}, \qquad P_\text{tp} = 5.18~\text{bar},
 at which the specific volumes, enthalpies and internal energies of solid, liquid and vapour
 ($v_{s},v_{l},v_{g}$ and $u_{s},u_{l},u_{g}$) are stored as the vertices of the phase lever: the
 solid vertex from the table, and the liquid and vapour vertices from CoolProp saturation at
-$P_\text{tp}$. The latent heat of sublimation follows as $L_\text{sub} = h_g - h_s$.
+$P_\text{tp}$. The latent heat of sublimation follows as $\Delta h_\text{sub} = h_g - h_s$.
 
 \subsection{Vessel mass and energy balances}
 \label{sec:balance}
@@ -457,10 +462,14 @@ $\dot m_g + \dot m_l = \dot m$. Each zone integrates its own internal energy,
 \end{align}
 where $\dot Q_{wg}$ and $\dot Q_{wl}$ are the wall-to-vapour and wall-to-liquid heat rates
 (Section~\ref{sec:heat}), $\dot Q_{gl} = h_{gl}\,A_i\,(T_g - T_l)$ is the interphase heat rate
-across the interface of area $A_i$, and $h_g^\text{out}$, $h_l^\text{out}$, $h_\text{ev}$,
-$h_\text{cd}$ are the specific enthalpies of the discharged and phase-transferred mass. The zone
-temperatures $T_g$, $T_l$ and the shared pressure follow from the zone states $(m_g, U_g)$ and
-$(m_l, U_l)$ under the constraint that the two zones fill the vessel volume. Because both wall
+across the interface of area $A_i$, $h_g^\text{out}$ and $h_l^\text{out}$ are the specific
+enthalpies of the discharged vapour and liquid, and $h_\text{ev}$ and $h_\text{cd}$ are the specific
+enthalpies of the mass evaporated from the liquid zone into the vapour and of the mass condensed from
+the vapour into the liquid, respectively. The zone temperatures $T_g$, $T_l$ and the shared pressure
+follow from the zone states $(m_g, U_g)$ and $(m_l, U_l)$ under the constraint that the two zones fill
+the vessel volume; the evaporation and condensation rates $\dot m_\text{ev}$, $\dot m_\text{cd}$ are
+those required to hold the two zones at this common pressure and volume at each step, as detailed by
+\citet{AndreasenStegelmann2026}. Because both wall
 terms are retained, the wall exchanges with each zone independently, which is what allows the warm
 vapour and the cold boiling liquid to follow separate temperature paths.
 
@@ -497,8 +506,8 @@ $T_\text{sub}(P)$ falls and to absorb the vapour-to-solid interphase heat,
 \begin{equation}
 \label{eq:descent}
 \begin{aligned}
-\dot m_\text{sub} &= -\,\frac{m_s\,c_{p,s}}{L_\text{sub}}\,\frac{\mathrm{d}T_\text{sub}}{\mathrm{d}t}
-                  + \frac{\dot Q_{gs}}{L_\text{sub}}, \\
+\dot m_\text{sub} &= -\,\frac{m_s\,c_{p,s}}{\Delta h_\text{sub}}\,\frac{\mathrm{d}T_\text{sub}}{\mathrm{d}t}
+                  + \frac{\dot Q_{gs}}{\Delta h_\text{sub}}, \\
 \dot Q_{gs} &= h_{gs}\,A_{gs}\,(T_g - T_s).
 \end{aligned}
 \end{equation}
@@ -517,7 +526,8 @@ The release rate is computed with a homogeneous-equilibrium model (HEM) with a s
 supplemented by an optional non-equilibrium boost for a flashing liquid. It is evaluated on the
 CoolProp and solid-table basis at all pressures, so the mass rate is continuous across the triple
 point: only the vessel state hands over there, not the discharge model. The flow is assumed
-homogeneous and isentropic from the stagnation state to the throat. Along the isentrope $s = s_0$
+homogeneous and isentropic from the stagnation state, taken as the instantaneous vessel state, to
+the throat. Along the isentrope $s = s_0$
 the mass flux at throat pressure $P$ is
 \begin{equation}
 \label{eq:hem}
@@ -569,8 +579,9 @@ vanishing at the triple point, and this scaling is used to fade each case's cali
 vessel blows down.
 
 The discharge coefficient is split by phase. The vapour discharge is single-phase HEM and takes a
-sharp-edged value $C_{d,\text{gas}} = 0.84$; the coefficient fitted to the gas releases is
-essentially constant along each pressure decline, consistent with the HEM description. The liquid
+fixed sharp-edged value $C_{d,\text{gas}} = 0.84$ for all gas releases; the coefficient inferred from
+the measured flux is essentially constant along each pressure decline, consistent with the HEM
+description. The liquid
 discharge takes the two-phase, flashing sharp-orifice value $C_{d,\text{liq}} = 0.62$
 \citep{Darby2004} together with the non-equilibrium factor $N$, so a liquid release uses
 $C_{d,\text{liq}}$ for the liquid and $C_{d,\text{gas}}$ for its vapour tail. The non-equilibrium
@@ -586,8 +597,17 @@ additional non-equilibrium machinery is not required there.
 The wall is resolved into two nodes, an unwetted (vapour-contact) node at temperature $T_w$ and a
 wetted (liquid- or solid-contact) node at $T_w^{w}$, with the wetted and unwetted areas taken from
 the vessel geometry at the current liquid level. Each node exchanges with the ambient through an
-external coefficient $h_\text{out}$, taken as the measured value of approximately
-0.4\,W\,m$^{-2}$\,K$^{-1}$ for the insulated CARDICE sphere (Section~\ref{sec:experimental}).
+external coefficient $h_\text{ext}$, taken as the measured value of approximately
+0.4\,W\,m$^{-2}$\,K$^{-1}$ for the insulated CARDICE sphere (Section~\ref{sec:experimental}). Each
+node simply balances its external and internal heat transfer: for a node at temperature $T$,
+\begin{equation}
+\label{eq:wallnode}
+C_w\,\frac{\mathrm{d}T}{\mathrm{d}t} = h_\text{ext}\,A_\text{ext}\,(T_\text{amb} - T) - \dot Q_w,
+\end{equation}
+with $C_w$ the node wall heat capacity, $A_\text{ext}$ its external area, $T_\text{amb}$ the ambient
+temperature, and $\dot Q_w$ its wall-to-fluid heat rate ($\dot Q_{wg}$ for the unwetted node,
+$\dot Q_{wl}$ for the wetted node, Eq.~\eqref{eq:zoneenergy}); the wetted node is instead pinned to
+$T_\text{sub}(P)$ while dry ice is present (Eq.~\eqref{eq:icewall}).
 
 The vapour-side (gas-contact) wall coefficient is a natural-convection correlation, selectable
 between the Geankoplis multi-regime form \citep{Geankoplis1993} in terms of the Rayleigh number
@@ -631,8 +651,10 @@ ill-defined for CO$_2$, the coefficient uses by default the Cooper reduced-press
 \label{eq:cooper}
 h_\text{boil} = 55\,P_r^{\,0.12 - 0.2\log_{10} R_p}\,(-\log_{10} P_r)^{-0.55}\,\mathcal{M}^{-0.5}\,q^{0.67},
 \end{equation}
-in terms of the reduced pressure $P_r = P/P_c$, the surface roughness $R_p$, the molar mass
-$\mathcal{M}$ and the wall heat flux $q$; Cooper needs none of those quantities. Below the triple
+in terms of the reduced pressure $P_r = P/P_c$, the surface roughness $R_p$ (in $\mu$m), the molar
+mass $\mathcal{M}$ (in kg\,kmol$^{-1}$) and the wall heat flux $q$ (in W\,m$^{-2}$); it is a
+dimensional correlation returning $h_\text{boil}$ in W\,m$^{-2}$\,K$^{-1}$, and requires none of the
+surface tension, saturated densities or latent heat. Below the triple
 point both correlations are pinned at the triple-point saturated liquid, only the wall superheat
 varying as the dry-ice bed cools, so that Rohsenow draws its surface tension, saturated densities and
 latent heat from that pinned state and remains usable as an alternative; a fixed coefficient may also
@@ -730,7 +752,7 @@ conductance of 4.3\,W\,K$^{-1}$, equivalent to approximately 0.4\,W\,m$^{-2}$\,K
 the latent loads, so the process is effectively near-adiabatic.
 
 CO$_2$ is released through a release pipe of 40\,mm inner diameter and approximately 2\,m
-length, terminated by a calibrated orifice connected either to the middle of the sphere for a
+length, terminated by a calibrated orifice connected either to the mid-height of the sphere for a
 vapour-space release or to the bottom for a liquid-space release. The measured quantities
 comprise the absolute pressure in the sphere and in the release pipe, the fluid temperature at
 six heights, the inner and outer wall temperatures at seven heights, the vessel mass of fluid
@@ -738,8 +760,8 @@ and solids from four load cells, and the mass flow rate through the release pipe
 inventory, corroborated against the measured pressure and temperature, is used here as the
 reference for the initial inventory and for the discharge calibration.
 
-The pure-CO$_2$ tests are numbers 5 to 10; the sphere was filled with liquid to approximately
-the middle. Three initial pressure levels are each realised as a vapour-space (gas) release and
+The pure-CO$_2$ tests are numbers 5 to 10; the sphere was filled with liquid to just below the
+centreline, so that the mid-height connection lies in the vapour space for a gas release. Three initial pressure levels are each realised as a vapour-space (gas) release and
 a liquid-space (liquid) release, as summarised in Table~\ref{tab:cardice-matrix}. The gas
 releases produce a large retained dry-ice bank inside the sphere, whereas the liquid releases
 leave essentially no solid inside the vessel; the dry ice a liquid release produces forms
@@ -747,12 +769,12 @@ downstream of the orifice instead.
 
 \begin{table}[!tbh]
 \centering
-\caption{CARDICE pure-CO$_2$ test matrix. $P_0$ and $T_0$ are the initial pressure and
+\caption{CARDICE pure-CO$_2$ test matrix. $P_\text{init}$ and $T_\text{init}$ are the initial pressure and
 temperature. The orifice diameter for test~8 is an effective value (Section~\ref{sec:discharge}).}
 \label{tab:cardice-matrix}
 \begin{tabular}{llccc}
 \toprule
-Test & Release & $P_0$ (bar) & $T_0$ ($^\circ$C) & Orifice (mm) \\
+Test & Release & $P_\text{init}$ (bar) & $T_\text{init}$ ($^\circ$C) & Orifice (mm) \\
 \midrule
 5  & Gas    & 20 & $-20$ & 3 \\
 6  & Liquid & 20 & $-20$ & 3 \\
@@ -795,13 +817,13 @@ point is reached.
 
 \begin{table}[!tbh]
 \centering
-\caption{ECCSEL/SINTEF dense-phase pure-CO$_2$ test matrix. $P_0$ and $T_0$ are the initial pressure
+\caption{ECCSEL/SINTEF dense-phase pure-CO$_2$ test matrix. $P_\text{init}$ and $T_\text{init}$ are the initial pressure
 and temperature; the configuration denotes a top opening (no riser, gas) or a bottom riser tube
 (liquid).}
 \label{tab:sintef-matrix}
 \begin{tabular}{lcccl}
 \toprule
-Test & $P_0$ (bar) & $T_0$ ($^\circ$C) & Nozzle (mm) & Configuration \\
+Test & $P_\text{init}$ (bar) & $T_\text{init}$ ($^\circ$C) & Nozzle (mm) & Configuration \\
 \midrule
 Exp71 & 122.6 & 25.2 & 8.0 & No riser (gas) \\
 Exp72 & 119.0 & 24.9 & 6.5 & No riser (gas) \\
@@ -874,7 +896,7 @@ contact with the gas. The cooling of the wetted (liquid-contact) wall is slightl
 after the initial gas-blowdown phase, but stays close to the lower measured band, reaching about
 $-75\,^\circ$C in agreement with the coldest sensors.
 
-The comparison highlights the value of the two-zone, partial-phase-equilibrium treatment: the
+The comparison highlights the value of the two-zone PPE treatment: the
 model captures the marked temperature separation between the warm vapour and the cold liquid and
 solid, in both the fluid and the wall, with the vapour held tens of degrees above the freezing and
 subliming condensate throughout the plateau and descent. A model that assumes full thermodynamic
@@ -1061,9 +1083,10 @@ choices, four sensitivity studies are presented: the time-step of the explicit i
 (Section~\ref{sec:sens-dt}), the plateau gas-liquid interphase coefficient
 (Section~\ref{sec:sens-htc}), the residual-heel dependence of the solid formed during a liquid
 release (Section~\ref{sec:sens-heel}), and the vessel-wall thermal mass
-(Section~\ref{sec:sens-wall}). A representative case is used for each: for the two CARDICE-based
-studies the gas release test~7 (which develops the full plateau and descent) and the liquid
-release test~8; for the two ECCSEL/SINTEF-based studies the gas release Exp72.
+(Section~\ref{sec:sens-wall}). A representative case is used in each. The time-step and plateau-coefficient studies use the CARDICE
+gas release test~7 (which develops the full plateau and descent); the plateau-coefficient study is
+repeated for the ECCSEL/SINTEF gas release Exp72. The residual-heel study uses the CARDICE liquid
+release test~8, and the wall thermal-mass study uses Exp72.
 
 \subsection{Time-step convergence}
 \label{sec:sens-dt}
@@ -1244,9 +1267,10 @@ cold bank: the wall stays warm apart from a shallow, transient cold zone at the 
 \centering
 \includegraphics[width=0.49\textwidth]{figures/wall2d_sensors_exp53}\hfill
 \includegraphics[width=0.49\textwidth]{figures/wall2d_sensors_exp72}
-\caption{Temperature-transmitter reconciliation for the ECCSEL/SINTEF tests at heights $z=0.77$\,m and
-$z=0.05$\,m: Exp53 (left; panels c and e) and Exp72 (right; panels d and f), reproducing the
-presentation of \citet{Hoydalsvik2026}. Measured (solid), two-dimensional conjugate wall (dashed)
+\caption{Thermocouple-temperature reconciliation for the ECCSEL/SINTEF tests at heights $z=0.77$\,m and
+$z=0.05$\,m: Exp53 (left; panels c and e) and Exp72 (right; panels d and f). The panel labels follow
+the corresponding figure of \citet{Hoydalsvik2026}, whose panels~a and~b (pressure and inventory) are
+not reproduced here. Measured (solid), two-dimensional conjugate wall (dashed)
 and lumped two-node wall (dotted); fluid centre, inner cylinder wall and outer cylinder wall are
 distinguished by colour (legend). The lumped model has no through-thickness gradient, so its inner
 and outer walls coincide. The fluid-near-wall sensor is omitted, as neither model resolves a radial
@@ -1272,7 +1296,7 @@ common to both wall descriptions.
 \section{Discussion and conclusions}
 \label{sec:discussion}
 
-A model combining the partial-phase-equilibrium (PPE), non-equilibrium (NEM) two-zone description
+A model combining the two-zone PPE description
 with the dry-ice (solid-level) extension and a simple two-node lumped wall, which ignores heat
 conduction and thermal gradients within the wall, reproduces most of the experimental observations
 across a wide range of conditions. Over the low- and medium-pressure CARDICE tests and the
@@ -1285,7 +1309,7 @@ tests) or conservative (the no-riser tests, where the wall cooling is over-predi
 
 The main feature that the present description does not resolve is the per-phase thermal
 stratification within each zone; capturing it would require a multi-zone model tending towards a
-computational fluid dynamics (CFD) treatment. The two-zone PPE/NEM formulation nonetheless already
+computational fluid dynamics (CFD) treatment. The two-zone PPE formulation nonetheless already
 reproduces the vapour and condensate stratification that a full thermodynamic-equilibrium model
 cannot, and the optional two-dimensional conjugate wall (Section~\ref{sec:wall2d}) removes the
 fast-test wall deficiencies at modest additional cost, although the lumped wall is adequate for most
@@ -1304,16 +1328,19 @@ Both the experiments and the model reinforce the importance of draining liquid C
 vessel, rather than a vapour-phase blowdown, in order to avoid the formation of dry ice, in
 agreement with current industry guidance \citep{eiga66_2022, eiga164_2020}. For the liquid drain to be effective,
 however, it must be taken from a low point so that essentially all of the liquid is removed before
-gas break-through; otherwise a residual liquid heel can still freeze into dry ice, as both the
-experiments and the model show.
+gas break-through; otherwise a residual liquid heel can still freeze into dry ice, as the model's
+residual-heel sensitivity study shows (Section~\ref{sec:sens-heel}). In every experiment reported
+here the vessel drained fully and no in-vessel solid formed.
 
 Because it captures the distinct behaviour of gas and liquid releases, including dry-ice formation,
 the model also provides a firm basis for predicting transient release rates, and the accompanying
 temperature, phase split and solid fraction, for scenarios such as leaks and full-bore pipe rupture.
 These are directly usable as a source term in dispersion modelling and quantitative risk assessment.
 The predicted wall temperatures are further relevant to low-temperature material integrity: the wall
-is cooled below $-70\,^\circ$C in several tests, and the conservative over-prediction of the wall
-cooling for the gas releases places any such assessment on the safe side.
+is cooled below $-70\,^\circ$C in several tests. For the gas releases the modelled wetted-wall minima
+agree with the measurements to within a few degrees and are mostly conservative, over-predicting the
+cooling; the largest non-conservative deviation is about $3\,^\circ$C (test~9), within the expected
+accuracy of the lumped wall description.
 
 The present study is limited to pure CO$_2$. Real CO$_2$ capture and storage streams contain
 impurities such as N$_2$, O$_2$ and CH$_4$ that shift the phase envelope and the conditions for
@@ -1357,27 +1384,28 @@ the content of the published article.
 {\small
 \noindent\textit{Latin symbols}\\[2pt]
 \begin{tabular}{@{}p{0.26\columnwidth}p{0.66\columnwidth}@{}}
-$A$ & area: orifice (flow) area, gas--liquid interface $A_i$, gas--solid interface $A_{gs}$ \\
+$A$ & area: orifice (flow) area, gas--liquid interface $A_i$, gas--solid interface $A_{gs}$, external wall area $A_\text{ext}$ \\
 $C_d$ & discharge coefficient ($C_{d,\text{gas}}=0.84$, $C_{d,\text{liq}}=0.62$) \\
+$C_w$ & wall-node heat capacity \\
 $c_p$ & specific heat capacity \\
 $G$ & mass flux through the restriction ($G_\text{HEM}$, $G_\text{frozen}$, $G_\text{liq}$) \\
-$h$ & specific enthalpy ($h_g,h_l,h_s,h_0$; $h_\text{ev},h_\text{cd}$) \\
-$h$ & heat-transfer coefficient ($h_\text{out},h_{gw},h_\text{boil},h_{gl},h_{gs}$) \\
+$h$ & specific enthalpy ($h_g,h_l,h_s,h_0$; $h_\text{ev},h_\text{cd}$ for the evaporated/condensed mass) \\
+$h$ & heat-transfer coefficient ($h_\text{ext},h_{gw},h_\text{boil},h_{gl},h_{gs}$) \\
 $k$ & thermal conductivity \\
 $L$ & characteristic length; $L_v$ vapour-column height \\
-$L_\text{sub}$ & latent heat of sublimation \\
+$\Delta h_\text{sub}$ & latent heat of sublimation \\
 $M$ & total in-vessel inventory (mass) \\
 $\mathcal{M}$ & molar mass \\
 $m$ & phase mass ($m_g,m_l,m_s$) \\
-$\dot m$ & mass flow rate; $\dot m_\text{ev},\dot m_\text{cd},\dot m_\text{sub}$ (evaporation, condensation, sublimation) \\
+$\dot m$ & mass flow rate; $\dot m_\text{ev}$ (evaporation, liquid$\to$vapour), $\dot m_\text{cd}$ (condensation, vapour$\to$liquid), $\dot m_\text{sub}$ (sublimation) \\
 $N$ & liquid non-equilibrium (frozen-flow) factor \\
 $P$ & pressure \\
 $q$ & wall heat flux \\
 $\dot Q$ & heat-transfer rate ($\dot Q_{wg},\dot Q_{wl},\dot Q_{gl},\dot Q_{gs}$) \\
-$R_p$ & surface roughness (Cooper correlation) \\
+$R_p$ & surface roughness ($\mu$m; Cooper correlation) \\
 $r,z$ & radial, axial coordinate (Appendix~\ref{app:wall2d}) \\
 $s$ & specific entropy \\
-$T$ & temperature \\
+$T$ & temperature ($T_g,T_l,T_s,T_w$; ambient $T_\text{amb}$, sublimation $T_\text{sub}$) \\
 $t$ & time \\
 $U$ & internal energy of a zone \\
 $u$ & specific internal energy \\
@@ -1403,12 +1431,13 @@ $\mathrm{Ra}$ & Rayleigh number ($\mathrm{Ra}=\mathrm{Gr}\,\mathrm{Pr}$) \\
 \vspace{5pt}\noindent\textit{Subscripts and superscripts}\\[2pt]
 \begin{tabular}{@{}p{0.26\columnwidth}p{0.66\columnwidth}@{}}
 $g,l,s$ & gas/vapour, liquid, solid \\
-$0$ & stagnation state; or initial condition (Section~\ref{sec:results} tables) \\
+$0$ & stagnation (current vessel) state \\
+$\text{init}$ & initial condition (test tables) \\
 $w$ & wall (superscript $w$: wetted, liquid- or solid-contact wall) \\
 $\text{tp},c,r$ & triple point, critical, reduced \\
 $\text{ev},\text{cd},\text{sub}$ & evaporation, condensation, sublimation \\
 $gl,gs,gw$ & gas--liquid, gas--solid, gas--wall \\
-$\text{back},i,\text{out}$ & back (downstream) pressure, interface, outlet (released) stream \\
+$\text{back},i,\text{ext},\text{out}$ & back (downstream) pressure, interface, external (ambient), outlet (released) stream \\
 \end{tabular}
 
 \vspace{5pt}\noindent\textit{Abbreviations}\\[2pt]
@@ -1417,7 +1446,6 @@ CCUS & carbon capture, utilisation and storage \\
 CFD & computational fluid dynamics \\
 EOS & equation of state \\
 HEM & homogeneous equilibrium model \\
-NEM & non-equilibrium model \\
 PPE & partial phase equilibrium \\
 QRA & quantitative risk assessment \\
 VLE & vapour--liquid equilibrium \\
@@ -1482,7 +1510,7 @@ gas-contact and the wetted regions drive the corresponding zone energy balances,
 fluid temperatures and heat-transfer coefficients set the Robin data for the next wall solve. The
 principal difference from \citet{Hoydalsvik2026} lies in the fluid model rather than the wall.
 Their model assumes full thermodynamic equilibrium between the phases, so the wall exchanges with a
-single bulk fluid temperature; the present model retains the two-zone, partial-phase-equilibrium
+single bulk fluid temperature; the present model retains the two-zone PPE
 description of Section~\ref{sec:model}, so the conjugate wall exchanges with two distinct fluid
 temperatures, a superheated vapour above the level and a colder liquid or solid below it.
 
