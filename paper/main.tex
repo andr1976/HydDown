@@ -539,7 +539,7 @@ above the equilibrium value, towards the frozen all-liquid limit \citep{Fauske19
 frozen incompressible (Bernoulli) flux
 \begin{equation}
 \label{eq:frozen}
-G_\text{frozen} = \sqrt{2\,\rho_L\,(P_0 - P_\text{back})}
+G_\text{frozen} = \sqrt{2\,\rho_l\,(P_0 - P_\text{back})}
 \end{equation}
 is the upper bound and the equilibrium HEM flux the lower bound; the two are combined with a single
 non-equilibrium factor $N \in [0,1]$,
@@ -598,8 +598,9 @@ $\mathrm{Ra} = \mathrm{Gr}\,\mathrm{Pr}$,
 \end{cases}
 \qquad h = \frac{\mathrm{Nu}\,k}{L},
 \end{equation}
-with $L$ the vessel height (vertical) or diameter (horizontal) and the fluid properties from
-CoolProp. Below the triple point the vapour-contact wall uses the Churchill--Chu free-convection
+with $\mathrm{Nu}$ the Nusselt number, $\mathrm{Gr}$ and $\mathrm{Pr}$ the Grashof and Prandtl
+numbers, $k$ the fluid thermal conductivity, $L$ the characteristic length (the vessel height for a
+vertical vessel, the diameter for a horizontal one), and the fluid properties from CoolProp. Below the triple point the vapour-contact wall uses the Churchill--Chu free-convection
 correlation for a vertical surface \citep{ChurchillChu1975}, the same law adopted in the SINTEF
 reference model \citep{Hoydalsvik2026},
 \begin{equation}
@@ -621,10 +622,10 @@ heat flows into the liquid and solid zone as an additional vaporisation term. Th
 coefficient uses, by default, the Cooper reduced-pressure correlation \citep{Cooper1984},
 \begin{equation}
 \label{eq:cooper}
-h_\text{boil} = 55\,P_r^{\,0.12 - 0.2\log_{10} R_p}\,(-\log_{10} P_r)^{-0.55}\,M^{-0.5}\,q^{0.67},
+h_\text{boil} = 55\,P_r^{\,0.12 - 0.2\log_{10} R_p}\,(-\log_{10} P_r)^{-0.55}\,\mathcal{M}^{-0.5}\,q^{0.67},
 \end{equation}
-in terms of the reduced pressure $P_r = P/P_c$, the surface roughness $R_p$, the molar mass $M$ and
-the wall heat flux $q$. Cooper is preferred because it requires no surface tension, saturated
+in terms of the reduced pressure $P_r = P/P_c$, the surface roughness $R_p$, the molar mass
+$\mathcal{M}$ and the wall heat flux $q$. Cooper is preferred because it requires no surface tension, saturated
 densities or latent heat, quantities that are ill-defined for CO$_2$ at and below the triple point;
 the Rohsenow correlation \citep{Rohsenow1952}, which needs all of them, is available as an
 alternative. Both are capped at 3000\,W\,m$^{-2}$\,K$^{-1}$, above which the wall is
@@ -1347,6 +1348,80 @@ manuscript drafting and editing, literature review structuring, development and 
 plotting and analysis scripts, and further development of the HydDown software package. After using
 this tool, the author reviewed and edited the content as needed and takes full responsibility for
 the content of the published article.
+
+% =====================================================================
+\section*{Nomenclature}
+\nolinenumbers
+{\small
+\noindent\textit{Latin symbols}\\[2pt]
+\begin{tabular}{@{}p{0.26\columnwidth}p{0.66\columnwidth}@{}}
+$A$ & area: orifice (flow) area, gas--liquid interface $A_i$, gas--solid interface $A_{gs}$ \\
+$C_d$ & discharge coefficient ($C_{d,\text{gas}}=0.84$, $C_{d,\text{liq}}=0.62$) \\
+$c_p$ & specific heat capacity \\
+$G$ & mass flux through the restriction ($G_\text{HEM}$, $G_\text{frozen}$, $G_\text{liq}$) \\
+$h$ & specific enthalpy ($h_g,h_l,h_s,h_0$; $h_\text{ev},h_\text{cd}$) \\
+$h$ & heat-transfer coefficient ($h_\text{out},h_{gw},h_\text{boil},h_{gl},h_{gs}$) \\
+$k$ & thermal conductivity \\
+$L$ & characteristic length; $L_v$ vapour-column height \\
+$L_\text{sub}$ & latent heat of sublimation \\
+$M$ & total in-vessel inventory (mass) \\
+$\mathcal{M}$ & molar mass \\
+$m$ & phase mass ($m_g,m_l,m_s$) \\
+$\dot m$ & mass flow rate; $\dot m_\text{ev},\dot m_\text{cd},\dot m_\text{sub}$ (evaporation, condensation, sublimation) \\
+$N$ & liquid non-equilibrium (frozen-flow) factor \\
+$P$ & pressure \\
+$q$ & wall heat flux \\
+$\dot Q$ & heat-transfer rate ($\dot Q_{wg},\dot Q_{wl},\dot Q_{gl},\dot Q_{gs}$) \\
+$R_p$ & surface roughness (Cooper correlation) \\
+$r,z$ & radial, axial coordinate (Appendix~\ref{app:wall2d}) \\
+$s$ & specific entropy \\
+$T$ & temperature \\
+$t$ & time \\
+$U$ & internal energy of a zone \\
+$u$ & specific internal energy \\
+$V$ & vessel volume \\
+$v$ & specific volume ($v_g,v_l,v_s$) \\
+$x_\text{solid}$ & solid mass fraction of the released stream \\
+\end{tabular}
+
+\vspace{5pt}\noindent\textit{Greek symbols}\\[2pt]
+\begin{tabular}{@{}p{0.26\columnwidth}p{0.66\columnwidth}@{}}
+$\beta_\text{gas}$ & vapour lever fraction of the released stream \\
+$\rho$ & density ($\rho_0$ stagnation, $\rho_l$ liquid) \\
+\end{tabular}
+
+\vspace{5pt}\noindent\textit{Dimensionless groups}\\[2pt]
+\begin{tabular}{@{}p{0.26\columnwidth}p{0.66\columnwidth}@{}}
+$\mathrm{Gr}$ & Grashof number \\
+$\mathrm{Nu}$ & Nusselt number \\
+$\mathrm{Pr}$ & Prandtl number \\
+$\mathrm{Ra}$ & Rayleigh number ($\mathrm{Ra}=\mathrm{Gr}\,\mathrm{Pr}$) \\
+\end{tabular}
+
+\vspace{5pt}\noindent\textit{Subscripts and superscripts}\\[2pt]
+\begin{tabular}{@{}p{0.26\columnwidth}p{0.66\columnwidth}@{}}
+$g,l,s$ & gas/vapour, liquid, solid \\
+$0$ & stagnation state; or initial condition (Section~\ref{sec:results} tables) \\
+$w$ & wall (superscript $w$: wetted, liquid- or solid-contact wall) \\
+$\text{tp},c,r$ & triple point, critical, reduced \\
+$\text{ev},\text{cd},\text{sub}$ & evaporation, condensation, sublimation \\
+$gl,gs,gw$ & gas--liquid, gas--solid, gas--wall \\
+$\text{back},i,\text{out}$ & back (downstream) pressure, interface, outlet (released) stream \\
+\end{tabular}
+
+\vspace{5pt}\noindent\textit{Abbreviations}\\[2pt]
+\begin{tabular}{@{}p{0.26\columnwidth}p{0.66\columnwidth}@{}}
+CCUS & carbon capture, utilisation and storage \\
+CFD & computational fluid dynamics \\
+EOS & equation of state \\
+HEM & homogeneous equilibrium model \\
+NEM & non-equilibrium model \\
+PPE & partial phase equilibrium \\
+QRA & quantitative risk assessment \\
+VLE & vapour--liquid equilibrium \\
+\end{tabular}
+}
+\linenumbers
 
 % =====================================================================
 \appendix
