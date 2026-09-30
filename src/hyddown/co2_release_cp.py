@@ -181,6 +181,16 @@ class CO2ReleaseModelCP(CO2ReleaseModel):
         h0 = self._flash.hmass(); s0 = self._flash.smass(); rho0 = self._flash.rhomass()
         return self.hem_rate_from_stagnation(h0, s0, rho0, T, P, Cd, area)
 
+    def mix_leak_rate(self, P, Q, Cd, area):
+        """HEM rate for a homogeneous two-phase (bulk-mixture) discharge at tank pressure ``P``
+        and overall mass vapour quality ``Q``. The upstream stagnation is the settled two-phase
+        mixture (a PQ-flash), so both phases are routed to the throat together (the "global mix").
+        Used by ``release.type: mix``."""
+        Q = min(max(Q, 0.0), 1.0)
+        self._flash.update(CP.PQ_INPUTS, P, Q)
+        h0 = self._flash.hmass(); s0 = self._flash.smass(); rho0 = self._flash.rhomass(); T = self._flash.T()
+        return self.hem_rate_from_stagnation(h0, s0, rho0, T, P, Cd, area)
+
     # ------------------------------------------------------- atmospheric state
     def atm_split(self, h0_mass):
         beta_gas = (h0_mass - self.h_solid_atm) / (self.h_gas_atm - self.h_solid_atm)

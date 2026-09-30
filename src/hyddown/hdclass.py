@@ -806,6 +806,27 @@ class HydDown:
             self.release_rate[i] = rate["mdot"]
             return rate["mdot"]
 
+        if self.release_phase == "mix":
+            # Homogeneous "global mix" draw: the bulk two-phase inventory at the vessel quality
+            # Q_bulk = m_gas/(m_gas+m_liquid) feeds the throat (HEM stagnation at (P, Q_bulk)).
+            # Both phases leave together (see the mass/energy balance), and Q_bulk -> 1 naturally
+            # as the liquid drains.
+            idx = i - 1 if i > 0 else 0
+            Qb = self.m_gas[idx] / max(self.m_gas[idx] + self.m_liquid[idx], 1e-12)
+            rate = self.release_model.mix_leak_rate(
+                P, Qb, self.CD_release, self.D_release ** 2 / 4 * math.pi
+            )
+            atm = self.release_model.atm_split(rate["h0"])
+            self.T_atm[i] = atm["T"]
+            self.x_vap_atm[i] = atm["vapour_frac"]
+            self.x_solid_atm[i] = atm["solid_frac"]
+            self.solid_frac_throat[i] = rate["solid_frac_throat"]
+            self.P_throat[i] = rate["P_throat"]
+            self.T_throat[i] = rate["T_throat"]
+            self.release_choked[i] = 1.0 if rate["choked"] else 0.0
+            self.release_rate[i] = rate["mdot"]
+            return rate["mdot"]
+
         if (
             self.static_head
             and self.release_phase == "liquid"
@@ -3187,7 +3208,14 @@ class HydDown:
                 if self.non_equilibrium:
                     # First, update masses with valve/release flow only (no phase transfer yet)
                     if input["valve"]["flow"] == "discharge":
-                        if self.has_release and self.release_phase == "liquid":
+                        if self.has_release and self.release_phase == "mix":
+                            # Homogeneous "global mix": the outflow leaves both zones in
+                            # proportion to the bulk quality Q_bulk = m_gas/(m_gas+m_liquid).
+                            _dm = self.mass_rate[i-1] * self.tstep
+                            _Qb = self.m_gas[i-1] / max(self.m_gas[i-1] + self.m_liquid[i-1], 1e-12)
+                            self.m_gas[i] = self.m_gas[i-1] - _Qb * _dm
+                            self.m_liquid[i] = self.m_liquid[i-1] - (1.0 - _Qb) * _dm
+                        elif self.has_release and self.release_phase == "liquid":
                             # Liquid-space release: the outflow leaves the liquid inventory.
                             # (release_phase flips to "gas" once the liquid is exhausted, so
                             # this branch stops draining liquid at that point.)
@@ -3388,26 +3416,29 @@ class HydDown:
                                           - self.tstep * Q_gas_liquid
                                           + E_evap - E_cond)  # Phase transfer energy
                     else:  # discharge
-                        # Attribute the outflow enthalpy to the phase the mass actually
-                        # leaves from. A liquid-space release draws liquid (release_phase
-                        # == "liquid"); a vapour-space release / standard blowdown draws
-                        # gas. Exactly one of h_gas_out / h_liq_out is non-zero.
-                        liquid_release = self.has_release and self.release_phase == "liquid"
+                        # Attribute the outflow enthalpy to the phase(s) the mass leaves from:
+                        # a liquid release draws liquid; a vapour/gas release draws gas; a "mix"
+                        # release draws both zones in proportion to the bulk quality Q_bulk.
+                        if self.has_release and self.release_phase == "mix":
+                            f_gas = self.m_gas[i-1] / max(self.m_gas[i-1] + self.m_liquid[i-1], 1e-12)
+                        elif self.has_release and self.release_phase == "liquid":
+                            f_gas = 0.0
+                        else:
+                            f_gas = 1.0
+                        f_liq = 1.0 - f_gas
                         h_gas_out = 0.0
                         h_liq_out = 0.0
-                        if liquid_release:
-                            if self.m_liquid[i-1] > 1e-6:
-                                self.fluid_liquid.update(
-                                    CP.DmassUmass_INPUTS, self.rho_liquid[i-1], self.U_liquid[i-1]
-                                )
-                                h_liq_out = self.fluid_liquid.hmass()
-                        else:
-                            if self.m_gas[i-1] > 1e-6:
-                                # Use DmassUmass to get enthalpy (avoids PT issues at saturation)
-                                self.fluid_gas.update(CP.DmassUmass_INPUTS, self.rho_gas[i-1], self.U_gas[i-1])
-                                h_gas_out = self.fluid_gas.hmass()
+                        if f_gas > 0.0 and self.m_gas[i-1] > 1e-6:
+                            # Use DmassUmass to get enthalpy (avoids PT issues at saturation)
+                            self.fluid_gas.update(CP.DmassUmass_INPUTS, self.rho_gas[i-1], self.U_gas[i-1])
+                            h_gas_out = self.fluid_gas.hmass()
+                        if f_liq > 0.0 and self.m_liquid[i-1] > 1e-6:
+                            self.fluid_liquid.update(
+                                CP.DmassUmass_INPUTS, self.rho_liquid[i-1], self.U_liquid[i-1]
+                            )
+                            h_liq_out = self.fluid_liquid.hmass()
                         U_gas_tentative = (U_gas_start
-                                          - self.tstep * self.mass_rate[i-1] * h_gas_out
+                                          - self.tstep * self.mass_rate[i-1] * f_gas * h_gas_out
                                           + self.tstep * self.Q_inner[i]
                                           - self.tstep * Q_gas_liquid
                                           + E_evap - E_cond)  # Phase transfer energy
@@ -3418,7 +3449,7 @@ class HydDown:
                     # Outflow enthalpy leaving the liquid phase (0 unless a liquid release)
                     liquid_out_term = 0.0
                     if input["valve"]["flow"] == "discharge":
-                        liquid_out_term = self.tstep * self.mass_rate[i-1] * h_liq_out
+                        liquid_out_term = self.tstep * self.mass_rate[i-1] * f_liq * h_liq_out
                     U_liquid_tentative = (U_liquid_start
                                          - liquid_out_term
                                          + self.tstep * self.Q_inner_wetted[i]

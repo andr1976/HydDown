@@ -1129,7 +1129,7 @@ def release_validation(input):
         True for success, False for failure
     """
     schema_release = {
-        "type": {"required": True, "type": "string", "allowed": ["liquid", "gas"]},
+        "type": {"required": True, "type": "string", "allowed": ["liquid", "gas", "mix"]},
         "diameter": {"required": True, "type": "number", "min": 0},
         "discharge_coef": {"required": True, "type": "number", "min": 0},
         # Optional separate Cd for a gas discharge (gas release or the gas tail of a
