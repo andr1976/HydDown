@@ -385,6 +385,8 @@ class CO2ReleaseModel:
             r["G_frozen"] = G_frozen
             r["G"] = G_ne
             r["mdot"] = Cd * area * G_ne
+            if r.get("rho_throat", 0.0) > 0.0:
+                r["v_throat"] = G_ne / r["rho_throat"]   # keep v = G/rho consistent with the NE flux
         return r
 
     def hem_rate_from_stagnation(self, h0, s0, rho0, T0, P0, Cd, area):
@@ -398,6 +400,7 @@ class CO2ReleaseModel:
         stag = {"h0": h0, "s0": s0, "rho0": rho0, "T0": T0}
         if P0 <= self.p_back:
             return {"mdot": 0.0, "G": 0.0, "P_throat": P0, "T_throat": T0,
+                    "rho_throat": rho0, "v_throat": 0.0,
                     "solid_frac_throat": 0.0, "choked": False, **stag}
 
         def neg_flux(P):
@@ -430,7 +433,9 @@ class CO2ReleaseModel:
         choked = bool(Pth > lo * 1.001)
 
         _hk, _rho, Tth, solid = self._iso_props(Pth, s0)
+        v_throat = Gmax / _rho if _rho > 0 else 0.0   # G = rho * v at the choke plane
         return {"mdot": Cd * area * Gmax, "G": Gmax, "P_throat": Pth, "T_throat": Tth,
+                "rho_throat": _rho, "v_throat": v_throat,
                 "solid_frac_throat": solid, "choked": choked, **stag}
 
     # ------------------------------------------------------- atmospheric state

@@ -705,6 +705,8 @@ class HydDown:
             self.solid_frac_throat = np.zeros(data_len)  # dry-ice fraction at choked throat [-]
             self.P_throat = np.zeros(data_len)  # choked-throat pressure [Pa]
             self.T_throat = np.zeros(data_len)  # choked-throat temperature [K]
+            self.rho_throat = np.zeros(data_len)  # choked-throat density [kg/m3]
+            self.v_throat = np.zeros(data_len)  # choked-throat velocity [m/s]
             self.m_dryice_cum = np.zeros(data_len)  # cumulative dry-ice mass released [kg]
             self.release_choked = np.zeros(data_len)  # 1.0 if choked flow, else 0.0
             self.release_rate = np.zeros(data_len)  # release-hole mass flow only [kg/s]
@@ -802,6 +804,8 @@ class HydDown:
             self.solid_frac_throat[i] = rate["solid_frac_throat"]
             self.P_throat[i] = rate["P_throat"]
             self.T_throat[i] = rate["T_throat"]
+            self.rho_throat[i] = rate["rho_throat"]
+            self.v_throat[i] = rate["v_throat"]
             self.release_choked[i] = 1.0 if rate["choked"] else 0.0
             self.release_rate[i] = rate["mdot"]
             return rate["mdot"]
@@ -823,14 +827,17 @@ class HydDown:
             self.solid_frac_throat[i] = rate["solid_frac_throat"]
             self.P_throat[i] = rate["P_throat"]
             self.T_throat[i] = rate["T_throat"]
+            self.rho_throat[i] = rate["rho_throat"]
+            self.v_throat[i] = rate["v_throat"]
             self.release_choked[i] = 1.0 if rate["choked"] else 0.0
             self.release_rate[i] = rate["mdot"]
             return rate["mdot"]
 
+        j = i - 1 if i > 0 else 0   # at the first step, use the initial level/density (no -1 wrap)
         if (
             self.static_head
             and self.release_phase == "liquid"
-            and self.liquid_level[i - 1] - self.discharge_location > 0.01
+            and self.liquid_level[j] - self.discharge_location > 0.01
         ):
             # Time-dependent hydrostatic head of the settled liquid column above the (low)
             # discharge point (liquid discharge only). The bottom liquid is sub-cooled at
@@ -838,8 +845,8 @@ class HydDown:
             # (a PT-flash). The head vanishes as the level falls to the draw point and when the
             # liquid is exhausted (release_phase flips to "gas"). HEM only; N is not applied.
             from CoolProp.CoolProp import PropsSI
-            dz = self.liquid_level[i - 1] - self.discharge_location
-            P0_eff = P + self.rho_liquid[i - 1] * 9.80665 * dz
+            dz = self.liquid_level[j] - self.discharge_location
+            P0_eff = P + self.rho_liquid[j] * 9.80665 * dz
             Tsat = PropsSI("T", "P", P, "Q", 0, self.comp)
             rate = self.release_model.dense_leak_rate(
                 Tsat, P0_eff, self.CD_release, self.D_release ** 2 / 4 * math.pi, phase="liquid"
@@ -858,6 +865,8 @@ class HydDown:
         self.solid_frac_throat[i] = rate["solid_frac_throat"]
         self.P_throat[i] = rate["P_throat"]
         self.T_throat[i] = rate["T_throat"]
+        self.rho_throat[i] = rate["rho_throat"]
+        self.v_throat[i] = rate["v_throat"]
         self.release_choked[i] = 1.0 if rate["choked"] else 0.0
         self.release_rate[i] = rate["mdot"]
         return rate["mdot"]
@@ -4072,6 +4081,8 @@ class HydDown:
                 # --- Choked-throat conditions ---
                 df["Throat pressure (bar)"] = self.P_throat / 1e5
                 df["Throat temperature (oC)"] = self.T_throat - 273.15
+                df["Throat density (kg/m3)"] = self.rho_throat
+                df["Throat velocity (m/s)"] = self.v_throat
                 df["Throat dry-ice mass fraction (-)"] = self.solid_frac_throat
                 # --- Fully-expanded atmospheric (1 atm) conditions ---
                 df["Atmospheric temperature (oC)"] = self.T_atm - 273.15

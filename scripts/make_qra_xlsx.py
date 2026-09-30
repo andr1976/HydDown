@@ -48,6 +48,9 @@ def build(csv_path):
     # Choked-throat conditions
     out["Throat pressure (bar)"] = df["Throat pressure (bar)"]
     out["Throat temperature (K)"] = df["Throat temperature (oC)"] + K
+    if "Throat density (kg/m3)" in df:
+        out["Throat density (kg/m3)"] = df["Throat density (kg/m3)"]
+        out["Throat velocity (m/s)"] = df["Throat velocity (m/s)"]
     out["Throat solid mass fraction (-)"] = df["Throat dry-ice mass fraction (-)"]
     # Fully-expanded atmospheric conditions
     out["Atmospheric temperature (K)"] = df["Atmospheric temperature (oC)"] + K
