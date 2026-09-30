@@ -229,6 +229,12 @@ class HydDown:
         else:
             self.non_equilibrium = False
 
+        # NEM phase-transfer flow-work fraction f: the energy carried by the evaporating/
+        # condensing mass is u + f*(h - u). f=0 -> internal energy only (no flow-work
+        # injection, minimal gas superheat); f=0.5 -> (h+u)/2 (default, matches the measured
+        # superheat); f=1 -> full enthalpy. See the phase-transfer energy balance.
+        self.flow_work_fraction = self.input["calculation"].get("flow_work_fraction", 0.5)
+
         # Non-equilibrium model only works with single component and energybalance
         if self.non_equilibrium:
             if "&" in self.input["initial"]["fluid"]:
@@ -934,6 +940,10 @@ class HydDown:
         self.mass_rate[i] = mdot
         self.release_rate[i] = mdot
         self.solid_frac_throat[i] = r["solid_frac_throat"]
+        self.P_throat[i] = r["P_throat"]
+        self.T_throat[i] = r["T_throat"]
+        self.rho_throat[i] = r["rho_throat"]
+        self.v_throat[i] = r["v_throat"]
         self.release_choked[i] = 1.0 if r["choked"] else 0.0
         self.T_atm[i] = atm["T"]
         self.x_vap_atm[i] = atm["vapour_frac"]
@@ -1235,6 +1245,13 @@ class HydDown:
         self.release_rate[i] = r["mdot"]
         self.solid_frac_throat[i] = 0.0
         self.release_choked[i] = 1.0
+        if r["mdot"] > 0.0:
+            # throat state of the venting (warm) gas, for the CFD source-term export
+            _thr = rm.gas_leak_rate(r["T_g"], r["P"], self.CD_release_gas, area)
+            self.P_throat[i] = _thr["P_throat"]
+            self.T_throat[i] = _thr["T_throat"]
+            self.rho_throat[i] = _thr["rho_throat"]
+            self.v_throat[i] = _thr["v_throat"]
         self.liquid_level[i] = self.inner_vol.h_from_V(m_l * rm.v_l) if m_l > 1e-6 else 0.0
         self.T_atm[i] = atm["T"]
         self.x_vap_atm[i] = atm["vapour_frac"]
@@ -1342,6 +1359,13 @@ class HydDown:
         self.release_rate[i] = r["mdot"]
         self.solid_frac_throat[i] = 0.0
         self.release_choked[i] = 1.0 if r["mdot"] > 0 else 0.0
+        if r["mdot"] > 0.0:
+            # throat state of the venting (warm) gas on the sublimation descent, for the export
+            _thr = rm.gas_leak_rate(r["T_g"], r["P"], self.CD_release_gas, area)
+            self.P_throat[i] = _thr["P_throat"]
+            self.T_throat[i] = _thr["T_throat"]
+            self.rho_throat[i] = _thr["rho_throat"]
+            self.v_throat[i] = _thr["v_throat"]
         self.liquid_level[i] = 0.0
         self.T_atm[i] = atm["T"]
         self.x_vap_atm[i] = atm["vapour_frac"]
@@ -1678,6 +1702,10 @@ class HydDown:
         self.mass_rate[i] = mdot
         self.release_rate[i] = mdot
         self.solid_frac_throat[i] = rate.get("solid_frac_throat", 0.0)
+        self.P_throat[i] = rate.get("P_throat", 0.0)
+        self.T_throat[i] = rate.get("T_throat", 0.0)
+        self.rho_throat[i] = rate.get("rho_throat", 0.0)
+        self.v_throat[i] = rate.get("v_throat", 0.0)
         self.release_choked[i] = 1.0 if rate.get("choked", False) else 0.0
         self.liquid_level[i] = (
             self.inner_vol.h_from_V(m_l * rm.v_l) if m_l > 1e-6 else 0.0
@@ -3292,7 +3320,8 @@ class HydDown:
                                 # Use (h+u)/2 compromise between enthalpy and internal energy
                                 h_vap_sat = self.fluid_liquid.saturated_vapor_keyed_output(CP.iHmass)
                                 u_vap_sat = self.fluid_liquid.saturated_vapor_keyed_output(CP.iUmass)
-                                e_vap_sat = (h_vap_sat + u_vap_sat) / 2.0
+                                # u + f*(h - u): f=0.5 gives the (h+u)/2 default
+                                e_vap_sat = u_vap_sat + self.flow_work_fraction * (h_vap_sat - u_vap_sat)
 
                                 # E_evap = energy carried by evaporated mass
                                 # This energy is SUBTRACTED from liquid and ADDED to gas
@@ -3334,7 +3363,8 @@ class HydDown:
                                 # Use (h+u)/2 compromise between enthalpy and internal energy
                                 h_liq_sat = self.fluid_gas.saturated_liquid_keyed_output(CP.iHmass)
                                 u_liq_sat = self.fluid_gas.saturated_liquid_keyed_output(CP.iUmass)
-                                e_liq_sat = (h_liq_sat + u_liq_sat) / 2.0
+                                # u + f*(h - u): f=0.5 gives the (h+u)/2 default
+                                e_liq_sat = u_liq_sat + self.flow_work_fraction * (h_liq_sat - u_liq_sat)
 
                                 # E_cond = energy carried by condensed mass
                                 # This energy is SUBTRACTED from gas and ADDED to liquid
@@ -3808,7 +3838,19 @@ class HydDown:
             self.S_mass[i] = self.fluid.smass()
             self.U_mass[i] = self.fluid.umass()
 
-            self.liquid_level[i] = self.calc_liquid_level()
+            if self.non_equilibrium:
+                # NEM: derive the level from the tracked liquid inventory (m_liquid / rho_liquid),
+                # NOT the bulk equilibrium flash. Once the gas zone superheats, the bulk flash reads
+                # a near-unity quality (almost no liquid) and collapses the reported level to 0 while
+                # the NEM still holds a real liquid inventory - which would prematurely trip the
+                # liquid->gas switch (leaving a spurious heel) and turn the static head off early.
+                if self.m_liquid[i] > 1e-9 and self.rho_liquid[i] > 0.0:
+                    V_liq = min(self.m_liquid[i] / self.rho_liquid[i], self.inner_vol.V_total)
+                    self.liquid_level[i] = self.inner_vol.h_from_V(V_liq)
+                else:
+                    self.liquid_level[i] = 0.0
+            else:
+                self.liquid_level[i] = self.calc_liquid_level()
 
             # Calculating vent temperature (adiabatic) only for discharge problem
             if self.input["valve"]["flow"] == "discharge":

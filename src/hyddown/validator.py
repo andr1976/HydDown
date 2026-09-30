@@ -89,6 +89,10 @@ def validate_mandatory_ruleset(input):
                         {"type": "string", "allowed": ["calc", "calc_two_sided"]}
                     ]
                 },
+                # NEM phase-transfer flow-work fraction: energy carried by the
+                # evaporating/condensing mass = u + f*(h - u). 0 = internal energy only
+                # (no flow work -> minimal gas superheat), 0.5 = (h+u)/2 (default), 1 = full h.
+                "flow_work_fraction": {"required": False, "type": "number", "min": 0, "max": 1},
             },
         },
         "vessel": {

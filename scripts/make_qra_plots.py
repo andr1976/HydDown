@@ -19,8 +19,9 @@ NAVY, RED, AMBER, SLATE, GREY = "#002D40", "#D61F39", "#E6A740", "#82979F", "#4C
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSV_DIR = os.path.join(HERE, "..", "qra_output")
-OUT_DIR = ("C:\\Users\\AndersAndreasen\\OneDrive - ORS\\Projects 2026 - "
-           "120.691_D_CarbonCuts_Ruby Development Project\\01 Working area\\CFD\\Source terms")
+OUT_DIR = os.environ.get("QRA_PLOT_DIR",
+          ("C:\\Users\\AndersAndreasen\\OneDrive - ORS\\Projects 2026 - "
+           "120.691_D_CarbonCuts_Ruby Development Project\\01 Working area\\CFD\\Source terms"))
 os.makedirs(OUT_DIR, exist_ok=True)
 
 
@@ -28,8 +29,16 @@ def plot_one(csv_path):
     name = os.path.splitext(os.path.basename(csv_path))[0]
     df = pd.read_csv(csv_path)
     t = df["Time (s)"].values
+    # Defensive: mask any frozen/undefined throat rows (throat P == 0 -> would read as 0 bar /
+    # -273 oC) so they never plot as a spurious drop to zero. Export already truncates these.
+    if "Throat pressure (bar)" in df:
+        bad = df["Throat pressure (bar)"].values <= 1e-9
+        for col in ("Throat pressure (bar)", "Throat temperature (oC)",
+                    "Throat density (kg/m3)", "Throat velocity (m/s)"):
+            if col in df:
+                df.loc[bad, col] = np.nan
 
-    fig, ax = plt.subplots(3, 2, figsize=(11, 11))
+    fig, ax = plt.subplots(4, 2, figsize=(11, 14.5))
     fig.suptitle("QRA source term  --  %s" % name, fontsize=12, fontweight="bold", color=NAVY)
 
     # (a) pressures
@@ -44,12 +53,15 @@ def plot_one(csv_path):
     a.plot(t, df["Release mass rate (kg/s)"], color=RED, lw=1.8)
     a.set_ylabel("Mass flow [kg/s]"); a.set_title("(b) Release mass flow")
 
-    # (c) temperatures (degC)
+    # (c) temperatures (degC). NB the legacy "Fluid temperature" column mirrors the gas zone,
+    # so it is not plotted separately (it would duplicate "Vessel gas"). The release is drawn
+    # from the liquid, whose temperature tracks saturation.
     a = ax[1, 0]
-    a.plot(t, df["Fluid temperature (oC)"], color=NAVY, lw=1.6, label="Vessel fluid")
     if "Vessel gas temperature (oC)" in df:
-        a.plot(t, df["Vessel gas temperature (oC)"], color=AMBER, lw=1.2, ls="-.", label="Vessel gas")
-        a.plot(t, df["Vessel liquid/solid temperature (oC)"], color=SLATE, lw=1.2, ls=":", label="Vessel liq/solid")
+        a.plot(t, df["Vessel gas temperature (oC)"], color=AMBER, lw=1.4, ls="-.", label="Vessel gas")
+        a.plot(t, df["Vessel liquid/solid temperature (oC)"], color=NAVY, lw=1.6, label="Vessel liquid/solid")
+    else:
+        a.plot(t, df["Fluid temperature (oC)"], color=NAVY, lw=1.6, label="Vessel fluid")
     if "Throat temperature (oC)" in df:
         a.plot(t, df["Throat temperature (oC)"], color=RED, lw=1.4, ls="--", label="Throat")
     if "Atmospheric temperature (oC)" in df:
@@ -78,6 +90,27 @@ def plot_one(csv_path):
     if "Throat velocity (m/s)" in df:
         a.plot(t, df["Throat velocity (m/s)"], color=RED, lw=1.6)
     a.set_ylabel("Throat velocity [m/s]"); a.set_xlabel("Time [s]"); a.set_title("(f) Throat velocity")
+
+    # (g) vessel inventory per phase
+    a = ax[3, 0]
+    if "Vessel liquid mass (kg)" in df:
+        a.plot(t, df["Vessel liquid mass (kg)"], color=NAVY, lw=1.8, label="Liquid")
+        a.plot(t, df["Vessel gas mass (kg)"], color=RED, lw=1.8, label="Gas")
+        if "Vessel dry-ice mass (kg)" in df:
+            a.plot(t, df["Vessel dry-ice mass (kg)"], color=AMBER, lw=1.8, label="Dry ice")
+        a.legend(frameon=False, fontsize=7)
+    a.set_ylabel("Vessel mass [kg]"); a.set_xlabel("Time [s]"); a.set_title("(g) Vessel inventory per phase")
+
+    # (h) liquid level + cumulative dry ice released
+    a = ax[3, 1]
+    if "Liquid level (m)" in df:
+        a.plot(t, df["Liquid level (m)"], color=NAVY, lw=1.6, label="Liquid level")
+    a.set_ylabel("Liquid level [m]"); a.set_xlabel("Time [s]"); a.set_title("(h) Liquid level / dry ice out")
+    if "Cumulative dry-ice mass (kg)" in df:
+        a2 = a.twinx()
+        a2.plot(t, df["Cumulative dry-ice mass (kg)"], color=AMBER, lw=1.6, ls="--", label="Cum. dry ice out")
+        a2.set_ylabel("Cumulative dry ice to atm [kg]", color=GREY)
+    a.legend(frameon=False, fontsize=7, loc="upper right")
 
     for row in ax:
         for a in row:

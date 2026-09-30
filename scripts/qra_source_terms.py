@@ -71,7 +71,8 @@ def build(name, seg, V, P_bara, T_C, nominal, sched, kind, rtype, dt, end_time):
         "vessel": vessel,
         "initial": {"temperature": round(T, 2), "pressure": round(P_bara * 1e5, 1), "fluid": "CO2"},
         "calculation": {"type": "energybalance", "time_step": dt, "end_time": end_time,
-                        "non_equilibrium": True, "h_gas_liquid": "calc_two_sided"},
+                        "non_equilibrium": True, "h_gas_liquid": "calc_two_sided",
+                        "flow_work_fraction": 0.0},  # pure-u phase transfer: no spurious gas superheat
         "valve": {"flow": "discharge", "type": "none", "back_pressure": 101325.0},
         "release": {"type": rtype, "diameter": round(ID, 5), "discharge_coef": 1.0,
                     "liquid_nonequilibrium": 0.0, "static_head": static,
@@ -98,13 +99,23 @@ def run_one(d, dts):
 
 
 def export(hd, path):
-    """Write the valid rows (truncate trailing zeros left by a mid-run failure)."""
+    """Write the valid source-term rows.
+
+    Two cuts: (i) trailing zeros left by a mid-run failure, and (ii) the triple-point validity
+    floor. Once the vessel reaches the triple point (~5.18 bar) dry ice forms inside it
+    (solid-in-vessel regime, out of scope) and the release model stops computing the throat
+    state, leaving the throat columns at 0 (which would read as 0 bar / -273 oC). We end the
+    source term at the last row with a valid (non-zero) throat pressure."""
     hd.isrun = True
     df = hd.get_dataframe()
     p = np.asarray(hd.P)
     if np.any(p > 1e3):
         n = int(np.max(np.where(p > 1e3)[0])) + 1
         df = df.iloc[:n]
+    if "Throat pressure (bar)" in df:
+        good = df["Throat pressure (bar)"].values > 1e-9
+        if good.any():
+            df = df.iloc[:int(np.max(np.where(good)[0])) + 1]
     df.to_csv(path, index=False)
     return df
 
