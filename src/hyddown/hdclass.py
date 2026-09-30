@@ -294,6 +294,11 @@ class HydDown:
             # behind (it then freezes to a small dry-ice residue below the triple point, and the
             # remaining vapour re-warms). Default 0.0 -> draw liquid to depletion (old behaviour).
             self.discharge_location = rel.get("discharge_location", 0.0)
+            # Opt-in (default off): add the time-dependent hydrostatic head of the settled
+            # liquid column above the discharge point to the driving (stagnation) pressure of
+            # the HEM rate. Liquid discharge only; vanishes as the liquid drains / the release
+            # switches to gas. See compute_release().
+            self.static_head = bool(rel.get("static_head", False))
             # Separate discharge coefficient for a GAS discharge - a gas-space release, or the
             # gas tail of a liquid release once the liquid is exhausted. Defaults to the single
             # discharge_coef so existing inputs are unchanged. This lets a liquid release use a
@@ -698,6 +703,8 @@ class HydDown:
             self.x_vap_atm = np.zeros(data_len)  # atmospheric vapour mass fraction [-]
             self.x_solid_atm = np.zeros(data_len)  # atmospheric dry-ice (solid) mass fraction [-]
             self.solid_frac_throat = np.zeros(data_len)  # dry-ice fraction at choked throat [-]
+            self.P_throat = np.zeros(data_len)  # choked-throat pressure [Pa]
+            self.T_throat = np.zeros(data_len)  # choked-throat temperature [K]
             self.m_dryice_cum = np.zeros(data_len)  # cumulative dry-ice mass released [kg]
             self.release_choked = np.zeros(data_len)  # 1.0 if choked flow, else 0.0
             self.release_rate = np.zeros(data_len)  # release-hole mass flow only [kg/s]
@@ -793,20 +800,43 @@ class HydDown:
             self.x_vap_atm[i] = atm["vapour_frac"]
             self.x_solid_atm[i] = atm["solid_frac"]
             self.solid_frac_throat[i] = rate["solid_frac_throat"]
+            self.P_throat[i] = rate["P_throat"]
+            self.T_throat[i] = rate["T_throat"]
             self.release_choked[i] = 1.0 if rate["choked"] else 0.0
             self.release_rate[i] = rate["mdot"]
             return rate["mdot"]
 
-        rate, atm = self.release_model.release_state(
-            P,
-            self.release_phase,
-            self.CD_release_gas if self.release_phase == "gas" else self.CD_release,
-            self.D_release ** 2 / 4 * math.pi,
-        )
+        if (
+            self.static_head
+            and self.release_phase == "liquid"
+            and self.liquid_level[i - 1] - self.discharge_location > 0.01
+        ):
+            # Time-dependent hydrostatic head of the settled liquid column above the (low)
+            # discharge point (liquid discharge only). The bottom liquid is sub-cooled at
+            # (P0_eff, T_sat(P)); the HEM rate is taken from that state via dense_leak_rate
+            # (a PT-flash). The head vanishes as the level falls to the draw point and when the
+            # liquid is exhausted (release_phase flips to "gas"). HEM only; N is not applied.
+            from CoolProp.CoolProp import PropsSI
+            dz = self.liquid_level[i - 1] - self.discharge_location
+            P0_eff = P + self.rho_liquid[i - 1] * 9.80665 * dz
+            Tsat = PropsSI("T", "P", P, "Q", 0, self.comp)
+            rate = self.release_model.dense_leak_rate(
+                Tsat, P0_eff, self.CD_release, self.D_release ** 2 / 4 * math.pi, phase="liquid"
+            )
+            atm = self.release_model.atm_split(rate["h0"])
+        else:
+            rate, atm = self.release_model.release_state(
+                P,
+                self.release_phase,
+                self.CD_release_gas if self.release_phase == "gas" else self.CD_release,
+                self.D_release ** 2 / 4 * math.pi,
+            )
         self.T_atm[i] = atm["T"]
         self.x_vap_atm[i] = atm["vapour_frac"]
         self.x_solid_atm[i] = atm["solid_frac"]
         self.solid_frac_throat[i] = rate["solid_frac_throat"]
+        self.P_throat[i] = rate["P_throat"]
+        self.T_throat[i] = rate["T_throat"]
         self.release_choked[i] = 1.0 if rate["choked"] else 0.0
         self.release_rate[i] = rate["mdot"]
         return rate["mdot"]
@@ -3993,15 +4023,29 @@ class HydDown:
             )
             # CO2 release / dry-ice atmospheric state (appended so column indices are stable)
             if self.has_release:
-                # In-vessel inventory breakdown (gas / liquid / solid dry ice)
+                # --- In-vessel / isolatable-volume conditions ---
                 df["Vessel gas mass (kg)"] = self.m_gas
                 df["Vessel liquid mass (kg)"] = self.m_liquid
                 df["Vessel dry-ice mass (kg)"] = self.m_solid
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    df["Vessel dry-ice mass fraction (-)"] = np.where(
+                        self.mass_fluid > 0, self.m_solid / self.mass_fluid, 0.0
+                    )
+                if getattr(self, "non_equilibrium", False) and hasattr(self, "T_gas"):
+                    df["Vessel gas temperature (oC)"] = self.T_gas - 273.15
+                    df["Vessel liquid/solid temperature (oC)"] = self.T_liquid - 273.15
+                df["Liquid level (m)"] = self.liquid_level
+                # --- Discharge (release-hole) mass flow ---
                 df["Release mass rate (kg/s)"] = self.release_rate
+                df["Choked (-)"] = self.release_choked
+                # --- Choked-throat conditions ---
+                df["Throat pressure (bar)"] = self.P_throat / 1e5
+                df["Throat temperature (oC)"] = self.T_throat - 273.15
+                df["Throat dry-ice mass fraction (-)"] = self.solid_frac_throat
+                # --- Fully-expanded atmospheric (1 atm) conditions ---
                 df["Atmospheric temperature (oC)"] = self.T_atm - 273.15
                 df["Atmospheric vapour mass fraction (-)"] = self.x_vap_atm
                 df["Atmospheric dry-ice mass fraction (-)"] = self.x_solid_atm
-                df["Throat dry-ice mass fraction (-)"] = self.solid_frac_throat
                 df["Cumulative dry-ice mass (kg)"] = self.m_dryice_cum
         return df
 

@@ -1136,6 +1136,7 @@ def release_validation(input):
         # liquid release); defaults to discharge_coef when omitted.
         "discharge_coef_gas": {"required": False, "type": "number", "min": 0},
         "discharge_location": {"required": False, "type": "number", "min": 0},
+        "static_head": {"required": False, "type": "boolean"},
         "back_pressure": {"required": False, "type": "number", "min": 0},
         "atm_pressure": {"required": False, "type": "number", "min": 0},
         "eos": {"required": False, "type": "string", "allowed": ["CoolProp", "tcPR"]},
